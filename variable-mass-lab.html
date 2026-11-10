@@ -1,0 +1,1333 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Variable Mass Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+/* Layout: lab bench — animated stage beside a control panel, live ledgers below, then a grid of four graphs */
+:root{
+  --font-display:"IBM Plex Sans Condensed","IBM Plex Sans",system-ui,sans-serif;
+  --font-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+
+  --bg:#f1f4f9; --surface:#ffffff; --surface-2:#e8edf5; --ink:#101a30; --ink-2:#4b5772; --line:#d3dae6;
+  --blue:#1b3f8b; --blue-ink:#ffffff; --blue-soft:#dde5f6; --amber:#b5730a; --amber-soft:#fbeed3;
+
+  --c-v:#1f63d6; --c-u:#66779a; --c-p:#7a3fbf; --c-fext:#c2362f; --c-flow:#c27c06; --c-fnet:#0d8a62;
+  --c-pe:#0d8a62; --c-heat:#d4541c; --c-src:#8a94a8; --c-exh:#e2a53a;
+
+  --sky:#e7eef9; --sky-high:#cdd8ec; --space:#e3e8f3; --star:#8e9ab6; --ground:#cfd5e1; --ground-2:#b8c1d2;
+  --rail:#56607a; --tie:#9aa3b8; --sand:#dba54a; --sand-2:#a8761f; --hull:#ffffff; --hull-2:#c5cee0;
+  --hull-line:#33415f; --flame:#f39a12; --flame-core:#fff2c4; --smoke:#a3acbf; --panel:#f7f9fc; --grid:#e3e8f0;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1322; --surface:#131c2f; --surface-2:#1a2540; --ink:#e5ebf6; --ink-2:#9ba8c3; --line:#28344f;
+    --blue:#86a9ff; --blue-ink:#0c1322; --blue-soft:#1c2a4c; --amber:#f0b13c; --amber-soft:#3b2b10;
+    --c-v:#6fa0ff; --c-u:#97a4bf; --c-p:#b88cf2; --c-fext:#ff6f64; --c-flow:#f0b13c; --c-fnet:#3ccf98;
+    --c-pe:#3ccf98; --c-heat:#ff8a4c; --c-src:#6d7892; --c-exh:#c98f2a;
+    --sky:#111b30; --sky-high:#0b1222; --space:#080d1a; --star:#c3cee6; --ground:#232e46; --ground-2:#2e3a56;
+    --rail:#8d98b2; --tie:#3c4865; --sand:#d9ad57; --sand-2:#a77d2c; --hull:#26324d; --hull-2:#3a4a6e;
+    --hull-line:#b7c3dc; --flame:#ffad33; --flame-core:#fff0c2; --smoke:#5b6680; --panel:#0f1729; --grid:#1f2a43;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c1322; --surface:#131c2f; --surface-2:#1a2540; --ink:#e5ebf6; --ink-2:#9ba8c3; --line:#28344f;
+  --blue:#86a9ff; --blue-ink:#0c1322; --blue-soft:#1c2a4c; --amber:#f0b13c; --amber-soft:#3b2b10;
+  --c-v:#6fa0ff; --c-u:#97a4bf; --c-p:#b88cf2; --c-fext:#ff6f64; --c-flow:#f0b13c; --c-fnet:#3ccf98;
+  --c-pe:#3ccf98; --c-heat:#ff8a4c; --c-src:#6d7892; --c-exh:#c98f2a;
+  --sky:#111b30; --sky-high:#0b1222; --space:#080d1a; --star:#c3cee6; --ground:#232e46; --ground-2:#2e3a56;
+  --rail:#8d98b2; --tie:#3c4865; --sand:#d9ad57; --sand-2:#a77d2c; --hull:#26324d; --hull-2:#3a4a6e;
+  --hull-line:#b7c3dc; --flame:#ffad33; --flame-core:#fff0c2; --smoke:#5b6680; --panel:#0f1729; --grid:#1f2a43;
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.45}
+.wrap{max-width:1320px;margin:0 auto;padding-block:22px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:16px}
+
+.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px}
+.title-block{min-width:0;max-width:720px}
+.eyebrow{font:500 11.5px/1.2 var(--font-mono);letter-spacing:.09em;text-transform:uppercase;color:var(--amber);margin-bottom:6px}
+h1{font-family:var(--font-display);font-weight:600;font-size:clamp(28px,3.6vw,40px);line-height:1.05;letter-spacing:-.01em;margin:0 0 8px;text-wrap:balance}
+.lede{margin:0;color:var(--ink-2);max-width:62ch}
+.law{font:500 clamp(15px,1.7vw,19px)/1.3 var(--font-mono);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 16px;white-space:nowrap;overflow-x:auto;max-width:100%}
+.law sub{font-size:.7em}
+.t-ext{color:var(--c-fext)} .t-flow{color:var(--c-flow)} .t-net{color:var(--c-fnet)}
+
+.tabs{display:flex;gap:4px;flex-wrap:wrap;background:var(--surface-2);padding:4px;border-radius:11px;width:fit-content;max-width:100%}
+.tab{appearance:none;border:0;background:transparent;padding:8px 14px;border-radius:8px;font:600 14px/1.2 var(--font-body);color:var(--ink-2);cursor:pointer;display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left}
+.tab small{font:500 10.5px/1.2 var(--font-mono);letter-spacing:.06em;text-transform:uppercase;opacity:.85}
+.tab:hover{color:var(--ink)}
+.tab[aria-selected="true"]{background:var(--blue);color:var(--blue-ink)}
+
+.main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start}
+@media (max-width:980px){.main{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;min-width:0}
+h2{font:600 12px/1.2 var(--font-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);margin:0 0 10px}
+
+.stage-card{display:flex;flex-direction:column;gap:12px;padding:12px}
+.stage{position:relative;width:100%;border-radius:9px;overflow:hidden;border:1px solid var(--line)}
+#scene{display:block;width:100%;height:420px;touch-action:none}
+
+.vkey{display:flex;flex-wrap:wrap;gap:6px}
+.vk{appearance:none;display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:5px 11px 5px 9px;font:500 12.5px/1.2 var(--font-body);cursor:pointer}
+.vk .sw{width:18px;height:3px;border-radius:2px;background:var(--c);position:relative}
+.vk .sw::after{content:"";position:absolute;right:-3px;top:-3px;border-left:6px solid var(--c);border-top:4.5px solid transparent;border-bottom:4.5px solid transparent}
+.vk[aria-pressed="false"]{color:var(--ink-2);opacity:.6}
+.vk[aria-pressed="false"] .sw{background:var(--line)}
+.vk[aria-pressed="false"] .sw::after{border-left-color:var(--line)}
+.vk i{font-style:italic;font-family:var(--font-mono)}
+
+.transport{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px}
+.btn{appearance:none;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:8px;padding:7px 12px;font:600 13.5px/1 var(--font-body);cursor:pointer}
+.btn:hover{border-color:var(--ink-2)}
+.btn svg{width:14px;height:14px;fill:currentColor}
+.btn.primary{background:var(--blue);border-color:var(--blue);color:var(--blue-ink);min-width:96px;justify-content:center}
+.speed{display:inline-flex;align-items:center;gap:6px;font:500 13px var(--font-body);color:var(--ink-2)}
+select{font:500 13px var(--font-body);color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:7px;padding:5px 8px}
+.scrub{flex:1 1 180px;display:flex;align-items:center;gap:10px;min-width:0}
+.scrub input{flex:1;min-width:0;accent-color:var(--amber)}
+.scrub output{font:500 13px var(--font-mono);color:var(--ink-2);white-space:nowrap;font-variant-numeric:tabular-nums}
+
+.eq{border-top:1px solid var(--line);padding-top:10px;display:flex;flex-direction:column;gap:6px}
+.eq-live{font:500 14.5px/1.5 var(--font-mono);font-variant-numeric:tabular-nums;overflow-x:auto;white-space:nowrap}
+.eq-live .lbl{color:var(--ink-2);font-weight:400}
+.eq-note{margin:0;color:var(--ink-2);font-size:14px;max-width:80ch}
+.eq-note b{color:var(--ink);font-weight:600}
+
+.panel{display:flex;flex-direction:column;gap:6px}
+.panel h2{margin-top:10px}
+.panel h2:first-of-type{margin-top:4px}
+.scen-desc{margin:0 0 4px;font-size:14px;color:var(--ink-2)}
+.params{display:flex;flex-direction:column;gap:12px}
+.field{display:flex;flex-direction:column;gap:5px}
+.field-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.field label,.field .flabel{font-size:13px;color:var(--ink);font-weight:500}
+.numwrap{display:inline-flex;align-items:center;gap:4px;font:500 12.5px var(--font-mono);color:var(--ink-2);flex:none}
+.numwrap input{width:82px;font:500 13px var(--font-mono);padding:3px 6px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);text-align:right;font-variant-numeric:tabular-nums}
+input[type="range"]{width:100%;accent-color:var(--blue);margin:0}
+.seg{display:flex;flex-wrap:wrap;gap:4px}
+.seg button{flex:1 1 auto;appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--ink-2);border-radius:7px;padding:6px 8px;font:500 12.5px/1.2 var(--font-body);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--blue-soft);border-color:var(--blue);color:var(--ink);font-weight:600}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:5px 11px;font:500 12.5px/1.2 var(--font-body);cursor:pointer}
+.chip:hover{border-color:var(--amber)}
+.chip[aria-pressed="true"]{background:var(--amber-soft);border-color:var(--amber);font-weight:600}
+.note{margin:4px 0 0;font-size:13.5px;line-height:1.5;color:var(--ink);background:var(--surface-2);border-radius:8px;padding:9px 11px}
+.check{display:flex;align-items:center;gap:8px;font-size:13.5px;cursor:pointer}
+.check input{accent-color:var(--blue);width:16px;height:16px;margin:0}
+
+.readouts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:16px}
+.vals{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 12px;margin:0}
+.vals div{min-width:0}
+.vals dt{font:500 11.5px/1.2 var(--font-mono);color:var(--ink-2);letter-spacing:.03em}
+.vals dd{margin:2px 0 0;font:500 15px/1.25 var(--font-mono);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+
+.mrow{display:grid;grid-template-columns:minmax(0,1fr) 92px;gap:2px 10px;align-items:center;margin-bottom:9px}
+.mrow .mname{font-size:13px;grid-column:1/-1;display:flex;align-items:center;gap:6px}
+.mrow .mname .dot{width:9px;height:9px;border-radius:2px;background:var(--c);flex:none}
+.mtrack{position:relative;height:12px;background:var(--surface-2);border-radius:3px}
+.mtrack::after{content:"";position:absolute;left:50%;top:-3px;bottom:-3px;width:1px;background:var(--ink-2)}
+.mtrack i{position:absolute;top:0;bottom:0;background:var(--c);border-radius:2px}
+.mval{font:500 12.5px var(--font-mono);text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.ledger{margin:4px 0 0;font:500 12.5px/1.5 var(--font-mono);color:var(--ink-2);overflow-wrap:anywhere}
+
+.erow{display:grid;grid-template-columns:70px minmax(0,1fr);gap:8px;align-items:center;margin-bottom:8px}
+.erow span{font:500 12px var(--font-mono);color:var(--ink-2)}
+.ebar{display:flex;height:16px;background:var(--surface-2);border-radius:3px;overflow:hidden}
+.ebar i{height:100%;background:var(--c);flex:none}
+.elegend{list-style:none;margin:8px 0 0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 12px}
+.elegend li{display:flex;align-items:baseline;gap:6px;font-size:12.5px;min-width:0}
+.elegend .dot{width:9px;height:9px;border-radius:2px;background:var(--c);flex:none;transform:translateY(1px)}
+.elegend .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.elegend b{margin-left:auto;font:500 12px var(--font-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.elegend .grp{grid-column:1/-1;font:500 11px var(--font-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-2);margin-top:4px}
+
+.graphs{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,440px),1fr));gap:16px}
+.gcard{display:flex;flex-direction:column;gap:8px;padding:12px 14px}
+.ghead{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.ghead select{font-weight:600;font-size:14px}
+.gunit{font:500 12px var(--font-mono);color:var(--ink-2)}
+.gcard canvas{display:block;width:100%;height:220px;cursor:ew-resize;touch-action:pan-y}
+.legend{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:4px 16px}
+.legend li{display:flex;align-items:center;gap:6px;font-size:12.5px}
+.legend .ln{width:18px;height:0;border-top:2.5px solid var(--c);flex:none}
+.legend .ln.dash{border-top-style:dashed}
+.legend .ln.area{height:9px;border:0;background:var(--c);opacity:.75;border-radius:2px}
+.legend b{font:500 12px var(--font-mono);font-variant-numeric:tabular-nums}
+.legend sub{font-size:.72em}
+
+.notes{font-size:13.5px;color:var(--ink-2)}
+.notes ul{margin:0;padding-left:18px;display:grid;gap:4px;max-width:110ch}
+.notes b{color:var(--ink);font-weight:600}
+
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+@media (max-width:560px){
+  .vals{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .elegend{grid-template-columns:minmax(0,1fr)}
+  .law{font-size:14px;padding:8px 12px}
+}
+</style>
+<style>html,body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="title-block">
+      <div class="eyebrow">AP Physics C: Mechanics · Linear momentum</div>
+      <h1>Variable Mass Lab</h1>
+      <p class="lede">Newton's second law for an object that gains or loses mass while it moves. Pick a situation, set the starting conditions, then watch the vectors, momentum, energy and graphs evolve together.</p>
+    </div>
+    <div class="law" aria-label="Variable-mass form of Newton's second law">
+      <span class="t-ext">ΣF<sub>ext</sub></span> + <span class="t-flow">(u − v)·dm/dt</span> = <span class="t-net">m·dv/dt</span>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="Situation">
+    <button class="tab" role="tab" id="tab-rocket" data-scen="rocket" aria-selected="true">Rocket<small>Mass leaves</small></button>
+    <button class="tab" role="tab" id="tab-sand" data-scen="sand" aria-selected="false">Sand into a moving car<small>Mass enters</small></button>
+    <button class="tab" role="tab" id="tab-leak" data-scen="leak" aria-selected="false">Leaking sand car<small>Mass leaves with u = v</small></button>
+  </nav>
+
+  <div class="main">
+    <section class="card stage-card" aria-label="Simulation">
+      <div class="stage" id="stage"><canvas id="scene" role="img" aria-label="Animated scene with vector panel"></canvas></div>
+      <div class="vkey" id="vkey" role="group" aria-label="Vectors shown">
+        <button class="vk" data-k="vel" aria-pressed="true" style="--c:var(--c-v)"><span class="sw"></span>Velocity <i>v</i>, <i>u</i></button>
+        <button class="vk" data-k="mom" aria-pressed="true" style="--c:var(--c-p)"><span class="sw"></span>Momentum <i>p</i></button>
+        <button class="vk" data-k="fext" aria-pressed="true" style="--c:var(--c-fext)"><span class="sw"></span>External force</button>
+        <button class="vk" data-k="flow" aria-pressed="true" style="--c:var(--c-flow)"><span class="sw"></span><span id="flowKey">Thrust</span></button>
+        <button class="vk" data-k="net" aria-pressed="true" style="--c:var(--c-fnet)"><span class="sw"></span>Net force</button>
+      </div>
+      <div class="transport">
+        <button class="btn primary" id="play" type="button"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z"/></svg><span>Play</span></button>
+        <button class="btn" id="step" type="button" title="Advance a short time step"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 2.5v11l7-5.5zM11 2.5h2v11h-2z"/></svg>Step</button>
+        <button class="btn" id="reset" type="button"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.5a5.5 5.5 0 1 1-5.2 3.7l1.9.6A3.5 3.5 0 1 0 8 4.5V7L4.5 3.5 8 0z"/></svg>Reset</button>
+        <label class="speed" for="speed">Speed
+          <select id="speed">
+            <option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="1">1×</option><option value="2">2×</option>
+            <option value="5">5×</option><option value="10">10×</option><option value="20">20×</option><option value="50">50×</option>
+          </select>
+        </label>
+        <div class="scrub"><input type="range" id="scrub" min="0" max="1000" step="1" value="0" aria-label="Time"><output id="tlabel">0.0 s</output></div>
+      </div>
+      <div class="eq" aria-live="off">
+        <div class="eq-live" id="eqLive"></div>
+        <p class="eq-note" id="eqNote"></p>
+      </div>
+    </section>
+
+    <aside class="card panel" aria-label="Controls">
+      <p class="scen-desc" id="scenDesc"></p>
+      <h2>Initial conditions</h2>
+      <div id="params" class="params"></div>
+      <h2>Try this</h2>
+      <div id="presets" class="chips" role="group" aria-label="Example setups"></div>
+      <p class="note" id="presetNote"></p>
+      <h2>Display</h2>
+      <label class="check" for="optParticles"><input type="checkbox" id="optParticles" checked> Exhaust and sand particles</label>
+      <label class="check" for="optPred"><input type="checkbox" id="optPred"> Analytic prediction on velocity graph</label>
+    </aside>
+  </div>
+
+  <section class="readouts">
+    <div class="card"><h2>Right now</h2><dl class="vals" id="vals"></dl></div>
+    <div class="card"><h2>Momentum · kg·m/s</h2><div id="mom"></div><p class="ledger" id="momEq"></p></div>
+    <div class="card"><h2>Energy ledger</h2><div id="energy"></div></div>
+  </section>
+
+  <section class="graphs" id="graphs" aria-label="Graphs"></section>
+
+  <footer class="card notes">
+    <h2>Model notes</h2>
+    <ul>
+      <li><b>u</b> is the velocity of the mass entering or leaving, measured in the ground frame. For the rocket, u = v − u<sub>rel</sub>. The mass-transfer term (u − v)·dm/dt is the thrust for the rocket and the drag of the incoming sand for the car.</li>
+      <li>Motion is one-dimensional: positive is to the right, or up for the launch. Sand falls from the chute with horizontal velocity u; its vertical motion is not part of the model. The track is frictionless and there is no air resistance.</li>
+      <li>Burn rate and exhaust speed are constant. The energy ledger counts the exhaust's kinetic (and gravitational potential) energy at the moment it leaves; the fuel releases ½·|dm/dt|·u<sub>rel</sub>² every second.</li>
+      <li>Each run is computed in advance with a fourth-order Runge–Kutta integrator (8000 steps) and agrees with the analytic solutions to better than 0.01%. Each vector type keeps one scale for the whole run, so arrow lengths can be compared over time. Click or drag on any graph to jump to that moment.</li>
+    </ul>
+  </footer>
+</div>
+
+<script>
+(() => {
+'use strict';
+
+/*PHYSICS-START*/
+function makeModel(scen, P) {
+  const n = k => +P[k];
+  if (scen === 'rocket') {
+    const launch = P.env === 'launch';
+    const tFlow = n('fuel') > 0 ? n('fuel') / n('rate') : 0;
+    return { scen, flow: 'out', launch, m0: n('dry') + n('fuel'), base: n('dry'), load: n('fuel'),
+      v0: launch ? 0 : n('v0'), rate: n('rate'), uRel: n('uRel'), g: launch ? n('g') : 0,
+      u: 0, mode: 'none', F: 0, tFlow, tEnd: tFlow > 0 ? tFlow * 1.3 : 20 };
+  }
+  if (scen === 'sand') {
+    const tFlow = n('load') / n('rate');
+    return { scen, flow: 'in', launch: false, m0: n('car'), base: n('car'), load: n('load'),
+      v0: n('v0'), rate: n('rate'), uRel: 0, g: 0, u: n('u'), mode: P.mode,
+      F: P.mode === 'const' ? n('F') : 0, tFlow, tEnd: tFlow * 1.25 };
+  }
+  const tFlow = n('load') / n('rate');
+  return { scen: 'leak', flow: 'out', launch: false, m0: n('car') + n('load'), base: n('car'), load: n('load'),
+    v0: n('v0'), rate: n('rate'), uRel: 0, g: 0, u: 0, mode: P.mode,
+    F: P.mode === 'const' ? n('F') : 0, tFlow, tEnd: tFlow * 1.3 };
+}
+
+// Forces on the body. ug = ground-frame velocity of the mass crossing the boundary.
+function forces(M, x, v, m, on) {
+  let mdot = 0, ug = NaN, Fapp = 0, Fg = 0, N = 0, Fflow = 0;
+  if (M.scen === 'rocket') {
+    if (on) { mdot = -M.rate; ug = v - M.uRel; Fflow = (ug - v) * mdot; }
+    if (M.launch) Fg = -m * M.g;
+  } else if (M.scen === 'sand') {
+    if (on) { mdot = M.rate; ug = M.u; Fflow = (ug - v) * mdot; }
+    if (M.mode === 'const') Fapp = M.F;
+    else if (M.mode === 'hold') Fapp = on ? -Fflow : 0;
+  } else {
+    if (on) { mdot = -M.rate; ug = v; Fflow = 0; }
+    if (M.mode === 'const') Fapp = M.F;
+  }
+  let pinned = false;
+  if (M.launch && x <= 1e-9 && v <= 1e-9 && Fflow + Fg <= 0) { pinned = true; N = -(Fflow + Fg); }
+  const Fext = Fapp + Fg + N;
+  const a = pinned ? 0 : (Fext + Fflow) / m;
+  return { mdot, ug, Fapp, Fg, N, Fflow, Fext, Fnet: pinned ? 0 : Fext + Fflow, a, pinned };
+}
+
+// State Y: x, v, m, J, pOut, pIn, KEout, W, Edis, Echem, KEin, Uout
+function deriv(M, Y, on) {
+  const x = Y[0], v = Y[1], m = Y[2];
+  const f = forces(M, x, v, m, on);
+  const ug = isNaN(f.ug) ? 0 : f.ug;
+  const b = f.mdot < 0 ? -f.mdot : 0, lam = f.mdot > 0 ? f.mdot : 0;
+  return [
+    f.pinned ? 0 : v, f.a, f.mdot, f.Fext,
+    b * ug, lam * ug, 0.5 * b * ug * ug, f.Fapp * v,
+    0.5 * lam * (v - ug) * (v - ug),
+    M.scen === 'rocket' ? 0.5 * b * M.uRel * M.uRel : 0,
+    0.5 * lam * ug * ug,
+    M.launch ? b * M.g * x : 0
+  ];
+}
+function rk4(M, Y, h, on) {
+  const add = (A, B, s) => A.map((a, i) => a + B[i] * s);
+  const k1 = deriv(M, Y, on), k2 = deriv(M, add(Y, k1, h / 2), on),
+        k3 = deriv(M, add(Y, k2, h / 2), on), k4 = deriv(M, add(Y, k3, h), on);
+  return Y.map((y, i) => y + h / 6 * (k1[i] + 2 * k2[i] + 2 * k3[i] + k4[i]));
+}
+
+function simulate(M) {
+  const NSTEP = 8000, REC = 4;
+  const nFlow = M.tFlow > 0 ? Math.max(400, Math.round(NSTEP * M.tFlow / M.tEnd / REC) * REC) : 0;
+  const nCoast = Math.max(200, Math.round((NSTEP - nFlow) / REC) * REC);
+  const K = ['x', 'v', 'm', 'J', 'pOut', 'pIn', 'KEout', 'W', 'Edis', 'Echem', 'KEin', 'Uout'];
+  const R = { t: [], on: [], a: [], ug: [], Fext: [], Fflow: [], Fnet: [], Fapp: [], N: [] };
+  K.forEach(k => R[k] = []);
+  let Y = [0, M.v0, M.m0, 0, 0, 0, 0, 0, 0, 0, 0, 0], t = 0;
+  const rec = on => {
+    R.t.push(t); R.on.push(on);
+    K.forEach((k, j) => R[k].push(Y[j]));
+    const f = forces(M, Y[0], Y[1], Y[2], on);
+    R.a.push(f.a); R.ug.push(f.ug); R.Fext.push(f.Fext); R.Fflow.push(f.Fflow);
+    R.Fnet.push(f.Fnet); R.Fapp.push(f.Fapp); R.N.push(f.N);
+  };
+  const seg = (n, h, on) => {
+    for (let i = 0; i < n; i++) {
+      if (i % REC === 0) rec(on);
+      Y = rk4(M, Y, h, on); t += h;
+      if (M.launch && Y[0] < 0) { Y[8] += 0.5 * Y[2] * Y[1] * Y[1]; Y[0] = 0; Y[1] = 0; }
+    }
+  };
+  if (nFlow) { seg(nFlow, M.tFlow / nFlow, true); t = M.tFlow; rec(true); }
+  seg(nCoast, (M.tEnd - M.tFlow) / nCoast, false); t = M.tEnd; rec(false);
+
+  const n = R.t.length, g = M.launch ? M.g : 0;
+  R.p = R.v.map((v, i) => R.m[i] * v);
+  R.KE = R.v.map((v, i) => 0.5 * R.m[i] * v * v);
+  R.PE = R.x.map((x, i) => R.m[i] * g * x);
+  R.Eexch = R.KEout.map((k, i) => k + R.Uout[i]);
+  R.E0 = R.KE[0] + R.PE[0];
+  R.Wpos = R.W.map(w => Math.max(w, 0));
+  R.Wneg = R.W.map(w => Math.max(-w, 0));
+  R.E0arr = R.t.map(() => R.E0);
+  R.Esup = R.t.map((_, i) => R.E0 + R.Echem[i] + R.Wpos[i] + R.KEin[i]);
+  R.Enow = R.t.map((_, i) => R.KE[i] + R.PE[i] + R.Eexch[i] + R.Edis[i] + R.Wneg[i]);
+  R.p0 = R.p[0];
+  R.pSys = R.p.map((p, i) => M.flow === 'out' ? p + R.pOut[i] : p);
+  R.pPred = R.t.map((_, i) => R.p0 + R.J[i] + R.pIn[i]);
+  R.dmEx = R.m.map(m => Math.abs(m - M.m0));
+  R.vth = R.t.map(tt => vTheory(M, tt));
+  R.tEnd = M.tEnd; R.n = n;
+  const mx = (...arrs) => Math.max(1e-9, ...arrs.map(a => a.reduce((s, x) => isNaN(x) ? s : Math.max(s, Math.abs(x)), 0)));
+  R.maxV = mx(R.v, R.ug);
+  R.maxPbody = mx(R.p);
+  R.maxP = mx(R.p, R.pOut, R.pSys, R.pIn, R.J);
+  R.maxF = mx(R.Fext, R.Fflow, R.Fnet);
+  R.maxE = mx(R.Esup, R.Enow);
+  R.maxX = mx(R.x);
+  R.tLift = M.launch ? (() => { for (let i = 0; i < n; i++) if (R.x[i] > 1e-6) return R.t[Math.max(0, i - 1)]; return Infinity; })() : 0;
+  return R;
+}
+
+function vTheory(M, t) {
+  const tf = M.tFlow;
+  if (M.scen === 'rocket') {
+    const g = M.launch ? M.g : 0;
+    let tL = 0;
+    if (M.launch) {
+      const mL = M.uRel * M.rate / g;
+      tL = M.m0 > mL ? (M.m0 - mL) / M.rate : 0;
+      if (tL >= tf) return 0;
+    }
+    if (t <= tL) return M.v0;
+    const mL = M.m0 - M.rate * tL;
+    const vAt = tt => M.v0 + M.uRel * Math.log(mL / (M.m0 - M.rate * tt)) - g * (tt - tL);
+    if (t <= tf) return vAt(t);
+    return vAt(tf) - g * (t - tf);
+  }
+  if (M.scen === 'sand') {
+    if (M.mode === 'hold') return M.v0;
+    const F = M.mode === 'const' ? M.F : 0;
+    const vf = tt => (M.m0 * M.v0 + (F + M.rate * M.u) * tt) / (M.m0 + M.rate * tt);
+    if (t <= tf) return vf(t);
+    return vf(tf) + F * (t - tf) / (M.m0 + M.rate * tf);
+  }
+  const F = M.mode === 'const' ? M.F : 0;
+  const vf = tt => M.v0 + (F / M.rate) * Math.log(M.m0 / (M.m0 - M.rate * tt));
+  if (t <= tf) return vf(t);
+  return vf(tf) + F * (t - tf) / (M.m0 - M.rate * tf);
+}
+/*PHYSICS-END*/
+
+/* ---------- Scenario definitions ---------- */
+const SC = {
+  rocket: {
+    desc: 'Fuel leaves the nozzle at a fixed speed relative to the rocket. The momentum the exhaust carries backward pushes the rocket forward.',
+    names: { body: 'Rocket', exchV: 'Exhaust <i>u</i> (ground frame)', exchMass: 'Fuel burned', exchE: 'Exhaust KE + PE',
+      exchP: 'Exhaust (all gas expelled)', flowSub: 'thrust', flowKey: 'Thrust', flowName: 'Thrust (u − v)·dm/dt', uLane: 'exh' },
+    params: [
+      { k: 'env', type: 'seg', label: 'Environment', opts: [['space', 'Deep space'], ['launch', 'Launch pad']], def: 'space' },
+      { k: 'g', type: 'seg', label: 'Gravity', opts: [['9.8', 'Earth 9.8'], ['3.71', 'Mars 3.71'], ['1.62', 'Moon 1.62']], def: '9.8', show: P => P.env === 'launch' },
+      { k: 'dry', label: 'Empty rocket mass', unit: 'kg', min: 200, max: 10000, step: 50, def: 1000 },
+      { k: 'fuel', label: 'Fuel mass', unit: 'kg', min: 0, max: 30000, step: 100, def: 4000 },
+      { k: 'rate', label: 'Burn rate |dm/dt|', unit: 'kg/s', min: 5, max: 500, step: 5, def: 50 },
+      { k: 'uRel', label: 'Exhaust speed relative to rocket', unit: 'm/s', min: 200, max: 4500, step: 50, def: 2500 },
+      { k: 'v0', label: 'Initial velocity', unit: 'm/s', min: -2000, max: 3000, step: 50, def: 0, show: P => P.env === 'space' },
+    ],
+    presets: [
+      { name: 'Deep-space burn', P: { env: 'space', dry: 1000, fuel: 4000, rate: 50, uRel: 2500, v0: 0 },
+        note: 'Rocket and exhaust momenta stay equal and opposite, so the total holds at zero. Speed climbs as u<sub>rel</sub>·ln(m₀/m): fastest near the end of the burn, when little mass is left to push.' },
+      { name: 'Faster than its exhaust', P: { env: 'space', dry: 1000, fuel: 14000, rate: 100, uRel: 2000, v0: 0 },
+        note: 'Near t = 95 s the rocket passes 2000 m/s, its exhaust speed. After that the exhaust moves forward in the ground frame (the dashed line on the velocity graph crosses zero), yet the thrust does not change. Thrust depends only on the exhaust speed relative to the rocket.' },
+      { name: 'Earth launch', P: { env: 'launch', g: '9.8', dry: 1000, fuel: 4000, rate: 50, uRel: 2500 },
+        note: 'Gravity is now an external force, ΣF<sub>ext</sub> = −mg. The total momentum of rocket + exhaust is no longer constant: it changes by the impulse of gravity, ∫F<sub>ext</sub> dt.' },
+      { name: 'Too heavy to lift off', P: { env: 'launch', g: '9.8', dry: 1000, fuel: 12000, rate: 50, uRel: 2500 },
+        note: 'Thrust (125 kN) starts out smaller than the weight (127 kN), so the pad pushes up and a = 0. Liftoff waits until enough fuel has burned that u<sub>rel</sub>·|dm/dt| > mg, at t ≈ 4.9 s.' },
+    ],
+  },
+  sand: {
+    desc: 'Sand pours from an overhead chute into an open car rolling on a frictionless track. Every grain has to be brought up to the car\'s speed.',
+    names: { body: 'Car + sand', exchV: 'Falling sand <i>u</i> (horizontal)', exchMass: 'Sand added', exchE: '',
+      exchP: '', flowSub: 'sand', flowKey: 'Sand force', flowName: 'Sand force (u − v)·dm/dt', uLane: 'sand' },
+    params: [
+      { k: 'car', label: 'Empty car mass', unit: 'kg', min: 500, max: 10000, step: 100, def: 2000 },
+      { k: 'v0', label: 'Initial velocity', unit: 'm/s', min: 0, max: 40, step: 0.5, def: 10 },
+      { k: 'rate', label: 'Sand flow rate dm/dt', unit: 'kg/s', min: 10, max: 500, step: 10, def: 100 },
+      { k: 'load', label: 'Sand to load', unit: 'kg', min: 500, max: 20000, step: 500, def: 8000 },
+      { k: 'u', label: 'Horizontal velocity of falling sand, u', unit: 'm/s', min: -10, max: 40, step: 0.5, def: 0 },
+      { k: 'mode', type: 'seg', label: 'Applied force on the car', opts: [['none', 'None'], ['const', 'Constant'], ['hold', 'Hold speed']], def: 'none' },
+      { k: 'F', label: 'Applied force', unit: 'N', min: -5000, max: 10000, step: 100, def: 1000, show: P => P.mode === 'const' },
+    ],
+    presets: [
+      { name: 'Free car', P: { car: 2000, v0: 10, rate: 100, load: 8000, u: 0, mode: 'none', F: 1000 },
+        note: 'No horizontal external force, and the sand brings no horizontal momentum, so m·v stays constant: the car slows from 10 m/s to 2 m/s as 8000 kg lands. Kinetic energy is not conserved. 80 kJ becomes thermal energy as each grain is dragged up to the car\'s speed.' },
+      { name: 'Hold speed (conveyor)', P: { car: 2000, v0: 10, rate: 100, load: 8000, u: 0, mode: 'hold', F: 1000 },
+        note: 'To hold v = 10 m/s the engine pushes with F = v·dm/dt = 1000 N. It does work at the rate F·v = v²·dm/dt, but kinetic energy grows only at ½v²·dm/dt. Exactly half of the work becomes thermal energy. Compare the two energy bars.' },
+      { name: 'Sand thrown forward', P: { car: 2000, v0: 10, rate: 100, load: 8000, u: 20, mode: 'none', F: 1000 },
+        note: 'Sand arriving faster than the car (u = 20 m/s) pushes it forward. The car speeds up toward 20 m/s but can never pass the speed of the incoming sand.' },
+      { name: 'Constant push', P: { car: 2000, v0: 5, rate: 100, load: 8000, u: 0, mode: 'const', F: 2000 },
+        note: 'With a steady 2000 N push the car speeds up toward v = F/(dm/dt) = 20 m/s but never gets there: the faster it goes, the more force it takes just to bring new sand up to speed.' },
+    ],
+  },
+  leak: {
+    desc: 'Sand drains through a hole in the floor of a moving car. Each grain leaves with the car\'s own velocity, so it pushes on nothing as it goes.',
+    names: { body: 'Car + sand', exchV: 'Leaking sand <i>u</i>', exchMass: 'Sand leaked', exchE: 'Leaked sand KE',
+      exchP: 'Leaked sand', flowSub: 'leak', flowKey: 'Leak force', flowName: 'Leak force (u − v)·dm/dt', uLane: 'sand' },
+    params: [
+      { k: 'car', label: 'Empty car mass', unit: 'kg', min: 500, max: 10000, step: 100, def: 2000 },
+      { k: 'load', label: 'Initial sand load', unit: 'kg', min: 500, max: 20000, step: 500, def: 6000 },
+      { k: 'rate', label: 'Leak rate |dm/dt|', unit: 'kg/s', min: 10, max: 500, step: 10, def: 100 },
+      { k: 'v0', label: 'Initial velocity', unit: 'm/s', min: 0, max: 40, step: 0.5, def: 10 },
+      { k: 'mode', type: 'seg', label: 'Applied force on the car', opts: [['none', 'None'], ['const', 'Constant']], def: 'none' },
+      { k: 'F', label: 'Applied force', unit: 'N', min: -5000, max: 10000, step: 100, def: 2000, show: P => P.mode === 'const' },
+    ],
+    presets: [
+      { name: 'Coasting leak', P: { car: 2000, load: 6000, rate: 100, v0: 10, mode: 'none', F: 2000 },
+        note: 'The sand leaves moving with the car (u = v), so it carries its own momentum away and exerts no force. The car stays at 10 m/s even though its momentum and kinetic energy both drop.' },
+      { name: 'Pushed leaking car', P: { car: 2000, load: 6000, rate: 100, v0: 10, mode: 'const', F: 2000 },
+        note: 'A constant 2000 N push on a shrinking mass: the acceleration F/m rises from 0.25 m/s² to 1.0 m/s² as the sand drains, then stays at 1.0 m/s² once the car is empty.' },
+    ],
+  },
+};
+
+/* ---------- State ---------- */
+const S = {
+  scen: 'rocket', P: {}, M: null, R: null, t: 0, playing: false, pb: 5, preset: 0,
+  show: { vel: true, mom: true, fext: true, flow: true, net: true, particles: true, pred: false },
+  sc: { s: 1, D: 10 }, dirty: true, flick: 0.5, geo: {},
+};
+const SPEEDS = [0.25, 0.5, 1, 2, 5, 10, 20, 50];
+const FM = '"IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace';
+const FS = '"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif';
+const $ = (s, r = document) => r.querySelector(s);
+const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+const hash = k => { const s = Math.sin(k * 127.1 + 311.7) * 43758.5453; return s - Math.floor(s); };
+
+/* ---------- Formatting ---------- */
+const SUP = { '-': '⁻', 0: '⁰', 1: '¹', 2: '²', 3: '³', 4: '⁴', 5: '⁵', 6: '⁶', 7: '⁷', 8: '⁸', 9: '⁹' };
+const sup = e => String(e).split('').map(c => SUP[c] || c).join('');
+function sig(x, n = 3) {
+  if (!isFinite(x)) return '—';
+  const a = Math.abs(x);
+  if (a < 1e-6) return '0';
+  if (a >= 1000) return Math.round(x).toLocaleString('en-US').replace(/^-/, '−');
+  return Number(x.toPrecision(n)).toString().replace(/^-/, '−');
+}
+function fmt(x, unit) {
+  if (!isFinite(x)) return '—';
+  const a = Math.abs(x);
+  if (unit === 'N' || unit === 'J') {
+    for (const [f, p] of [[1e9, 'G'], [1e6, 'M'], [1e3, 'k']]) if (a >= f * 0.9995) return sig(x / f) + ' ' + p + unit;
+    return sig(x) + ' ' + unit;
+  }
+  if (unit === 'kg·m/s' && a >= 1e5) {
+    const e = Math.floor(Math.log10(a));
+    return (x / 10 ** e).toFixed(2) + '×10' + sup(e) + ' ' + unit;
+  }
+  if (unit === 'm' && a >= 1e4) return sig(x / 1000) + ' km';
+  return sig(x) + ' ' + unit;
+}
+const fmtDist = d => Math.abs(d) >= 1000 ? (+(d / 1000).toPrecision(4)) + ' km' : (+d.toPrecision(4)) + ' m';
+function niceUp(x) { const e = Math.floor(Math.log10(x)), b = 10 ** e; for (const m of [1, 2, 5, 10]) if (m * b >= x) return m * b; return 10 * b; }
+function niceStep(range, n) { const raw = range / n, e = Math.floor(Math.log10(raw)), b = 10 ** e, m = raw / b; return (m <= 1 ? 1 : m <= 2 ? 2 : m <= 2.5 ? 2.5 : m <= 5 ? 5 : 10) * b; }
+function autoPb(T) { for (const s of SPEEDS) if (T / s <= 24) return s; return 50; }
+
+/* ---------- Theme colors ---------- */
+const C = {};
+const TOKENS = ['bg', 'surface', 'surface-2', 'ink', 'ink-2', 'line', 'blue', 'amber', 'c-v', 'c-u', 'c-p', 'c-fext', 'c-flow', 'c-fnet', 'c-pe', 'c-heat', 'c-src', 'c-exh',
+  'sky', 'sky-high', 'space', 'star', 'ground', 'ground-2', 'rail', 'tie', 'sand', 'sand-2', 'hull', 'hull-2', 'hull-line', 'flame', 'flame-core', 'smoke', 'panel', 'grid'];
+function readColors() {
+  const cs = getComputedStyle(document.documentElement);
+  TOKENS.forEach(k => C[k] = cs.getPropertyValue('--' + k).trim() || '#888888');
+  S.dirty = true;
+}
+function mixHex(a, b, t) {
+  const p = h => { h = h.replace('#', ''); if (h.length === 3) h = h.split('').map(c => c + c).join(''); return [0, 2, 4].map(i => parseInt(h.substr(i, 2), 16)); };
+  const A = p(a), B = p(b);
+  return 'rgb(' + A.map((x, i) => Math.round(x + (B[i] - x) * t)).join(',') + ')';
+}
+
+/* ---------- Build / rebuild ---------- */
+function defaults(scen) { const P = {}; SC[scen].params.forEach(p => P[p.k] = p.def); return P; }
+function rebuild(opts = {}) {
+  S.M = makeModel(S.scen, S.P);
+  S.R = simulate(S.M);
+  S.t = opts.t != null ? opts.t : 0;
+  S.playing = false;
+  if (opts.autoSpeed) { S.pb = autoPb(S.R.tEnd); $('#speed').value = String(S.pb); }
+  parts = [];
+  sceneScale();
+  buildLedgers();
+  graphs.forEach(g => g.prep());
+  S.dirty = true;
+}
+
+/* ---------- Controls ---------- */
+function buildControls() {
+  const def = SC[S.scen];
+  $('#scenDesc').textContent = def.desc;
+  $('#flowKey').textContent = def.names.flowKey;
+  const box = $('#params'); box.innerHTML = '';
+  def.params.forEach(p => {
+    const f = document.createElement('div'); f.className = 'field'; f.dataset.k = p.k;
+    if (p.type === 'seg') {
+      f.innerHTML = `<span class="flabel" id="lbl-${p.k}">${p.label}</span><div class="seg" role="group" aria-labelledby="lbl-${p.k}">` +
+        p.opts.map(([v, l]) => `<button type="button" data-v="${v}" aria-pressed="${String(S.P[p.k]) === v}">${l}</button>`).join('') + '</div>';
+      f.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+        S.P[p.k] = b.dataset.v;
+        f.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+        userChanged();
+      }));
+    } else {
+      f.innerHTML = `<div class="field-top"><label for="p-${p.k}">${p.label}</label><span class="numwrap"><input type="number" id="p-${p.k}-n" aria-label="${p.label} value" min="${p.min}" max="${p.max}" step="${p.step}" value="${S.P[p.k]}">${p.unit}</span></div>` +
+        `<input type="range" id="p-${p.k}" min="${p.min}" max="${p.max}" step="${p.step}" value="${S.P[p.k]}">`;
+      const r = f.querySelector('input[type=range]'), nIn = f.querySelector('input[type=number]');
+      r.addEventListener('input', () => { S.P[p.k] = +r.value; nIn.value = r.value; userChanged(); });
+      nIn.addEventListener('change', () => {
+        let v = parseFloat(nIn.value); if (!isFinite(v)) v = S.P[p.k];
+        v = clamp(v, p.min, p.max); nIn.value = v; r.value = v; S.P[p.k] = v; userChanged();
+      });
+    }
+    box.appendChild(f);
+  });
+  refreshVisibility();
+  const pr = $('#presets'); pr.innerHTML = '';
+  def.presets.forEach((p, i) => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = p.name;
+    b.setAttribute('aria-pressed', String(i === S.preset));
+    b.addEventListener('click', () => loadPreset(i));
+    pr.appendChild(b);
+  });
+  updateNote();
+}
+function refreshVisibility() {
+  SC[S.scen].params.forEach(p => { const f = $(`.field[data-k="${p.k}"]`); if (f) f.hidden = p.show ? !p.show(S.P) : false; });
+}
+function updateNote() {
+  const def = SC[S.scen];
+  $('#presetNote').innerHTML = S.preset >= 0 ? def.presets[S.preset].note : 'Custom setup. Press Play, or pick an example above.';
+  $('#presets').querySelectorAll('.chip').forEach((b, i) => b.setAttribute('aria-pressed', String(i === S.preset)));
+}
+function userChanged() { S.preset = -1; refreshVisibility(); updateNote(); rebuild(); updatePlay(); }
+function loadPreset(i) {
+  S.preset = i;
+  S.P = Object.assign(defaults(S.scen), SC[S.scen].presets[i].P);
+  buildControls();
+  rebuild({ autoSpeed: true }); updatePlay();
+}
+function setScenario(scen) {
+  S.scen = scen;
+  document.querySelectorAll('.tab').forEach(t => t.setAttribute('aria-selected', String(t.dataset.scen === scen)));
+  S.preset = 0;
+  S.P = Object.assign(defaults(scen), SC[scen].presets[0].P);
+  buildControls();
+  rebuild({ autoSpeed: true }); updatePlay();
+}
+
+/* ---------- Transport ---------- */
+function updatePlay() {
+  const b = $('#play');
+  const atEnd = S.t >= S.R.tEnd - 1e-9;
+  b.querySelector('span').textContent = S.playing ? 'Pause' : atEnd ? 'Replay' : 'Play';
+  b.querySelector('svg').innerHTML = S.playing ? '<path d="M3.5 2.5h3v11h-3zM9.5 2.5h3v11h-3z"/>' : '<path d="M4 2.5v11l9-5.5z"/>';
+}
+function setTime(t) { S.t = clamp(t, 0, S.R.tEnd); S.playing = false; parts = []; S.dirty = true; updatePlay(); }
+$('#play').addEventListener('click', () => {
+  if (S.playing) S.playing = false;
+  else { if (S.t >= S.R.tEnd - 1e-9) { S.t = 0; parts = []; } S.playing = true; }
+  updatePlay(); S.dirty = true;
+});
+$('#step').addEventListener('click', () => {
+  S.playing = false;
+  const dt = niceStep(S.R.tEnd, 100);
+  const sub = 6;
+  for (let i = 0; i < sub; i++) {
+    S.t = Math.min(S.R.tEnd, S.t + dt / sub);
+    updateParticles(dt / sub / S.pb, dt / sub, state());
+  }
+  S.dirty = true; updatePlay();
+});
+$('#reset').addEventListener('click', () => setTime(0));
+$('#speed').addEventListener('change', e => { S.pb = +e.target.value; });
+$('#scrub').addEventListener('input', e => setTime(e.target.value / 1000 * S.R.tEnd));
+document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => setScenario(t.dataset.scen)));
+document.querySelectorAll('.vk').forEach(b => b.addEventListener('click', () => {
+  const k = b.dataset.k; S.show[k] = !S.show[k]; b.setAttribute('aria-pressed', String(S.show[k])); S.dirty = true;
+}));
+$('#optParticles').addEventListener('change', e => { S.show.particles = e.target.checked; if (!S.show.particles) parts = []; S.dirty = true; });
+$('#optPred').addEventListener('change', e => { S.show.pred = e.target.checked; graphs.forEach(g => g.prep()); S.dirty = true; });
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space' && (e.target === document.body || e.target === document.documentElement)) { e.preventDefault(); $('#play').click(); }
+});
+
+/* ---------- Interpolated state ---------- */
+function search(arr, t) { let lo = 0, hi = arr.length - 1; if (t <= arr[0]) return 0; if (t >= arr[hi]) return hi; while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (arr[mid] <= t) lo = mid; else hi = mid; } return lo; }
+function state() {
+  const R = S.R, M = S.M, t = S.t;
+  const i = search(R.t, t), j = Math.min(i + 1, R.n - 1);
+  const dt = R.t[j] - R.t[i], f = dt > 0 ? clamp((t - R.t[i]) / dt, 0, 1) : 0;
+  const L = k => R[k][i] + (R[k][j] - R[k][i]) * f;
+  const on = M.tFlow > 0 && t < M.tFlow - 1e-9;
+  const x = L('x'), v = L('v'), m = L('m');
+  const F = forces(M, x, v, m, on);
+  return Object.assign({ t, i, x, v, m, on }, F, {
+    p: m * v, KE: 0.5 * m * v * v, PE: m * M.g * x, J: L('J'), pOut: L('pOut'), pIn: L('pIn'),
+    Eexch: L('KEout') + L('Uout'), Edis: L('Edis'), Echem: L('Echem'), W: L('W'), KEin: L('KEin'),
+    frac: M.load > 0 ? clamp((m - M.base) / M.load, 0, 1) : 0,
+  });
+}
+
+/* ---------- Scene ---------- */
+const cv = $('#scene'), ctx = cv.getContext('2d');
+let W = 0, H = 0, parts = [];
+function layout() {
+  if (S.M.launch) { const pw = Math.round(W * (W < 560 ? 0.44 : 0.38)); return { vertical: true, world: { x: 0, y: 0, w: W - pw, h: H }, panel: { x: W - pw, y: 0, w: pw, h: H } }; }
+  const ph = Math.round(H * 0.36);
+  return { vertical: false, world: { x: 0, y: 0, w: W, h: H - ph }, panel: { x: 0, y: H - ph, w: W, h: ph } };
+}
+function resizeScene() {
+  const w = cv.parentElement.clientWidth; if (!w) return;
+  W = w; H = Math.round(clamp(W * 0.56, 330, 500));
+  const d = window.devicePixelRatio || 1;
+  cv.width = Math.round(W * d); cv.height = Math.round(H * d); cv.style.height = H + 'px';
+  ctx.setTransform(d, 0, 0, d, 0, 0);
+  if (S.R) sceneScale();
+  S.dirty = true;
+}
+function sceneScale() {
+  if (!W) return;
+  const L = layout(), ext = L.vertical ? L.world.h : L.world.w;
+  const s = 0.30 * ext / (S.R.maxV * autoPb(S.R.tEnd));
+  S.sc = { s, D: niceUp(110 / s) };
+}
+
+function updateParticles(dtR, dtS, st) {
+  if (!S.show.particles || !S.R) return;
+  const M = S.M, g = S.geo, rateFrac = M.rate / 500;
+  if (st.on) {
+    const R = (M.scen === 'rocket' ? 90 + 260 * rateFrac : M.scen === 'sand' ? 50 + 280 * rateFrac : 40 + 200 * rateFrac);
+    S.spawnAcc = (S.spawnAcc || 0) + R * dtR;
+    let n = Math.floor(S.spawnAcc); S.spawnAcc -= n; n = Math.min(n, 40);
+    const s = S.sc.s;
+    for (let k = 0; k < n; k++) {
+      if (M.scen === 'rocket') {
+        const spread = 1 + 0.16 * (Math.random() - 0.5);
+        const off = M.launch ? 0 : -(g.rocketLen || 100) / 2 / s;
+        parts.push({ kind: 'exh', gx: st.x + off, vx: (st.v - M.uRel * spread), ly: (Math.random() - 0.5) * (g.nozzle || 10), vly: (Math.random() - 0.5) * 70, life: 0, max: 0.55 + Math.random() * 0.35 });
+      } else if (M.scen === 'sand') {
+        if (g.carLeft == null) continue;
+        const land = g.carLeft + 10 + Math.random() * (g.carRight - g.carLeft - 20);
+        const hFall = Math.max(10, g.sandY - g.chuteY), gpx = 1500, T = Math.sqrt(2 * hFall / gpx);
+        const drift = (M.u - st.v) * s * S.pb * T;
+        const sx = land - drift;
+        parts.push({ kind: 'grain', gx: st.x + (sx - g.cx) / s, sy: g.chuteY + Math.random() * 4, vy: 0, gpx });
+      } else {
+        if (g.holeY == null) continue;
+        parts.push({ kind: 'leak', gx: st.x + (Math.random() - 0.5) * 6 / s, vx: st.v, sy: g.holeY, vy: 0, gpx: 1500 });
+      }
+    }
+  }
+  for (const p of parts) {
+    if (p.kind === 'exh') {
+      p.gx += p.vx * dtS; p.ly += p.vly * dtR; p.life += dtR;
+      if (M.launch && p.gx < 0) { p.gx = 0; p.vx = 0; if (!p.hit) { p.hit = true; p.vly = (p.ly >= 0 ? 1 : -1) * (90 + Math.random() * 120); } }
+    } else if (p.kind === 'grain') {
+      p.gx += M.u * dtS; p.vy += p.gpx * dtR; p.sy += p.vy * dtR;
+      if (p.sy >= (g.sandY || 1e9)) p.dead = true;
+    } else {
+      p.gx += p.vx * dtS; p.vy += p.gpx * dtR; p.sy += p.vy * dtR;
+      if (p.sy >= (g.trackY || 1e9) - 3) p.dead = true;
+    }
+  }
+  parts = parts.filter(p => !p.dead && !(p.kind === 'exh' && p.life > p.max));
+  if (parts.length > 1500) parts.splice(0, parts.length - 1500);
+}
+
+function arrow(x0, y0, x1, y1, col, w) {
+  const dx = x1 - x0, dy = y1 - y0, L = Math.hypot(dx, dy);
+  ctx.fillStyle = col; ctx.strokeStyle = col;
+  if (L < 1.5) { ctx.beginPath(); ctx.arc(x0, y0, 2.5, 0, Math.PI * 2); ctx.fill(); return; }
+  const ux = dx / L, uy = dy / L, hd = Math.min(11, L * 0.7), hw = hd * 0.55 + w * 0.3;
+  ctx.lineWidth = w; ctx.lineCap = 'butt';
+  ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1 - ux * hd * 0.9, y1 - uy * hd * 0.9); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x1 - ux * hd - uy * hw, y1 - uy * hd + ux * hw); ctx.lineTo(x1 - ux * hd + uy * hw, y1 - uy * hd - ux * hw); ctx.closePath(); ctx.fill();
+}
+function symWidth(b, s, size) { ctx.font = `600 ${size}px ${FM}`; let w = ctx.measureText(b).width; if (s) { ctx.font = `500 ${size * 0.74}px ${FM}`; w += 1 + ctx.measureText(s).width; } return w; }
+function drawSym(b, s, x, y, col, size) {
+  ctx.fillStyle = col; ctx.textAlign = 'left';
+  ctx.font = `600 ${size}px ${FM}`; ctx.fillText(b, x, y);
+  if (s) { const w = ctx.measureText(b).width; ctx.font = `500 ${size * 0.74}px ${FM}`; ctx.fillText(s, x + w + 1, y + size * 0.3); }
+}
+
+function drawRocket(cx, cy, len, ang, frac, burning) {
+  const h = len * 0.22, x0 = -len / 2, x1 = len / 2;
+  ctx.save(); ctx.translate(cx, cy); ctx.rotate(ang);
+  if (burning) {
+    const fl = len * (0.2 + 0.1 * S.flick) * Math.sqrt(S.M.uRel / 2500);
+    ctx.beginPath(); ctx.moveTo(x0 + len * 0.02, -h * 0.27); ctx.quadraticCurveTo(x0 - fl * 0.5, -h * 0.3, x0 - fl, 0); ctx.quadraticCurveTo(x0 - fl * 0.5, h * 0.3, x0 + len * 0.02, h * 0.27); ctx.closePath();
+    ctx.fillStyle = C.flame; ctx.fill();
+    ctx.beginPath(); ctx.moveTo(x0 + len * 0.02, -h * 0.13); ctx.lineTo(x0 - fl * 0.55, 0); ctx.lineTo(x0 + len * 0.02, h * 0.13); ctx.closePath();
+    ctx.fillStyle = C['flame-core']; ctx.fill();
+  }
+  ctx.lineWidth = 1.5; ctx.strokeStyle = C['hull-line'];
+  // fins
+  ctx.fillStyle = C['hull-2'];
+  for (const sgn of [-1, 1]) {
+    ctx.beginPath(); ctx.moveTo(x0 + len * 0.07, sgn * h * 0.5); ctx.lineTo(x0 - len * 0.01, sgn * h * 1.0); ctx.lineTo(x0 + len * 0.06, sgn * h * 1.0); ctx.lineTo(x0 + len * 0.24, sgn * h * 0.5); ctx.closePath(); ctx.fill(); ctx.stroke();
+  }
+  // nozzle
+  ctx.beginPath(); ctx.moveTo(x0, -h * 0.3); ctx.lineTo(x0 + len * 0.07, -h * 0.2); ctx.lineTo(x0 + len * 0.07, h * 0.2); ctx.lineTo(x0, h * 0.3); ctx.closePath(); ctx.fillStyle = C['hull-2']; ctx.fill(); ctx.stroke();
+  // body + nose
+  ctx.beginPath(); ctx.moveTo(x0 + len * 0.07, -h / 2); ctx.lineTo(x0 + len * 0.72, -h / 2);
+  ctx.quadraticCurveTo(x1 - len * 0.04, -h * 0.45, x1, 0); ctx.quadraticCurveTo(x1 - len * 0.04, h * 0.45, x0 + len * 0.72, h / 2);
+  ctx.lineTo(x0 + len * 0.07, h / 2); ctx.closePath(); ctx.fillStyle = C.hull; ctx.fill(); ctx.stroke();
+  // fuel gauge (fills from the tail)
+  const gx = x0 + len * 0.13, gw = len * 0.52, gh = h * 0.4;
+  ctx.fillStyle = C['surface-2']; ctx.fillRect(gx, -gh / 2, gw, gh);
+  ctx.fillStyle = C.amber; ctx.fillRect(gx, -gh / 2, gw * frac, gh);
+  ctx.lineWidth = 1; ctx.strokeRect(gx, -gh / 2, gw, gh);
+  ctx.restore();
+}
+
+function drawCar(cx, yb, len, frac, leak) {
+  const h = len * 0.3, x0 = cx - len / 2, inset = len * 0.04;
+  const top = yb - h;
+  // body (cutaway)
+  ctx.beginPath(); ctx.moveTo(x0, top); ctx.lineTo(x0 + len, top); ctx.lineTo(x0 + len - inset, yb); ctx.lineTo(x0 + inset, yb); ctx.closePath();
+  ctx.fillStyle = C.hull; ctx.fill();
+  // sand
+  const lvl = yb - 3 - (h - 6) * frac * 0.9;
+  if (frac > 0.002) {
+    ctx.save(); ctx.beginPath(); ctx.moveTo(x0 + 2, top); ctx.lineTo(x0 + len - 2, top); ctx.lineTo(x0 + len - inset - 1, yb - 2); ctx.lineTo(x0 + inset + 1, yb - 2); ctx.closePath(); ctx.clip();
+    const heap = leak ? -h * 0.06 * Math.min(1, frac * 4) : h * 0.12 * Math.min(1, frac * 4);
+    ctx.beginPath(); ctx.moveTo(x0, yb); ctx.lineTo(x0, lvl + Math.max(0, heap) * 0.4);
+    ctx.quadraticCurveTo(cx, lvl - heap * 1.6, x0 + len, lvl + Math.max(0, heap) * 0.4); ctx.lineTo(x0 + len, yb); ctx.closePath();
+    ctx.fillStyle = C.sand; ctx.fill();
+    ctx.fillStyle = C['sand-2'];
+    for (let k = 0; k < 60; k++) { const px = x0 + hash(k * 3.1) * len, py = lvl + 4 + hash(k * 7.7) * (yb - lvl - 6); if (py < yb - 2) ctx.fillRect(px, py, 1.5, 1.5); }
+    ctx.restore();
+  }
+  // ribs + outline
+  ctx.strokeStyle = C['hull-line']; ctx.lineWidth = 1; ctx.globalAlpha = 0.35;
+  for (let k = 1; k < 6; k++) { const xx = x0 + len * k / 6; ctx.beginPath(); ctx.moveTo(xx, top + 2); ctx.lineTo(xx, yb - 2); ctx.stroke(); }
+  ctx.globalAlpha = 1; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(x0, top); ctx.lineTo(x0 + len, top); ctx.lineTo(x0 + len - inset, yb); ctx.lineTo(x0 + inset, yb); ctx.closePath(); ctx.stroke();
+  // hole
+  if (leak) { ctx.fillStyle = C['hull-line']; ctx.fillRect(cx - 5, yb - 1, 10, 4); }
+  // underframe + wheels
+  const wr = len * 0.055;
+  ctx.fillStyle = C['hull-2']; ctx.fillRect(x0 + inset, yb, len - 2 * inset, 5); ctx.strokeRect(x0 + inset, yb, len - 2 * inset, 5);
+  const ang = (S.camX || 0) * S.sc.s / wr;
+  for (const fx of [0.16, 0.3, 0.7, 0.84]) {
+    const wx = x0 + len * fx, wy = yb + 5 + wr;
+    ctx.beginPath(); ctx.arc(wx, wy, wr, 0, Math.PI * 2); ctx.fillStyle = C.hull; ctx.fill(); ctx.lineWidth = 2; ctx.stroke();
+    ctx.lineWidth = 1.2; ctx.beginPath();
+    for (let q = 0; q < 3; q++) { const a = ang + q * Math.PI / 3; ctx.moveTo(wx - Math.cos(a) * wr * 0.8, wy - Math.sin(a) * wr * 0.8); ctx.lineTo(wx + Math.cos(a) * wr * 0.8, wy + Math.sin(a) * wr * 0.8); }
+    ctx.stroke();
+  }
+  return { top, lvl, wr, h };
+}
+
+function drawStatus(r, st, y0) {
+  const M = S.M, R = S.R;
+  let line;
+  if (M.scen === 'rocket') {
+    if (M.launch && st.on && st.pinned) line = 'On the pad · thrust < weight';
+    else if (st.on) line = `Burning · ${sig(st.m - M.base)} kg fuel left`;
+    else if (M.launch && R.tLift === Infinity) line = 'Never lifted off';
+    else if (M.launch && st.x <= 1e-6 && st.t > R.tLift + 0.5) line = 'Back on the ground';
+    else line = M.tFlow > 0 ? `Burnout at ${sig(M.tFlow)} s · coasting` : 'No fuel · coasting';
+  } else if (M.scen === 'sand') line = st.on ? `Loading · ${sig(st.m - M.base)} kg of sand in car` : 'Car full · no more sand';
+  else line = st.on ? `Leaking · ${sig(st.m - M.base)} kg of sand left` : 'Car empty';
+  const pos = (M.launch ? 'h = ' : 'x = ') + fmt(st.x, 'm');
+  ctx.font = `600 16px ${FM}`; const w1 = ctx.measureText(`t = ${st.t.toFixed(1)} s`).width;
+  ctx.font = `500 12.5px ${FS}`; const w2 = ctx.measureText(line).width, w3 = ctx.measureText(pos).width;
+  const bw = Math.min(r.w - 16, Math.max(w1, w2, w3) + 20);
+  ctx.globalAlpha = 0.82; ctx.fillStyle = C.surface; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(r.x + 8, y0, bw, 60, 7) : ctx.rect(r.x + 8, y0, bw, 60); ctx.fill(); ctx.globalAlpha = 1;
+  ctx.textAlign = 'left'; ctx.fillStyle = C.ink; ctx.font = `600 16px ${FM}`; ctx.fillText(`t = ${st.t.toFixed(1)} s`, r.x + 18, y0 + 20);
+  ctx.font = `500 12.5px ${FS}`; ctx.fillStyle = C['ink-2']; ctx.fillText(line, r.x + 18, y0 + 37); ctx.fillText(pos, r.x + 18, y0 + 53);
+}
+
+function drawSpace(r, st) {
+  const { s, D } = S.sc, cx = r.x + r.w * 0.5, cy = r.y + r.h * 0.47;
+  ctx.fillStyle = C.space; ctx.fillRect(r.x, r.y, r.w, r.h);
+  const sp = D / 3, k0 = Math.floor((st.x - (cx - r.x) / s) / sp) - 1, k1 = Math.ceil((st.x + (r.x + r.w - cx) / s) / sp) + 1;
+  ctx.fillStyle = C.star;
+  if (k1 - k0 < 600) for (let k = k0; k <= k1; k++) for (let j = 0; j < 3; j++) {
+    const X = (k + hash(k * 3 + j + 0.5)) * sp, y = r.y + 6 + hash(k * 7 + j * 13 + 1.3) * (r.h - 46), sx = cx + (X - st.x) * s, z = 0.7 + 1.5 * hash(k * 11 + j * 5 + 2.1);
+    ctx.globalAlpha = 0.45 + 0.5 * hash(k * 5 + j); ctx.fillRect(sx, y, z, z);
+  }
+  ctx.globalAlpha = 1;
+  // ruler
+  const yR = r.y + r.h - 24;
+  ctx.strokeStyle = C['ink-2']; ctx.fillStyle = C['ink-2']; ctx.lineWidth = 1; ctx.globalAlpha = 0.7;
+  ctx.beginPath(); ctx.moveTo(r.x, yR); ctx.lineTo(r.x + r.w, yR); ctx.stroke();
+  const t0 = Math.floor((st.x - (cx - r.x) / s) / (D / 5)) - 1, t1 = Math.ceil((st.x + (r.x + r.w - cx) / s) / (D / 5)) + 1;
+  ctx.font = `500 11px ${FM}`; ctx.textAlign = 'center';
+  for (let k = t0; k <= t1; k++) {
+    const sx = cx + (k * D / 5 - st.x) * s, big = k % 5 === 0;
+    ctx.beginPath(); ctx.moveTo(sx, yR); ctx.lineTo(sx, yR + (big ? 8 : 4)); ctx.stroke();
+    if (big) ctx.fillText(fmtDist(k * D / 5), sx, yR + 19);
+  }
+  ctx.globalAlpha = 1;
+  const len = Math.min(r.w * 0.22, 190);
+  S.geo = { rocketLen: len, nozzle: len * 0.22 * 0.45 };
+  drawExhaust(st, sx => cx + sx, ly => cy + ly);
+  drawRocket(cx, cy, len, 0, st.frac, st.on);
+  drawStatus(r, st, r.y + 8);
+  return cx;
+}
+function drawExhaust(st, X, Y) {
+  if (!S.show.particles) return;
+  const s = S.sc.s;
+  for (const p of parts) {
+    if (p.kind !== 'exh') continue;
+    const k = p.life / p.max, rad = 1.6 + 4.5 * k;
+    ctx.globalAlpha = Math.max(0, 0.85 * (1 - k));
+    ctx.fillStyle = k < 0.35 ? C.flame : C.smoke;
+    const along = (p.gx - st.x) * s;
+    if (S.M.launch) { ctx.beginPath(); ctx.arc(X(p.ly), Y(-along), rad, 0, Math.PI * 2); ctx.fill(); }
+    else { ctx.beginPath(); ctx.arc(X(along), Y(p.ly), rad, 0, Math.PI * 2); ctx.fill(); }
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawLaunch(r, st) {
+  const { s, D } = S.sc;
+  const f = clamp(st.x / 60000, 0, 1);
+  const grad = ctx.createLinearGradient(0, r.y, 0, r.y + r.h);
+  grad.addColorStop(0, mixHex(C['sky-high'], C.space, f)); grad.addColorStop(1, mixHex(C.sky, C.space, f * 0.85));
+  ctx.fillStyle = grad; ctx.fillRect(r.x, r.y, r.w, r.h);
+  const len = Math.min(r.h * 0.3, r.w * 0.6, 150), cx = r.x + r.w * 0.5;
+  const g0 = r.y + r.h * 0.88, minBase = r.y + r.h * 0.62;
+  const baseY = Math.max(minBase, g0 - st.x * s), groundY = baseY + st.x * s;
+  // altitude markers
+  const k0 = Math.floor((st.x - (r.y + r.h - baseY) / s) / D), k1 = Math.ceil((st.x + (baseY - r.y) / s) / D);
+  ctx.font = `500 11px ${FM}`; ctx.textAlign = 'left';
+  for (let k = Math.max(1, k0); k <= k1; k++) {
+    const y = baseY - (k * D - st.x) * s;
+    ctx.strokeStyle = C['ink-2']; ctx.globalAlpha = 0.25; ctx.setLineDash([3, 5]); ctx.beginPath(); ctx.moveTo(r.x, y); ctx.lineTo(r.x + r.w, y); ctx.stroke(); ctx.setLineDash([]);
+    ctx.globalAlpha = 0.85; ctx.fillStyle = C['ink-2']; ctx.fillText(fmtDist(k * D), r.x + 8, y - 4); ctx.globalAlpha = 1;
+  }
+  // ground + pad
+  if (groundY < r.y + r.h + 40) {
+    ctx.fillStyle = C.ground; ctx.fillRect(r.x, groundY, r.w, r.y + r.h - groundY + 40);
+    ctx.fillStyle = C['ground-2']; ctx.fillRect(cx - len * 0.45, groundY - 6, len * 0.9, 6);
+    ctx.strokeStyle = C['hull-line']; ctx.lineWidth = 1; ctx.strokeRect(cx - len * 0.45, groundY - 6, len * 0.9, 6);
+    // tower
+    ctx.strokeStyle = C['ink-2']; ctx.globalAlpha = 0.6; ctx.lineWidth = 1.2;
+    const tx = cx - len * 0.42, tt = groundY - len * 1.05;
+    ctx.beginPath(); ctx.moveTo(tx, groundY - 6); ctx.lineTo(tx, tt); ctx.moveTo(tx - 8, groundY - 6); ctx.lineTo(tx - 8, tt);
+    for (let yy = groundY - 6; yy > tt; yy -= 10) { ctx.moveTo(tx - 8, yy); ctx.lineTo(tx, yy - 10); }
+    ctx.stroke(); ctx.globalAlpha = 1;
+  }
+  S.geo = { rocketLen: len, nozzle: len * 0.22 * 0.45 };
+  drawExhaust(st, lx => cx + lx, up => baseY + up);
+  drawRocket(cx, baseY - len / 2, len, -Math.PI / 2, st.frac, st.on);
+  drawStatus(r, st, r.y + 8);
+  return { cx, cy: baseY - len / 2 };
+}
+
+function drawRail(r, st) {
+  const { s, D } = S.sc, M = S.M, cx = r.x + r.w * 0.5;
+  ctx.fillStyle = C.sky; ctx.fillRect(r.x, r.y, r.w, r.h);
+  const yTrack = r.y + r.h * 0.83;
+  ctx.fillStyle = C.ground; ctx.fillRect(r.x, yTrack + 3, r.w, r.y + r.h - yTrack);
+  const sp = D / 5, X0 = st.x - (cx - r.x) / s, X1 = st.x + (r.x + r.w - cx) / s;
+  ctx.fillStyle = C.tie;
+  for (let k = Math.floor(X0 / sp) - 1; k <= Math.ceil(X1 / sp) + 1; k++) { const sx = cx + (k * sp - st.x) * s; ctx.fillRect(sx - 5, yTrack - 1, 10, 6); }
+  // leak trail on the ties
+  if (M.scen === 'leak') {
+    const R = S.R; let maxD = 0;
+    for (let i = 0; i < R.n; i++) if (R.on[i]) maxD = Math.max(maxD, M.rate / Math.max(Math.abs(R.v[i]), 0.5));
+    ctx.fillStyle = C.sand;
+    for (let i = 0; i + 1 < R.n && R.t[i] < Math.min(S.t, M.tFlow); i++) {
+      if (!R.on[i]) continue;
+      const xa = cx + (R.x[i] - st.x) * s, xb = cx + (Math.min(R.x[i + 1], R.x[i] + (st.x - R.x[i])) - st.x) * s;
+      if (Math.max(xa, xb) < r.x - 2 || Math.min(xa, xb) > r.x + r.w + 2) continue;
+      const hgt = 1.5 + 4.5 * (M.rate / Math.max(Math.abs(R.v[i]), 0.5)) / maxD;
+      ctx.fillRect(Math.min(xa, xb), yTrack - 3 - hgt, Math.abs(xb - xa) + 0.6, hgt);
+    }
+  }
+  ctx.fillStyle = C.rail; ctx.fillRect(r.x, yTrack - 3, r.w, 3);
+  ctx.font = `500 11px ${FM}`; ctx.textAlign = 'center'; ctx.fillStyle = C['ink-2'];
+  for (let k = Math.floor(X0 / D) - 1; k <= Math.ceil(X1 / D) + 1; k++) {
+    const sx = cx + (k * D - st.x) * s; ctx.fillRect(sx - 0.5, yTrack + 5, 1, 6); ctx.fillText(fmtDist(k * D), sx, yTrack + 23);
+  }
+  // overhead chute (sand)
+  let statusY = r.y + 8, chuteY = 0;
+  if (M.scen === 'sand') {
+    const yc = r.y + 8, hc = 14; chuteY = yc + hc;
+    ctx.fillStyle = C['ground-2']; ctx.fillRect(r.x, yc, r.w, hc);
+    ctx.strokeStyle = C['hull-line']; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(r.x, yc); ctx.lineTo(r.x + r.w, yc); ctx.moveTo(r.x, yc + hc); ctx.lineTo(r.x + r.w, yc + hc); ctx.stroke();
+    const sh = M.u * st.t;
+    ctx.globalAlpha = 0.6;
+    for (let k = Math.floor((X0 - sh) / sp) - 1; k <= Math.ceil((X1 - sh) / sp) + 1; k++) { const sx = cx + (k * sp + sh - st.x) * s; ctx.beginPath(); ctx.moveTo(sx, yc + 2); ctx.lineTo(sx - 4, yc + hc - 2); ctx.stroke(); }
+    ctx.globalAlpha = 1;
+    ctx.font = `500 11px ${FM}`; ctx.textAlign = 'right'; ctx.fillStyle = C.ink;
+    const lab = M.u === 0 ? 'chute at rest · u = 0' : `chute moving · u = ${sig(M.u)} m/s`;
+    const lw = ctx.measureText(lab).width;
+    ctx.globalAlpha = 0.85; ctx.fillStyle = C.surface; ctx.fillRect(r.x + r.w - lw - 18, yc + hc + 4, lw + 12, 17); ctx.globalAlpha = 1;
+    ctx.fillStyle = C['ink-2']; ctx.fillText(lab, r.x + r.w - 12, yc + hc + 16);
+    statusY = yc + hc + 8;
+  }
+  const len = Math.min(r.w * 0.34, 260);
+  const wr = len * 0.055, yb = yTrack - 3 - 5 - 2 * wr;
+  S.camX = st.x;
+  // grains behind car front? draw grains first so they enter the open top
+  const car = { carLeft: cx - len / 2, carRight: cx + len / 2 };
+  const lvlPreview = yb - 3 - (len * 0.3 - 6) * st.frac * 0.9;
+  S.geo = { cx, chuteY, sandY: lvlPreview, carLeft: car.carLeft, carRight: car.carRight, holeY: yb + 2, trackY: yTrack };
+  if (S.show.particles) {
+    ctx.fillStyle = C['sand-2'];
+    for (const p of parts) {
+      if (p.kind === 'grain' || p.kind === 'leak') { const sx = cx + (p.gx - st.x) * s; ctx.fillRect(sx - 1, p.sy - 1, 2.2, 2.2); }
+    }
+  }
+  drawCar(cx, yb, len, st.frac, M.scen === 'leak');
+  drawStatus(r, st, statusY);
+  return cx;
+}
+
+function vectorLanes(st) {
+  const N = SC[S.scen].names, sh = S.show, R = S.R, L = [];
+  if (sh.vel) {
+    L.push({ g: 0, b: 'v', s: '', val: st.v, col: 'c-v', unit: 'm/s', max: R.maxV, w: 3 });
+    L.push({ g: 0, b: 'u', s: N.uLane, val: st.on ? st.ug : NaN, col: 'c-u', unit: 'm/s', max: R.maxV, w: 2.4 });
+  }
+  if (sh.mom) L.push({ g: 1, b: 'p', s: '', val: st.p, col: 'c-p', unit: 'kg·m/s', max: R.maxPbody, w: 3 });
+  if (sh.fext) L.push({ g: 2, b: 'F', s: 'ext', val: st.Fext, col: 'c-fext', unit: 'N', max: R.maxF, w: 3.5 });
+  if (sh.flow) L.push({ g: 2, b: 'F', s: N.flowSub, val: st.Fflow, col: 'c-flow', unit: 'N', max: R.maxF, w: 3.5 });
+  if (sh.net) L.push({ g: 2, b: 'F', s: 'net', val: st.Fnet, col: 'c-fnet', unit: 'N', max: R.maxF, w: 3.5 });
+  return L;
+}
+function drawPanelH(r, st, ox) {
+  ctx.fillStyle = C.panel; ctx.fillRect(r.x, r.y, r.w, r.h);
+  ctx.fillStyle = C.line; ctx.fillRect(r.x, r.y, r.w, 1);
+  const lanes = vectorLanes(st);
+  ctx.strokeStyle = C['ink-2']; ctx.globalAlpha = 0.5; ctx.setLineDash([3, 4]); ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(ox, r.y + 4); ctx.lineTo(ox, r.y + r.h - 4); ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1;
+  if (!lanes.length) { ctx.font = `500 12px ${FS}`; ctx.fillStyle = C['ink-2']; ctx.textAlign = 'center'; ctx.fillText('All vectors hidden', r.x + r.w / 2, r.y + r.h / 2); return; }
+  const lh = (r.h - 8) / lanes.length, size = clamp(lh * 0.55, 10, 14);
+  const maxLen = Math.max(30, Math.min(ox - r.x - 74, r.x + r.w - ox - 16));
+  lanes.forEach((ln, i) => {
+    const y = r.y + 4 + lh * (i + 0.5);
+    if (i > 0 && lanes[i - 1].g !== ln.g) { ctx.fillStyle = C.line; ctx.fillRect(r.x + 8, y - lh / 2, r.w - 16, 1); }
+    drawSym(ln.b, ln.s, r.x + 12, y + size * 0.35, C[ln.col], size);
+    ctx.font = `500 ${Math.max(10, size - 1.5)}px ${FM}`; ctx.fillStyle = C['ink-2'];
+    if (!isFinite(ln.val)) { ctx.textAlign = 'left'; ctx.fillText('— no flow', ox + 8, y + 4); return; }
+    const len = ln.val / ln.max * maxLen;
+    arrow(ox, y, ox + len, y, C[ln.col], ln.w);
+    const txt = fmt(ln.val, ln.unit);
+    ctx.fillStyle = C['ink-2'];
+    if (len >= 0) { ctx.textAlign = 'right'; ctx.fillText(txt, ox - 8, y + 4); } else { ctx.textAlign = 'left'; ctx.fillText(txt, ox + 8, y + 4); }
+  });
+}
+function drawPanelV(r, st) {
+  ctx.fillStyle = C.panel; ctx.fillRect(r.x, r.y, r.w, r.h);
+  ctx.fillStyle = C.line; ctx.fillRect(r.x, r.y, 1, r.h);
+  const lanes = vectorLanes(st);
+  const oy = r.y + r.h * 0.47;
+  ctx.strokeStyle = C['ink-2']; ctx.globalAlpha = 0.5; ctx.setLineDash([3, 4]); ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(r.x + 4, oy); ctx.lineTo(r.x + r.w - 4, oy); ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1;
+  if (!lanes.length) { ctx.font = `500 12px ${FS}`; ctx.fillStyle = C['ink-2']; ctx.textAlign = 'center'; ctx.fillText('All vectors hidden', r.x + r.w / 2, oy - 10); return; }
+  const cw = (r.w - 8) / lanes.length, narrow = cw < 56;
+  const maxLen = Math.min(oy - r.y - 20, r.y + r.h - oy - (narrow ? 60 : 46));
+  const size = clamp(cw * 0.26, 10, 13), showVal = cw >= 46;
+  lanes.forEach((ln, i) => {
+    const x = r.x + 4 + cw * (i + 0.5);
+    if (i > 0 && lanes[i - 1].g !== ln.g) { ctx.fillStyle = C.line; ctx.fillRect(x - cw / 2, r.y + 10, 1, r.h - 20); }
+    const sw = symWidth(ln.b, ln.s, size);
+    drawSym(ln.b, ln.s, x - sw / 2, r.y + r.h - 14 - (narrow && i % 2 ? 16 : 0), C[ln.col], size);
+    if (!isFinite(ln.val)) { ctx.font = `500 10px ${FM}`; ctx.textAlign = 'center'; ctx.fillStyle = C['ink-2']; ctx.fillText('—', x, oy + 16); return; }
+    const len = ln.val / ln.max * maxLen;
+    arrow(x, oy, x, oy - len, C[ln.col], ln.w);
+    if (showVal) {
+      ctx.font = `500 10.5px ${FM}`; ctx.textAlign = 'center'; ctx.fillStyle = C['ink-2'];
+      const txt = fmt(ln.val, ln.unit).replace(' kg·m/s', '');
+      ctx.fillText(txt, x, len >= 0 ? oy + 16 : oy - 8);
+    }
+  });
+}
+
+function drawScene(st) {
+  if (!W) return;
+  ctx.clearRect(0, 0, W, H);
+  const L = layout();
+  ctx.save(); ctx.beginPath(); ctx.rect(L.world.x, L.world.y, L.world.w, L.world.h); ctx.clip();
+  let ox;
+  if (L.vertical) drawLaunch(L.world, st);
+  else if (S.scen === 'rocket') ox = drawSpace(L.world, st);
+  else ox = drawRail(L.world, st);
+  ctx.restore();
+  if (L.vertical) drawPanelV(L.panel, st); else drawPanelH(L.panel, st, ox);
+}
+
+/* ---------- Graphs ---------- */
+const GOPTS = [['v', 'Velocity'], ['x', 'Position'], ['m', 'Mass'], ['a', 'Acceleration'], ['p', 'Momentum'], ['F', 'Forces'], ['E', 'Energy']];
+function graphDef(key) {
+  const R = S.R, M = S.M, N = SC[S.scen].names, out = M.flow === 'out';
+  const any = a => a.some(x => Math.abs(x) > 1e-9);
+  switch (key) {
+    case 'v': return { unit: 'm/s', series: [
+      { label: N.body + ' <i>v</i>', d: R.v, col: 'c-v', w: 2.4 },
+      { label: N.exchV, d: R.ug, col: 'c-u', dash: [5, 4], w: 1.8 }],
+      pred: S.show.pred ? { label: 'Analytic <i>v</i>(<i>t</i>)', d: R.vth, col: 'ink-2' } : null };
+    case 'x': return { unit: 'm', series: [{ label: M.launch ? 'Altitude <i>h</i>' : 'Position <i>x</i>', d: R.x, col: 'blue', w: 2.4 }] };
+    case 'm': return { unit: 'kg', series: [
+      { label: N.body + ' <i>m</i>', d: R.m, col: 'blue', w: 2.4 },
+      { label: N.exchMass, d: R.dmEx, col: 'c-flow', dash: [5, 4], w: 1.8 }] };
+    case 'a': return { unit: 'm/s²', series: [{ label: '<i>a</i> = d<i>v</i>/d<i>t</i>', d: R.a, col: 'c-fnet', w: 2.4 }] };
+    case 'p': return { unit: 'kg·m/s', series: out ? [
+      { label: N.body + ' <i>m·v</i>', d: R.p, col: 'c-p', w: 2.4 },
+      { label: N.exchP, d: R.pOut, col: 'c-u', dash: [5, 4], w: 1.8 },
+      { label: 'Total', d: R.pSys, col: 'ink', w: 2.6 }] : [
+      { label: 'Car + sand <i>m·v</i>', d: R.p, col: 'c-p', w: 2.4 },
+      { label: 'Brought in by sand Σ<i>u</i>·d<i>m</i>', d: R.pIn, col: 'c-u', dash: [5, 4], w: 1.8 },
+      { label: 'Impulse ∫F<sub>ext</sub> d<i>t</i>', d: R.J, col: 'c-fext', dash: [2, 3], w: 1.8 }] };
+    case 'F': return { unit: 'N', series: [
+      { label: 'ΣF<sub>ext</sub>', d: R.Fext, col: 'c-fext', w: 2.2 },
+      { label: N.flowName, d: R.Fflow, col: 'c-flow', w: 2.2 },
+      { label: 'F<sub>net</sub> = <i>m·a</i>', d: R.Fnet, col: 'c-fnet', dash: [5, 4], w: 2 }] };
+    case 'E': {
+      const comps = [{ label: N.body + ' KE', d: R.KE, col: 'c-v' }];
+      if (M.launch) comps.push({ label: 'Rocket PE', d: R.PE, col: 'c-pe' });
+      if (out && any(R.Eexch)) comps.push({ label: N.exchE, d: R.Eexch, col: 'c-exh' });
+      if (any(R.Edis)) comps.push({ label: 'Thermal', d: R.Edis, col: 'c-heat' });
+      if (any(R.Wneg)) comps.push({ label: 'Removed by applied force', d: R.Wneg, col: 'c-src' });
+      return { unit: 'J', stack: comps, series: [{ label: 'Energy supplied', d: R.Esup, col: 'ink', dash: [6, 4], w: 1.8 }] };
+    }
+  }
+}
+function axisScale(maxAbs, unit) {
+  if (unit === 'N' || unit === 'J') { for (const [f, p] of [[1e9, 'G'], [1e6, 'M'], [1e3, 'k']]) if (maxAbs >= f) return { f, label: p + unit }; return { f: 1, label: unit }; }
+  if (unit === 'm' && maxAbs >= 1e4) return { f: 1e3, label: 'km' };
+  if (unit === 'kg·m/s' && maxAbs >= 1e4) { const e = Math.floor(Math.log10(maxAbs) / 3) * 3; return { f: 10 ** e, label: '×10' + sup(e) + ' kg·m/s' }; }
+  return { f: 1, label: unit };
+}
+const tickLabel = v => { const a = Math.abs(v); if (a < 1e-9) return '0'; return Number(v.toPrecision(4)).toLocaleString('en-US', { maximumFractionDigits: 3 }).replace(/^-/, '−'); };
+
+class Graph {
+  constructor(key, idx) {
+    const el = document.createElement('div'); el.className = 'card gcard';
+    el.innerHTML = `<div class="ghead"><select aria-label="Graph ${idx + 1} quantity">${GOPTS.map(([k, l]) => `<option value="${k}">${l}</option>`).join('')}</select><span class="gunit"></span></div><canvas></canvas><ul class="legend"></ul>`;
+    $('#graphs').appendChild(el);
+    this.el = el; this.cv = el.querySelector('canvas'); this.ctx = this.cv.getContext('2d');
+    this.sel = el.querySelector('select'); this.leg = el.querySelector('.legend'); this.unitEl = el.querySelector('.gunit');
+    this.key = key; this.sel.value = key; this.pad = { l: 56, r: 12, t: 10, b: 26 };
+    this.sel.addEventListener('change', () => { this.key = this.sel.value; this.prep(); this.draw(); });
+    const scrub = e => { const r = this.cv.getBoundingClientRect(); const fx = (e.clientX - r.left - this.pad.l) / (this.w - this.pad.l - this.pad.r); setTime(fx * S.R.tEnd); };
+    this.cv.addEventListener('pointerdown', e => { this.drag = true; try { this.cv.setPointerCapture(e.pointerId); } catch (_) {} scrub(e); });
+    this.cv.addEventListener('pointermove', e => { if (this.drag) scrub(e); });
+    this.cv.addEventListener('pointerup', () => { this.drag = false; });
+    this.cv.addEventListener('pointercancel', () => { this.drag = false; });
+  }
+  resize() {
+    const w = this.cv.clientWidth; if (!w) return;
+    const h = Math.round(clamp(w * 0.5, 190, 270));
+    this.w = w; this.h = h;
+    const d = window.devicePixelRatio || 1;
+    this.cv.width = Math.round(w * d); this.cv.height = Math.round(h * d); this.cv.style.height = h + 'px';
+    this.ctx.setTransform(d, 0, 0, d, 0, 0);
+  }
+  prep() {
+    if (!S.R) return;
+    const def = graphDef(this.key); this.def = def;
+    let lo = 0, hi = 0;
+    const scan = a => { for (const x of a) if (isFinite(x)) { if (x < lo) lo = x; if (x > hi) hi = x; } };
+    if (def.stack) {
+      const n = S.R.n; let acc = new Array(n).fill(0);
+      def.cum = def.stack.map(c => { acc = acc.map((a, i) => a + c.d[i]); return acc; });
+      scan(def.cum[def.cum.length - 1]);
+    }
+    def.series.forEach(s => scan(s.d));
+    if (def.pred) scan(def.pred.d);
+    if (hi - lo < 1e-9) { hi = 1; lo = def.unit === 'kg' || def.unit === 'J' ? 0 : -1; }
+    const step = niceStep((hi - lo) * 1.04, 5);
+    this.ymin = Math.floor(lo / step + 1e-9) * step; this.ymax = Math.ceil(hi / step - 1e-9) * step; this.ystep = step;
+    if (this.ymax - this.ymin < step) this.ymax = this.ymin + step;
+    this.ax = axisScale(Math.max(Math.abs(this.ymin), Math.abs(this.ymax)), def.unit);
+    this.unitEl.textContent = this.ax.label;
+    const items = [];
+    if (def.stack) def.stack.forEach(c => items.push({ label: c.label, col: c.col, area: true, d: c.d }));
+    def.series.forEach(s => items.push({ label: s.label, col: s.col, dash: !!s.dash, d: s.d }));
+    if (def.pred) items.push({ label: def.pred.label, col: def.pred.col, dash: true, d: def.pred.d });
+    this.items = items;
+    this.leg.innerHTML = items.map(it => `<li style="--c:var(--${it.col})"><span class="ln${it.area ? ' area' : it.dash ? ' dash' : ''}"></span><span>${it.label}</span><b></b></li>`).join('');
+    this.vals = [...this.leg.querySelectorAll('b')];
+  }
+  draw() {
+    if (!this.def || !this.w) return;
+    const c = this.ctx, { w, h, pad } = this, R = S.R, T = R.tEnd, def = this.def;
+    c.clearRect(0, 0, w, h);
+    const x0 = pad.l, x1 = w - pad.r, y0 = pad.t, y1 = h - pad.b;
+    const X = t => x0 + t / T * (x1 - x0), Y = v => y1 - (v - this.ymin) / (this.ymax - this.ymin) * (y1 - y0);
+    c.font = `500 11px ${FM}`; c.lineWidth = 1;
+    for (let v = this.ymin; v <= this.ymax + this.ystep * 0.01; v += this.ystep) {
+      const y = Math.round(Y(v)) + 0.5;
+      c.strokeStyle = Math.abs(v) < this.ystep * 1e-6 ? C['ink-2'] : C.grid; c.globalAlpha = Math.abs(v) < this.ystep * 1e-6 ? 0.6 : 1;
+      c.beginPath(); c.moveTo(x0, y); c.lineTo(x1, y); c.stroke(); c.globalAlpha = 1;
+      c.fillStyle = C['ink-2']; c.textAlign = 'right'; c.fillText(tickLabel(v / this.ax.f), x0 - 6, y + 4);
+    }
+    const ts = niceStep(T, 6);
+    c.textAlign = 'center';
+    for (let t = 0; t <= T + 1e-9; t += ts) { const x = Math.round(X(t)) + 0.5; c.strokeStyle = C.grid; c.beginPath(); c.moveTo(x, y0); c.lineTo(x, y1); c.stroke(); c.fillStyle = C['ink-2']; if (x < x1 - 44) c.fillText(tickLabel(t), x, y1 + 15); }
+    c.textAlign = 'right'; c.fillStyle = C['ink-2']; c.fillText('t (s)', x1, y1 + 15);
+    c.strokeStyle = C.line; c.strokeRect(x0 + 0.5, y0 + 0.5, x1 - x0, y1 - y0);
+    const iCur = search(R.t, S.t);
+    const st = state();
+    const line = (d, col, dash, lw, upto, alpha = 1) => {
+      c.strokeStyle = C[col]; c.lineWidth = lw; c.setLineDash(dash || []); c.globalAlpha = alpha; c.beginPath();
+      let pen = false;
+      for (let i = 0; i <= upto; i++) { const v = d[i]; if (!isFinite(v)) { pen = false; continue; } const x = X(R.t[i]), y = Y(v); if (pen) c.lineTo(x, y); else { c.moveTo(x, y); pen = true; } }
+      c.stroke(); c.setLineDash([]); c.globalAlpha = 1;
+    };
+    if (def.pred) line(def.pred.d, def.pred.col, [3, 4], 1.4, R.n - 1, 0.75);
+    if (def.stack) {
+      let prev = null;
+      def.cum.forEach((cum, k) => {
+        c.fillStyle = C[def.stack[k].col]; c.globalAlpha = 0.55; c.beginPath();
+        c.moveTo(X(R.t[0]), Y(prev ? prev[0] : 0));
+        for (let i = 0; i <= iCur; i++) c.lineTo(X(R.t[i]), Y(cum[i]));
+        for (let i = iCur; i >= 0; i--) c.lineTo(X(R.t[i]), Y(prev ? prev[i] : 0));
+        c.closePath(); c.fill(); c.globalAlpha = 1;
+        line(cum, def.stack[k].col, null, 1.2, iCur);
+        prev = cum;
+      });
+    }
+    def.series.forEach(s => line(s.d, s.col, s.dash, s.w || 2, iCur));
+    const cx = X(S.t);
+    c.strokeStyle = C.amber; c.lineWidth = 1.5; c.beginPath(); c.moveTo(cx, y0); c.lineTo(cx, y1); c.stroke();
+    // legend values
+    const i = st.i, j = Math.min(i + 1, R.n - 1), dt = R.t[j] - R.t[i], f = dt > 0 ? clamp((S.t - R.t[i]) / dt, 0, 1) : 0;
+    const unit = def.unit;
+    this.items.forEach((it, k) => {
+      const a = it.d[i], b = it.d[j]; let v = isFinite(a) && isFinite(b) ? a + (b - a) * f : (isFinite(a) ? a : NaN);
+      if (it.d === R.ug) v = st.on ? st.ug : NaN;
+      if (it.d === R.a) v = st.a; if (it.d === R.Fext) v = st.Fext; if (it.d === R.Fflow) v = st.Fflow; if (it.d === R.Fnet) v = st.Fnet;
+      if (Math.abs(v) < 1e-7 * Math.max(Math.abs(this.ymin), Math.abs(this.ymax))) v = 0;
+      this.vals[k].textContent = isFinite(v) ? fmt(v, unit) : '—';
+    });
+    // dots
+    def.series.forEach(s => { let v = s.d === R.ug ? (st.on ? st.ug : NaN) : s.d[i] + ((s.d[j] - s.d[i]) || 0) * f; if (s.d === R.a) v = st.a; if (!isFinite(v)) return; c.fillStyle = C[s.col]; c.beginPath(); c.arc(cx, Y(v), 3.2, 0, Math.PI * 2); c.fill(); });
+  }
+}
+const graphs = [];
+
+/* ---------- Ledgers & readouts ---------- */
+function buildLedgers() {
+  const M = S.M, N = SC[S.scen].names, out = M.flow === 'out';
+  S.mrows = out ? [
+    { k: 'p', label: N.body + ' (m·v)', col: 'c-p' }, { k: 'pOut', label: N.exchP, col: 'c-u' }, { k: 'pSys', label: 'Total', col: 'ink' }] : [
+    { k: 'p', label: 'Car + sand (m·v)', col: 'c-p' }, { k: 'pIn', label: 'Brought in by sand (Σu·dm)', col: 'c-u' }, { k: 'J', label: 'Impulse of external force (∫F dt)', col: 'c-fext' }];
+  $('#mom').innerHTML = S.mrows.map(r => `<div class="mrow" style="--c:var(--${r.col})"><span class="mname"><span class="dot"></span>${r.label}</span><div class="mtrack"><i></i></div><span class="mval"></span></div>`).join('');
+  S.mEls = [...$('#mom').querySelectorAll('.mrow')].map(el => ({ bar: el.querySelector('i'), val: el.querySelector('.mval') }));
+  const R = S.R, any = a => a.some(x => Math.abs(x) > 1e-9);
+  const sup = [{ k: 'E0', label: M.launch ? 'Initial KE + PE' : 'Initial KE', col: 'c-src' }];
+  if (M.scen === 'rocket') sup.push({ k: 'Echem', label: 'Released by fuel', col: 'c-flow' });
+  if (any(R.Wpos)) sup.push({ k: 'Wpos', label: 'Work by applied force', col: 'c-fext' });
+  if (any(R.KEin)) sup.push({ k: 'KEin', label: 'KE brought in by sand', col: 'c-u' });
+  const now = [{ k: 'KE', label: N.body + ' KE', col: 'c-v' }];
+  if (M.launch) now.push({ k: 'PE', label: 'Rocket PE', col: 'c-pe' });
+  if (out && any(R.Eexch)) now.push({ k: 'Eexch', label: N.exchE, col: 'c-exh' });
+  if (any(R.Edis) || M.scen === 'sand') now.push({ k: 'Edis', label: 'Thermal', col: 'c-heat' });
+  if (any(R.Wneg)) now.push({ k: 'Wneg', label: 'Removed by applied force', col: 'c-src' });
+  S.esup = sup; S.enow = now;
+  const seg = arr => arr.map(s => `<i style="--c:var(--${s.col})"></i>`).join('');
+  const li = arr => arr.map(s => `<li style="--c:var(--${s.col})"><span class="dot"></span><span class="nm">${s.label}</span><b></b></li>`).join('');
+  $('#energy').innerHTML = `<div class="erow"><span>Supplied</span><div class="ebar" id="ebSup">${seg(sup)}</div></div>` +
+    `<div class="erow"><span>Now in</span><div class="ebar" id="ebNow">${seg(now)}</div></div>` +
+    `<ul class="elegend"><li class="grp">Supplied</li>${li(sup)}<li class="grp">Now in</li>${li(now)}</ul>`;
+  const lis = [...$('#energy').querySelectorAll('.elegend li:not(.grp) b')];
+  S.eSupEls = { bars: [...$('#ebSup').children], vals: lis.slice(0, sup.length) };
+  S.eNowEls = { bars: [...$('#ebNow').children], vals: lis.slice(sup.length) };
+  const vals = [['t', 'Time t'], ['x', M.launch ? 'Altitude h' : 'Position x'], ['m', 'Mass m'], ['dm', 'dm/dt'], ['v', 'Velocity v'], ['u', 'u (' + (S.scen === 'rocket' ? 'exhaust' : 'sand') + ')'], ['a', 'Accel. a'], ['p', 'Momentum p'], ['KE', 'Kinetic energy']];
+  $('#vals').innerHTML = vals.map(([k, l]) => `<div><dt>${l}</dt><dd id="rv-${k}"></dd></div>`).join('');
+}
+function updateReadouts(st) {
+  const M = S.M, R = S.R;
+  const set = (k, v) => { const el = document.getElementById('rv-' + k); if (el) el.textContent = v; };
+  set('t', st.t.toFixed(2) + ' s'); set('x', fmt(st.x, 'm')); set('m', fmt(st.m, 'kg')); set('dm', fmt(st.mdot, 'kg/s'));
+  set('v', fmt(st.v, 'm/s')); set('u', st.on ? fmt(st.ug, 'm/s') : '—'); set('a', fmt(st.a, 'm/s²')); set('p', fmt(st.p, 'kg·m/s')); set('KE', fmt(st.KE, 'J'));
+  // momentum
+  const pv = { p: st.p, pOut: st.pOut, pSys: st.p + st.pOut, pIn: st.pIn, J: st.J };
+  S.mrows.forEach((r, i) => {
+    let v = pv[r.k]; if (Math.abs(v) < R.maxP * 1e-7) v = 0;
+    const frac = clamp(v / R.maxP, -1, 1) * 50;
+    const el = S.mEls[i];
+    el.bar.style.left = (frac >= 0 ? 50 : 50 + frac) + '%'; el.bar.style.width = Math.abs(frac) + '%';
+    el.val.textContent = fmt(v, 'kg·m/s').replace(' kg·m/s', '');
+  });
+  const unitNote = ' (kg·m/s)';
+  if (M.flow === 'out') $('#momEq').textContent = `Total = p₀ + ∫F_ext dt = ${fmt(R.p0, 'kg·m/s').replace(' kg·m/s', '')} + ${fmt(st.J, 'kg·m/s').replace(' kg·m/s', '')} = ${fmt(R.p0 + st.J, 'kg·m/s').replace(' kg·m/s', '')}${unitNote}`;
+  else $('#momEq').textContent = `m·v = p₀ + Σu·dm + ∫F dt = ${fmt(R.p0, 'kg·m/s').replace(' kg·m/s', '')} + ${fmt(st.pIn, 'kg·m/s').replace(' kg·m/s', '')} + ${fmt(st.J, 'kg·m/s').replace(' kg·m/s', '')}${unitNote}`;
+  // energy
+  const ev = { E0: R.E0, Echem: st.Echem, Wpos: Math.max(st.W, 0), Wneg: Math.max(-st.W, 0), KEin: st.KEin, KE: st.KE, PE: st.PE, Eexch: st.Eexch, Edis: st.Edis };
+  const fill = (defs, els) => defs.forEach((d, i) => { const v = ev[d.k]; els.bars[i].style.width = clamp(v / R.maxE * 100, 0, 100) + '%'; els.vals[i].textContent = fmt(v, 'J'); });
+  fill(S.esup, S.eSupEls); fill(S.enow, S.eNowEls);
+}
+function updateEq(st) {
+  const M = S.M, N = SC[S.scen].names;
+  const rel = st.on ? fmt(st.ug - st.v, 'm/s') : '—';
+  $('#eqLive').innerHTML =
+    `<span class="t-ext">(${fmt(st.Fext, 'N')})</span> + <span class="t-flow">(${rel})(${fmt(st.mdot, 'kg/s')})</span> = <span class="t-net">(${fmt(st.m, 'kg')})(${fmt(st.a, 'm/s²')})</span>` +
+    `<br><span class="lbl">ΣF<sub>ext</sub> + (u − v)·dm/dt = m·dv/dt</span>`;
+  let note = '';
+  if (M.scen === 'rocket') {
+    if (st.on) {
+      note = `<b>Thrust</b> = u<sub>rel</sub>·|dm/dt| = ${sig(M.uRel)} m/s × ${sig(M.rate)} kg/s = <b>${fmt(st.Fflow, 'N')}</b>.`;
+      if (M.launch) note += st.pinned ? ` The weight, mg = ${fmt(st.m * M.g, 'N')}, is larger, so the pad pushes up with ${fmt(st.N, 'N')} and a = 0.` : ` Weight mg = ${fmt(st.m * M.g, 'N')}, so the net force is ${fmt(st.Fnet, 'N')}.`;
+      else note += ` Velocity gained so far: u<sub>rel</sub>·ln(m₀/m) = ${fmt(M.uRel * Math.log(M.m0 / st.m), 'm/s')}.`;
+    } else note = M.tFlow > 0 ? `<b>Burnout.</b> dm/dt = 0, so ${M.launch ? (st.x <= 1e-6 && S.t > S.R.tLift ? 'the rocket rests on the ground.' : 'only gravity acts: a = −g.') : 'with no external force the rocket coasts at constant velocity.'}` : 'No fuel, so no thrust.';
+  } else if (M.scen === 'sand') {
+    if (st.on) {
+      note = `<b>Sand force</b> (u − v)·dm/dt = (${sig(M.u)} − ${sig(st.v)}) m/s × ${sig(M.rate)} kg/s = <b>${fmt(st.Fflow, 'N')}</b>.`;
+      if (M.mode === 'none') note += Math.abs(M.u) < 1e-9 ? ` With no horizontal external force and u = 0, m·v stays at ${fmt(S.R.p0, 'kg·m/s')}.` : ` Sand ${M.u > st.v ? 'arriving faster than the car pushes it forward' : 'arriving slower than the car holds it back'}.`;
+      else if (M.mode === 'hold') note += ` The engine supplies F = (v − u)·dm/dt = ${fmt(st.Fapp, 'N')}, so a = 0.`;
+      else note += ` Speed heads toward v = u + F/(dm/dt) = ${fmt(M.u + M.F / M.rate, 'm/s')}.`;
+    } else note = `<b>Car full.</b> dm/dt = 0, so ΣF<sub>ext</sub> = m·dv/dt${M.mode === 'hold' ? ' and the engine force drops to zero' : ''}.`;
+  } else {
+    if (st.on) {
+      note = `<b>Leaking sand leaves with the car's velocity</b> (u = v), so (u − v)·dm/dt = 0.`;
+      note += M.mode === 'none' ? ` The speed stays at ${fmt(st.v, 'm/s')} while momentum drops with the mass.` : ` a = F/m = ${fmt(M.F, 'N')} ÷ ${fmt(st.m, 'kg')} = ${fmt(st.a, 'm/s²')}, rising as the mass drains.`;
+    } else note = `<b>Car empty.</b> dm/dt = 0, so ΣF<sub>ext</sub> = m·dv/dt.`;
+  }
+  $('#eqNote').innerHTML = note;
+}
+function updateTransport() {
+  $('#scrub').value = String(Math.round(S.t / S.R.tEnd * 1000));
+  $('#tlabel').textContent = `${S.t.toFixed(1)} s / ${sig(S.R.tEnd)} s`;
+}
+
+/* ---------- Loop ---------- */
+function renderAll() {
+  const st = state();
+  drawScene(st);
+  graphs.forEach(g => g.draw());
+  updateReadouts(st); updateEq(st); updateTransport();
+}
+let last = performance.now();
+function loop(now) {
+  const dtR = Math.min(0.05, (now - last) / 1000); last = now;
+  if (S.playing) {
+    const dtS = dtR * S.pb;
+    S.t = Math.min(S.R.tEnd, S.t + dtS);
+    S.flick = Math.random();
+    updateParticles(dtR, dtS, state());
+    if (S.t >= S.R.tEnd) { S.playing = false; updatePlay(); }
+    S.dirty = true;
+  }
+  if (S.dirty) { S.dirty = false; renderAll(); }
+  requestAnimationFrame(loop);
+}
+
+/* ---------- Boot ---------- */
+readColors();
+const mq = window.matchMedia('(prefers-color-scheme: dark)');
+if (mq.addEventListener) mq.addEventListener('change', readColors);
+new MutationObserver(readColors).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class', 'style'] });
+['v', 'm', 'p', 'E'].forEach((k, i) => graphs.push(new Graph(k, i)));
+S.P = Object.assign(defaults('rocket'), SC.rocket.presets[0].P);
+buildControls();
+resizeScene(); graphs.forEach(g => g.resize());
+rebuild({ autoSpeed: true });
+// Open mid-burn so the first view shows the vectors, exhaust and graphs in action.
+S.t = S.M.tFlow * 0.55;
+for (let k = 0; k < 50; k++) updateParticles(1 / 60, S.pb / 60, state());
+updatePlay();
+const ro = new ResizeObserver(() => { resizeScene(); graphs.forEach(g => g.resize()); S.dirty = true; });
+ro.observe($('#stage')); graphs.forEach(g => ro.observe(g.cv));
+requestAnimationFrame(loop);
+})();
+</script>
+
+</body>
+</html>
