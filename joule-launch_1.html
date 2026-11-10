@@ -1,0 +1,1636 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Joule Launch: a slingshot physics game for work, kinetic energy, gravitational potential energy and efficiency.">
+<title>Joule Launch</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bungee&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: arcade stage (16:9 canvas + aim controls) beside a mission / predict / energy column; flight log, equation box and teacher notes below. Single committed navy-and-amber look. */
+:root {
+  --bg: #0C1A2C;
+  --panel: #13263F;
+  --panel-2: #1A3253;
+  --line: #2A4568;
+  --text: #EEF3FA;
+  --muted: #A9BCD4;
+  --amber: #F7B538;
+  --amber-ink: #241500;
+  --ke: #F7B538;
+  --gpe: #5CC6F2;
+  --heat: #F47252;
+  --total: #D9E4F1;
+  --good: #49C98D;
+  --bad: #FF8166;
+  --warn: #FFD27A;
+  --font-display: "Bungee", "Arial Black", Impact, sans-serif;
+  --font-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { background: var(--bg); color: var(--text); }
+body { font-family: var(--font-body); font-size: 15px; line-height: 1.45; }
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+
+.wrap { max-width: 1440px; margin: 0 auto; padding-block: 18px 48px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: flex; flex-direction: column; gap: 16px; }
+
+/* Header */
+.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 24px; }
+.brand { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.logo { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: clamp(28px, 4vw, 40px); line-height: 1; color: var(--amber); letter-spacing: 0.02em; text-shadow: 0 3px 0 #7A4E00; }
+.tagline { margin: 0; color: var(--muted); font-size: 14px; letter-spacing: 0.02em; }
+.levels { display: flex; flex-wrap: wrap; gap: 6px; }
+.lvl { display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px 6px 6px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); cursor: pointer; font-size: 13px; }
+.lvl:hover { border-color: var(--muted); }
+.lvl .n { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 6px; background: var(--panel-2); font-family: var(--font-display); font-size: 12px; }
+.lvl .st { font-size: 11px; letter-spacing: 1px; color: var(--muted); }
+.lvl .st b { color: var(--amber); font-weight: 400; }
+.lvl[aria-current="true"] { border-color: var(--amber); background: var(--panel-2); }
+.lvl[aria-current="true"] .n { background: var(--amber); color: var(--amber-ink); }
+.lvl .nm { white-space: nowrap; display: none; }
+.lvl[aria-current="true"] .nm, .lvl.sb .nm { display: inline; }
+
+/* Main grid */
+.main { display: grid; grid-template-columns: minmax(0, 1fr) 372px; gap: 16px; align-items: start; }
+@media (max-width: 1040px) { .main { grid-template-columns: minmax(0, 1fr); } }
+.stage { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.frame { position: relative; width: 100%; aspect-ratio: 16 / 9; max-width: 100%; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); background: #9BD6F0; }
+#cv { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+#cv.aiming { cursor: grabbing; }
+.hud { position: absolute; top: 0; left: 0; right: 0; display: flex; justify-content: space-between; gap: 8px; padding: 10px 12px; pointer-events: none; flex-wrap: wrap; }
+.hud-r { display: flex; gap: 8px; flex-wrap: wrap; }
+.pill { background: rgba(12, 26, 44, 0.82); color: var(--text); border-radius: 999px; padding: 4px 12px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; }
+.pill b { font-family: var(--font-mono); font-weight: 600; color: var(--amber); }
+.dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid #8FA6C2; }
+.dot.on { background: #B9C8D6; border-color: #EEF3FA; }
+
+.overlay { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(6, 14, 26, 0.6); padding: 16px; }
+.ocard { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 22px 24px; width: min(440px, 100%); display: flex; flex-direction: column; gap: 12px; box-shadow: 0 18px 50px rgba(0,0,0,0.45); }
+.o-eyebrow { margin: 0; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; }
+.o-title { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: 26px; color: var(--amber); line-height: 1.1; }
+.o-text { margin: 0; color: var(--text); }
+.o-stars { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.o-stars li { display: flex; gap: 10px; align-items: center; color: var(--muted); }
+.o-stars li .s { font-size: 22px; line-height: 1; color: #3A5378; }
+.o-stars li.on { color: var(--text); }
+.o-stars li.on .s { color: var(--amber); }
+.o-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+
+.loadfail { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; padding: 24px; background: var(--panel); color: var(--text); }
+
+/* Controls */
+.controls { display: flex; flex-wrap: wrap; gap: 12px 18px; align-items: flex-end; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+.ctl { display: flex; flex-direction: column; gap: 6px; flex: 1 1 180px; min-width: 0; }
+.ctl label, .ctl-label { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; color: var(--muted); }
+.ctl output { font-family: var(--font-mono); font-weight: 600; color: var(--text); font-size: 15px; }
+input[type="range"] { width: 100%; accent-color: var(--amber); }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg button { border: 0; background: transparent; padding: 7px 12px; cursor: pointer; font-size: 13px; white-space: nowrap; }
+#pickWrap { flex: 0 0 auto; }
+.seg button[aria-pressed="true"] { background: var(--amber); color: var(--amber-ink); font-weight: 700; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; flex: 0 1 auto; }
+.btn-primary { background: var(--amber); color: var(--amber-ink); border: 0; border-radius: 8px; padding: 10px 18px; font-weight: 700; cursor: pointer; font-size: 15px; }
+.btn-primary:disabled { background: #33496A; color: #93A6C0; cursor: not-allowed; }
+.btn-ghost { background: transparent; border: 1px solid var(--line); border-radius: 8px; padding: 9px 14px; cursor: pointer; color: var(--text); }
+.btn-ghost:hover { border-color: var(--muted); }
+.hint { margin: 0; color: var(--muted); font-size: 13px; }
+.hint kbd { font-family: var(--font-mono); font-size: 12px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; }
+
+/* Side panel */
+.panel { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; min-width: 0; }
+.card h2, .card h3 { margin: 0; }
+.card h3 { font-size: 15px; letter-spacing: 0.01em; }
+.eyebrow { margin: 0 0 4px; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+.m-title { font-family: var(--font-display); font-weight: 400; font-size: 22px; line-height: 1.1; color: var(--text); text-wrap: balance; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 10px; }
+.tag { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--panel-2); border: 1px solid var(--line); color: var(--text); }
+.brief { margin: 0 0 12px; color: var(--text); }
+.given { width: 100%; border-collapse: collapse; font-size: 14px; }
+.given th { text-align: left; font-weight: 400; color: var(--muted); padding: 5px 8px 5px 0; }
+.given td { text-align: right; font-family: var(--font-mono); font-weight: 600; padding: 5px 0; font-variant-numeric: tabular-nums; }
+.given tr + tr th, .given tr + tr td { border-top: 1px solid var(--line); }
+.given td.find { color: var(--warn); }
+
+.card-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 6px; }
+.sub { margin: 0 0 10px; font-size: 13px; color: var(--muted); }
+.q { display: flex; flex-direction: column; gap: 8px; padding: 10px 0; }
+.q + .q { border-top: 1px solid var(--line); }
+.q-prompt { margin: 0; display: flex; gap: 8px; }
+.q-letter { flex: none; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--panel-2); border: 1px solid var(--line); font-size: 12px; font-weight: 700; }
+.q.correct .q-letter { background: var(--good); border-color: var(--good); color: #062014; }
+.q.revealed .q-letter { background: var(--warn); border-color: var(--warn); color: #2A1E00; }
+.q-row { display: flex; gap: 8px; align-items: center; margin: 0; }
+.q-input { width: 120px; min-width: 0; flex: 1 1 auto; background: #0A1626; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font-family: var(--font-mono); font-size: 15px; }
+.q-input:read-only { opacity: 0.8; }
+.q-unit { font-family: var(--font-mono); color: var(--muted); min-width: 30px; }
+.btn-check { background: var(--panel-2); border: 1px solid var(--amber); color: var(--amber); border-radius: 8px; padding: 7px 12px; cursor: pointer; font-weight: 700; }
+.btn-check:disabled { opacity: 0.45; cursor: default; }
+.q-feedback { font-size: 14px; }
+.q-feedback:empty { display: none; }
+.q-feedback.good { color: var(--good); }
+.q-feedback.bad { color: var(--bad); }
+.q-feedback.warn { color: var(--warn); }
+.q-solution { font-size: 14px; background: #0A1626; border-left: 3px solid var(--warn); padding: 8px 10px; border-radius: 0 6px 6px 0; }
+.q-measured { font-size: 13px; color: var(--muted); }
+.q-measured b { color: var(--text); font-family: var(--font-mono); }
+.btn-reveal { align-self: flex-start; background: transparent; border: 0; color: var(--warn); text-decoration: underline; cursor: pointer; padding: 0; font-size: 13px; }
+
+/* Energy */
+.state { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--panel-2); color: var(--muted); font-family: var(--font-mono); }
+.state.live { background: var(--good); color: #062014; }
+.win-line { margin: 0 0 8px; font-size: 13px; color: var(--muted); }
+.win-line b { color: var(--text); font-family: var(--font-mono); }
+.bars { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; height: 150px; align-items: end; border-bottom: 2px solid var(--line); padding: 0 4px; }
+.bar { height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 4px; min-width: 0; }
+.bar .v { font-family: var(--font-mono); font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bar .f { width: 72%; border-radius: 4px 4px 0 0; height: 0; min-height: 0; }
+.bar.ke .f { background: var(--ke); }
+.bar.gpe .f { background: var(--gpe); }
+.bar.heat .f { background: var(--heat); }
+.bar.total .f { background: transparent; border: 2px dashed var(--total); border-bottom: 0; }
+.bar-names { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 4px 4px 0; font-size: 12px; text-align: center; color: var(--muted); }
+.bar-names span:nth-child(1) { color: var(--ke); }
+.bar-names span:nth-child(2) { color: var(--gpe); }
+.bar-names span:nth-child(3) { color: var(--heat); }
+.readouts { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 16px; margin: 12px 0 0; font-size: 13px; }
+.readouts div { display: flex; justify-content: space-between; gap: 8px; padding: 3px 0; border-bottom: 1px solid var(--line); }
+.readouts dt { color: var(--muted); }
+.readouts dd { margin: 0; font-family: var(--font-mono); font-weight: 600; font-variant-numeric: tabular-nums; }
+.empty-note { margin: 10px 0 0; font-size: 13px; color: var(--muted); }
+.replay { margin-top: 12px; display: flex; flex-direction: column; gap: 4px; }
+.replay label { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); }
+.replay output { font-family: var(--font-mono); color: var(--text); }
+
+.check { display: flex; gap: 8px; align-items: center; font-size: 14px; }
+select { background: #0A1626; border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; }
+.sb-grid { display: flex; flex-direction: column; gap: 12px; margin-top: 8px; }
+
+/* Energy card layout */
+.energy-grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 14px 22px; align-items: start; }
+@media (max-width: 720px) { .energy-grid { grid-template-columns: minmax(0, 1fr); } }
+.energy-side .readouts { margin-top: 0; }
+.table-wrap { overflow-x: auto; }
+table.log { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+table.log th { text-align: right; color: var(--muted); font-weight: 400; padding: 6px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+table.log td { text-align: right; font-family: var(--font-mono); padding: 5px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+table.log th:first-child, table.log td:first-child { text-align: left; }
+.eqbox { display: grid; gap: 6px; margin-top: 10px; }
+.eq { display: flex; justify-content: space-between; gap: 10px; padding: 7px 10px; background: #0A1626; border: 1px solid var(--line); border-radius: 8px; }
+.eq span:first-child { color: var(--muted); font-size: 13px; }
+.eq span:last-child { font-family: var(--font-mono); font-weight: 600; text-align: right; }
+details.teacher summary { cursor: pointer; font-weight: 700; }
+details.teacher[open] summary { margin-bottom: 10px; }
+.tnotes { display: grid; gap: 10px; max-width: 900px; }
+.tnotes p, .tnotes ul { margin: 0; }
+.tnotes ul { padding-left: 20px; display: grid; gap: 4px; }
+table.map { border-collapse: collapse; font-size: 13px; width: 100%; }
+table.map th, table.map td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+table.map th { color: var(--muted); font-weight: 400; }
+.copy-btn { font-size: 13px; padding: 6px 10px; }
+
+@media (max-width: 520px) {
+  .bars { height: 120px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+<style>
+body { margin: 0; }
+[hidden] { display: none !important; }
+img { max-width: 100%; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1 class="logo">Joule Launch</h1>
+      <p class="tagline">Physics 1 ACP · Unit 3: Work, Energy &amp; Efficiency</p>
+    </div>
+    <nav class="levels" id="levelNav" aria-label="Choose a level"></nav>
+  </header>
+
+  <div class="main">
+    <section class="stage" aria-label="Game">
+      <div class="frame" id="frame">
+        <canvas id="cv" tabindex="0" aria-label="Game area. Drag the pebble back in the pit to aim."></canvas>
+        <div class="hud">
+          <div class="pill" id="hudLevel">Level 1</div>
+          <div class="hud-r"><div class="pill" id="hudPebbles"></div><div class="pill" id="hudFiends"></div></div>
+        </div>
+        <div class="overlay" id="overlay" hidden><div class="ocard" id="ocard" role="dialog" aria-live="polite"></div></div>
+        <div class="loadfail" id="loadFail" hidden><p>The physics engine didn't load. Check the internet connection, then reload the page.</p></div>
+      </div>
+
+      <div class="controls">
+        <div class="ctl">
+          <label for="pull">Pull distance d <output id="pullOut" for="pull">1.00 m</output></label>
+          <input type="range" id="pull" min="0.2" max="2" step="0.05" value="1">
+        </div>
+        <div class="ctl">
+          <label for="angle">Launch angle θ <output id="angleOut" for="angle">45°</output></label>
+          <input type="range" id="angle" min="5" max="85" step="1" value="45">
+        </div>
+        <div class="ctl" id="pickWrap" hidden>
+          <span class="ctl-label">Pebble</span>
+          <div class="seg" role="group" aria-label="Pebble mass" id="pick"></div>
+        </div>
+        <div class="actions">
+          <button type="button" class="btn-primary" id="launchBtn">Launch</button>
+          <button type="button" class="btn-ghost" id="resetBtn">Restart level</button>
+        </div>
+      </div>
+      <p class="hint">Drag the pebble back in the pit to aim, or use the sliders. With the game area selected: <kbd>←</kbd><kbd>→</kbd> pull, <kbd>↑</kbd><kbd>↓</kbd> angle, <kbd>Space</kbd> launch.</p>
+      <section class="card" aria-labelledby="eTitle">
+        <div class="card-head"><h3 id="eTitle">Energy tracker</h3><span class="state" id="eState">Waiting</span></div>
+        <div class="energy-grid">
+          <div class="energy-chart">
+            <p class="win-line" id="eWork">Work you did on the band: <b>—</b></p>
+            <div class="bars" aria-hidden="true">
+              <div class="bar ke"><span class="v" id="bvKE">—</span><div class="f" id="bfKE"></div></div>
+              <div class="bar gpe"><span class="v" id="bvGPE">—</span><div class="f" id="bfGPE"></div></div>
+              <div class="bar heat"><span class="v" id="bvHeat">—</span><div class="f" id="bfHeat"></div></div>
+              <div class="bar total"><span class="v" id="bvTot">—</span><div class="f" id="bfTot"></div></div>
+            </div>
+            <div class="bar-names"><span>Kinetic</span><span>Grav. PE</span><span>Heat (band)</span><span>Total</span></div>
+          </div>
+          <div class="energy-side">
+            <dl class="readouts">
+              <div><dt>Time t</dt><dd id="rT">—</dd></div>
+              <div><dt>Height h</dt><dd id="rH">—</dd></div>
+              <div><dt>Speed v</dt><dd id="rV">—</dd></div>
+              <div><dt>KE</dt><dd id="rKE">—</dd></div>
+              <div><dt>GPE</dt><dd id="rGPE">—</dd></div>
+              <div><dt>Total</dt><dd id="rTot">—</dd></div>
+            </dl>
+            <p class="empty-note" id="eNote">Launch a pebble to see where its energy goes.</p>
+            <div class="replay">
+              <label for="replay">Flight replay <output id="replayOut">—</output></label>
+              <input type="range" id="replay" min="0" max="100" step="1" value="0" disabled>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section class="card" aria-labelledby="logTitle">
+        <div class="card-head"><h3 id="logTitle">Flight log</h3><button type="button" class="btn-ghost copy-btn" id="copyLog">Copy table</button></div>
+        <p class="sub" id="copyNote">Every launch is recorded here. Copy the table and paste it into a spreadsheet or your lab notes.</p>
+        <div class="table-wrap">
+          <table class="log">
+            <thead><tr><th>#</th><th>Level</th><th>m (kg)</th><th>d (m)</th><th>θ (°)</th><th>W (J)</th><th>KE launch (J)</th><th>v launch (m/s)</th><th>Peak h (m)</th><th>KE at hit (J)</th></tr></thead>
+            <tbody id="logBody"><tr><td colspan="10" style="text-align:left;color:var(--muted)">No launches yet.</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+
+    <aside class="panel">
+      <section class="card" aria-labelledby="mTitle">
+        <p class="eyebrow" id="mEyebrow">Level 1 of 8</p>
+        <h2 class="m-title" id="mTitle">First Fling</h2>
+        <div class="tags" id="mTags"></div>
+        <p class="brief" id="mBrief"></p>
+        <table class="given" id="given" aria-label="Given values"></table>
+      </section>
+
+      <section class="card" id="predictCard" aria-labelledby="pTitle">
+        <div class="card-head"><h3 id="pTitle">Predict before you launch</h3></div>
+        <p class="sub">Answers use <b>your</b> pull distance and g = 10 m/s². Launch unlocks when every prediction is correct.</p>
+        <div id="qList"></div>
+      </section>
+
+      <section class="card" id="sandboxCard" hidden aria-labelledby="sbTitle">
+        <h3 id="sbTitle">Sandbox settings</h3>
+        <div class="sb-grid">
+          <div class="ctl"><label for="sbF">Band force F <output id="sbFOut">150 N</output></label><input type="range" id="sbF" min="50" max="300" step="10" value="150"></div>
+          <div class="ctl"><label for="sbM">Pebble mass m <output id="sbMOut">1.0 kg</output></label><input type="range" id="sbM" min="0.5" max="5" step="0.5" value="1"></div>
+          <div class="ctl"><label for="sbE">Band efficiency <output id="sbEOut">100%</output></label><input type="range" id="sbE" min="10" max="100" step="5" value="100"></div>
+          <label class="check"><input type="checkbox" id="sbCliff"> Launch from an 8.0 m cliff</label>
+          <div class="ctl"><label for="sbLayout">Fort</label>
+            <select id="sbLayout">
+              <option value="L1">Hut (Level 1)</option>
+              <option value="L2" selected>Two towers (Level 2)</option>
+              <option value="L5">Stone fort (Level 5)</option>
+              <option value="L6">Tall tower (Level 6)</option>
+              <option value="L8">Stone columns (Level 8)</option>
+              <option value="none">Empty field</option>
+            </select>
+          </div>
+          <div class="actions"><button type="button" class="btn-ghost" id="sbRebuild">Rebuild fort</button></div>
+        </div>
+      </section>
+      <section class="card" aria-labelledby="eqTitle">
+        <h3 id="eqTitle">Equation box</h3>
+        <div class="eqbox">
+          <div class="eq"><span>Work</span><span>W = F × d</span></div>
+          <div class="eq"><span>Kinetic energy</span><span>KE = ½mv²</span></div>
+          <div class="eq"><span>Gravitational PE</span><span>GPE = mgh</span></div>
+          <div class="eq"><span>Efficiency</span><span>useful out ÷ in × 100%</span></div>
+          <div class="eq"><span>Conservation</span><span>KE + GPE + heat = total</span></div>
+          <div class="eq"><span>Gravity</span><span>g = 10 m/s²</span></div>
+        </div>
+      </section>
+
+    </aside>
+  </div>
+
+  <details class="card teacher">
+    <summary>For teachers</summary>
+    <div class="tnotes">
+      <p>Students aim with the pull distance and launch angle, then answer the level's prediction before Launch unlocks. Most answers depend on each student's own pull distance, so neighbors' answers won't match. Wrong answers get targeted feedback (forgot the ½, forgot the square root, used g = 9.8, wrote 0.8 instead of 80%). After two misses a "Show solution" link appears; using it gives up that level's prediction star.</p>
+      <p><b>Stars:</b> one for predicting without the solution, one for clearing the fort, one for clearing it within the par number of pebbles. Stars are saved in each student's own browser.</p>
+      <p><b>Physics model:</b> g = 10 m/s² and no air resistance in flight, so KE + GPE stays constant while the pebble flies. All losses happen in the band (its efficiency). Heights are measured to the pebble's center from the ground, or from the valley floor in Level 7. Blocks break when the pebble hits them with enough kinetic energy (glass 15 J, wood 40 J, stone 150 J).</p>
+      <div class="table-wrap">
+        <table class="map">
+          <thead><tr><th>Level</th><th>Concepts</th><th>Students calculate</th></tr></thead>
+          <tbody>
+            <tr><td>1 First Fling</td><td>Work</td><td>W = Fd for their pull</td></tr>
+            <tr><td>2 Launch Speed</td><td>Work → KE</td><td>KE at launch, then launch speed from KE = ½mv²</td></tr>
+            <tr><td>3 Balloon Pop</td><td>KE → GPE</td><td>Smallest pull distance to rise 9.0 m (straight up)</td></tr>
+            <tr><td>4 Over the Wall</td><td>Conservation</td><td>KE remaining at h = 6.0 m</td></tr>
+            <tr><td>5 Worn-Out Band</td><td>Efficiency</td><td>Work in, then KE out with a 75% band</td></tr>
+            <tr><td>6 Mystery Band</td><td>Efficiency</td><td>Efficiency from test data; energy lost to heat</td></tr>
+            <tr><td>7 Cliffside</td><td>GPE, conservation, efficiency</td><td>GPE at launch from an 8.0 m cliff; KE at the valley floor</td></tr>
+            <tr><td>8 Heavy or Light?</td><td>KE, mass and speed</td><td>Launch speed for a 1.0 kg or 4.0 kg pebble</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p><b>Discussion prompts:</b></p>
+      <ul>
+        <li>Change only the launch angle. Does the KE at launch change? Why not?</li>
+        <li>At the top of an angled shot, why isn't the KE zero? (Use the replay slider to find the peak.)</li>
+        <li>In Level 8 both pebbles get the same KE. Why does the heavy one leave so much slower?</li>
+        <li>Where does the "lost" energy in the band go? Is it destroyed?</li>
+      </ul>
+      <p>The Sandbox (after Level 8) lets you set any force, mass and efficiency for demos. It shows a live preview of the launch energy while you aim.</p>
+    </div>
+  </details>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/matter-js@0.19.0/build/matter.min.js"></script>
+<script>
+(function () {
+'use strict';
+const $ = id => document.getElementById(id);
+const Mx = window.Matter;
+if (!Mx) { $('loadFail').hidden = false; return; }
+const { Engine, Bodies, Body, Composite, Events } = Mx;
+
+/* ---------- World constants (meters, seconds, kg) ---------- */
+const S = 40, CW = 1280, CH = 720, GY = 610, G = 10, X0 = 3.2;
+const PIT_L = 0.5, PIT_R = 3.9, PIT_D = 2.6, CLIFF_X = 6.0;
+const D_MIN = 0.2, D_MAX = 2.0, TAU = Math.PI * 2;
+const CAT_TERRAIN = 0x0002;
+const FIEND_R = 0.4, FIEND_KG = 2;
+const MAT = { wood: { kg: 4, tough: 40 }, glass: { kg: 3, tough: 15 }, stone: { kg: 12, tough: 150 } };
+const PX = x => x * S, PY = h => GY - h * S, WX = X => X / S, WH = Y => (GY - Y) / S;
+const pebR = m => 0.35 * Math.cbrt(m);
+
+/* ---------- Number formatting ---------- */
+const f1 = x => (Math.round(x * 10) / 10).toFixed(1);
+const f2 = x => (Math.round(x * 100) / 100).toFixed(2);
+function nj(x) { const r = Math.round(x * 10) / 10; return Math.abs(r - Math.round(r)) < 1e-9 ? String(Math.round(r)) : r.toFixed(1); }
+const pct = e => nj(e * 100);
+const dec = e => String(+e.toFixed(2));
+
+/* ---------- Levels ---------- */
+const LEVELS = [
+  { id: 1, name: 'First Fling', tags: ['Work'], F: 100, m: 1.0, eta: 1, h0: 0, shots: 3, par: 2, d0: 1.0,
+    brief: 'A gang of Friction Fiends has moved into the quarry. Pull back the Mega-Sling and knock down their hut. Pulling the band back takes work.',
+    questions: ['work'],
+    blocks: [['wood', 19.3, 0, 0.3, 1.6], ['wood', 21.7, 0, 0.3, 1.6], ['wood', 20.5, 1.6, 2.9, 0.3]],
+    fiends: [[20.5, 1.9], [20.5, 0]] },
+  { id: 2, name: 'Launch Speed', tags: ['Work', 'Kinetic energy'], F: 160, m: 2.0, eta: 1, h0: 0, shots: 4, par: 3, d0: 1.0,
+    brief: "This band is ideal: every joule of work you do becomes the pebble's kinetic energy. Use that energy to find how fast the 2.0 kg pebble leaves the sling.",
+    questions: ['ke0', 'v0'],
+    blocks: [['wood', 15.3, 0, 0.3, 1.8], ['wood', 16.7, 0, 0.3, 1.8], ['wood', 16, 1.8, 1.9, 0.3],
+      ['wood', 23.1, 0, 0.3, 2.4], ['wood', 24.9, 0, 0.3, 2.4], ['wood', 24, 2.4, 2.3, 0.3],
+      ['wood', 23.35, 2.7, 0.3, 1.5], ['wood', 24.65, 2.7, 0.3, 1.5], ['wood', 24, 4.2, 1.8, 0.3]],
+    fiends: [[16, 2.1], [16, 0], [24, 4.5], [24, 2.7]] },
+  { id: 3, name: 'Balloon Pop', tags: ['Kinetic energy', 'GPE'], F: 120, m: 1.0, eta: 1, h0: 0, shots: 3, par: 1, d0: 0.5, lockAngle: 90, H: 9.0,
+    brief: 'A Fiend is drifting overhead in a balloon. The sling is locked straight up. As the pebble rises, its kinetic energy turns into GPE. Pull just far enough to reach the basket.',
+    questions: ['dmin'], blocks: [], fiends: [], balloons: [{ x: 3.2, H: 9.0 }], heightLabel: 'Basket height' },
+  { id: 4, name: 'Over the Wall', tags: ['GPE', 'Energy conservation'], F: 150, m: 1.5, eta: 1, h0: 0, shots: 4, par: 3, d0: 1.2, H: 6.0,
+    brief: 'A 6.0 m stone wall guards this fort. As the pebble climbs, some of its kinetic energy becomes GPE. Predict how much KE it still has when it is level with the top of the wall.',
+    questions: ['keAtH'], walls: [{ x1: 11.5, x2: 12.5, top: 6.0 }], heightLabel: 'Wall height',
+    blocks: [['wood', 17.8, 0, 0.3, 2.0], ['wood', 20.2, 0, 0.3, 2.0], ['wood', 19.0, 2.0, 2.9, 0.3], ['glass', 23.5, 0, 1.0, 1.0], ['glass', 23.5, 1.0, 1.0, 1.0]],
+    fiends: [[19.0, 2.3], [19.0, 0], [23.5, 2.0]] },
+  { id: 5, name: 'Worn-Out Band', tags: ['Work', 'Efficiency'], F: 200, m: 2.0, eta: 0.75, h0: 0, shots: 4, par: 3, d0: 1.0,
+    brief: 'This old band is only 75% efficient. The rest of your work turns into heat and sound in the rubber. Find out how much energy actually reaches the pebble.',
+    questions: ['work', 'ke0'],
+    blocks: [['stone', 20, 0, 1, 1], ['stone', 23, 0, 1, 1], ['wood', 21.5, 1.0, 4.0, 0.3], ['glass', 26, 0, 0.8, 0.8], ['glass', 26, 0.8, 0.8, 0.8]],
+    fiends: [[21.5, 1.3], [21.5, 0], [26, 1.6]] },
+  { id: 6, name: 'Mystery Band', tags: ['Efficiency'], F: 180, m: 2.0, eta: 0.8, h0: 0, shots: 4, par: 3, d0: 1.0, hideEta: true,
+    test: { F: 180, d: 1.0, m: 2.0, v: 12.0 },
+    brief: 'Nobody knows how good this new band is. In a test, pulling it back 1.00 m took an average force of 180 N, and a 2.0 kg pebble left the sling at 12.0 m/s. Work out its efficiency before you fire.',
+    questions: ['eta', 'lost'],
+    blocks: [['wood', 21.2, 0, 0.3, 1.8], ['wood', 22.8, 0, 0.3, 1.8], ['wood', 22, 1.8, 2.0, 0.3], ['wood', 21.4, 2.1, 0.3, 1.5], ['wood', 22.6, 2.1, 0.3, 1.5], ['wood', 22, 3.6, 1.6, 0.3], ['glass', 26.2, 0, 0.3, 1.5]],
+    fiends: [[22, 0], [22, 2.1], [22, 3.9], [27, 0]] },
+  { id: 7, name: 'Cliffside', tags: ['GPE', 'Energy conservation', 'Efficiency'], F: 100, m: 1.0, eta: 0.8, h0: 8.0, shots: 4, par: 3, d0: 0.8,
+    brief: 'You are firing down from an 8.0 m cliff with an 80% efficient band. Heights are measured from the valley floor. As the pebble drops, its GPE turns into kinetic energy.',
+    questions: ['gpe0', 'keFloor'],
+    blocks: [['wood', 16.2, 0, 0.3, 1.6], ['wood', 17.8, 0, 0.3, 1.6], ['wood', 17, 1.6, 2.0, 0.3],
+      ['glass', 24, 0, 0.7, 0.8], ['glass', 24, 0.8, 0.7, 0.8], ['glass', 26, 0, 0.7, 0.8], ['glass', 26, 0.8, 0.7, 0.8], ['wood', 25, 1.6, 2.6, 0.3]],
+    fiends: [[17, 1.9], [17, 0], [25, 1.9], [25, 0]] },
+  { id: 8, name: 'Heavy or Light?', tags: ['Kinetic energy', 'Mass & speed'], F: 250, eta: 0.8, h0: 0, shots: 4, par: 3, d0: 1.0, choices: [1.0, 4.0],
+    brief: 'Choose a light 1.0 kg pebble or a heavy 4.0 kg pebble for each shot. The same pull gives both the same kinetic energy, but not the same speed. Stone only breaks with a hard hit.',
+    questions: ['v0'],
+    blocks: [['stone', 18.5, 0, 1, 1], ['stone', 18.5, 1, 1, 1], ['stone', 22.5, 0, 1, 1], ['stone', 22.5, 1, 1, 1], ['wood', 20.5, 2.0, 5.0, 0.3]],
+    fiends: [[19.0, 2.3], [20.5, 2.3], [22.0, 2.3], [20.5, 0]] },
+];
+const SANDBOX = { id: 'S', name: 'Sandbox', sandbox: true, tags: ['Free play'], shots: Infinity, questions: [], d0: 1.0,
+  brief: 'Set your own band force, pebble mass and efficiency, then launch as many pebbles as you like. Let go of the pebble to fire. The energy bars preview each launch while you aim.' };
+const LAYOUTS = { L1: 0, L2: 1, L5: 4, L6: 5, L8: 7, none: -1 };
+
+/* ---------- Prediction questions ---------- */
+const QS = {
+  work: {
+    unit: 'J', deps: ['d'],
+    prompt: s => `You pull the band back <b>${f2(s.d)} m</b> with an average force of <b>${s.F} N</b>. How much work do you do on the band?`,
+    answer: s => s.F * s.d,
+    solution: s => `W = F × d = ${s.F} N × ${f2(s.d)} m = <b>${nj(s.F * s.d)} J</b>`,
+    hints: () => ['Work = force × distance. Use the band force and how far you pull.', 'Multiply the force in newtons by the pull distance in meters. N × m = J.'],
+    mistakes: s => [
+      { v: s.F / s.d, msg: 'It looks like you divided. Work is force <i>times</i> distance.' },
+      { v: s.F + s.d, msg: 'Multiply the force and the distance instead of adding them.' },
+    ],
+    measured: f => `Flight check: you did <b>${nj(f.W)} J</b> of work on the band.`,
+  },
+  ke0: {
+    unit: 'J', deps: ['d'],
+    prompt: s => s.eta === 1
+      ? `With an ideal band and a <b>${f2(s.d)} m</b> pull, what is the pebble's kinetic energy the instant it leaves the sling?`
+      : `The band is <b>${pct(s.eta)}% efficient</b>. What is the pebble's kinetic energy the instant it leaves the sling?`,
+    answer: s => s.eta * s.F * s.d,
+    solution: s => s.eta === 1
+      ? `All of the work becomes KE: KE = W = ${s.F} N × ${f2(s.d)} m = <b>${nj(s.F * s.d)} J</b>`
+      : `W = ${s.F} N × ${f2(s.d)} m = ${nj(s.F * s.d)} J. Only ${pct(s.eta)}% becomes KE: KE = ${dec(s.eta)} × ${nj(s.F * s.d)} J = <b>${nj(s.eta * s.F * s.d)} J</b>`,
+    hints: s => s.eta === 1
+      ? ['With an ideal band, all of the work you do becomes the pebble\'s kinetic energy.', 'Find W = F × d. That is the KE.']
+      : ['Find the work first (W = F × d), then take the efficiency percentage of it.', `Multiply the work by ${dec(s.eta)}.`],
+    mistakes: s => {
+      const W = s.F * s.d, out = [{ v: 0.5 * s.eta * W, msg: 'No need to halve it. The ½ belongs in KE = ½mv², not here.' }];
+      if (s.eta < 1) {
+        out.push({ v: W, msg: `That's the work you put in. Only ${pct(s.eta)}% of it reaches the pebble as KE.` });
+        out.push({ v: (1 - s.eta) * W, msg: "That's the energy lost to heat. What's left for the pebble?" });
+      }
+      return out;
+    },
+    measured: f => `Flight check: KE at launch was <b>${nj(f.KE0)} J</b>.`,
+  },
+  v0: {
+    unit: 'm/s', deps: ['d', 'm'],
+    prompt: s => s.eta === 1
+      ? `What will the <b>${f1(s.m)} kg</b> pebble's launch speed be?`
+      : `The band is <b>${pct(s.eta)}% efficient</b> and you pull <b>${f2(s.d)} m</b>. What will the <b>${f1(s.m)} kg</b> pebble's launch speed be?`,
+    answer: s => Math.sqrt(2 * s.eta * s.F * s.d / s.m),
+    solution: s => {
+      const KE = s.eta * s.F * s.d, v = Math.sqrt(2 * KE / s.m);
+      const ke = s.eta < 1 ? `KE = ${dec(s.eta)} × ${s.F} N × ${f2(s.d)} m = ${nj(KE)} J.` : `KE = W = ${s.F} N × ${f2(s.d)} m = ${nj(KE)} J.`;
+      return `${ke} From KE = ½mv²: v = √(2 × KE ÷ m) = √(2 × ${nj(KE)} J ÷ ${f1(s.m)} kg) = <b>${f2(v)} m/s</b>`;
+    },
+    hints: s => [s.eta < 1 ? 'First find the KE: work × efficiency. Then use KE = ½mv².' : 'First find the KE (= the work). Then use KE = ½mv².', 'Solve KE = ½mv² for v: v = √(2 × KE ÷ m).'],
+    mistakes: s => {
+      const KE = s.eta * s.F * s.d, out = [
+        { v: 2 * KE / s.m, msg: "That's v². Take the square root to get v." },
+        { v: Math.sqrt(KE / s.m), msg: "Don't drop the ½ in KE = ½mv². Solving gives v = √(2 × KE ÷ m)." },
+        { v: KE / s.m, msg: 'Solve KE = ½mv² for v: v = √(2 × KE ÷ m).' },
+      ];
+      if (s.eta < 1) out.push({ v: Math.sqrt(2 * s.F * s.d / s.m), msg: "Use the pebble's KE after the band's losses, not the full work." });
+      return out;
+    },
+    measured: f => `Flight check: the radar clocked <b>${f2(f.v0)} m/s</b> at launch.`,
+  },
+  dmin: {
+    unit: 'm', deps: [], usesG: true,
+    prompt: s => `The bottom of the basket is <b>${f1(s.H)} m</b> above the sling. What is the <b>smallest</b> pull distance d that gets the ${f1(s.m)} kg pebble up there?`,
+    answer: (s, g = G) => s.m * g * s.H / (s.eta * s.F),
+    solution: s => {
+      const E = s.m * G * s.H;
+      return `At the top of its climb, the pebble's KE has all become GPE. GPE needed = mgh = ${f1(s.m)} kg × 10 m/s² × ${f1(s.H)} m = ${nj(E)} J. Your work supplies it: F × d = ${nj(E)} J, so d = ${nj(E)} J ÷ ${s.F} N = <b>${f2(E / s.F)} m</b>`;
+    },
+    hints: () => ['First find the GPE the pebble needs at the basket: GPE = mgh.', 'Set the work F × d equal to that GPE and solve for d.'],
+    mistakes: s => { const E = s.m * G * s.H; return [
+      { v: E, msg: "That's the energy needed, in joules. Now find the pull distance d that supplies it." },
+      { v: s.F / E, msg: 'Flip it: d = energy ÷ force.' },
+    ]; },
+    measured: f => f.peak ? `Flight check: the pebble peaked at h = <b>${f2(f.peak.h)} m</b>.` : null,
+  },
+  keAtH: {
+    unit: 'J', deps: ['d'], usesG: true,
+    prompt: s => `With a <b>${f2(s.d)} m</b> pull, what is the pebble's kinetic energy when it is <b>${f1(s.H)} m</b> above the ground (level with the top of the wall)?`,
+    answer: (s, g = G) => s.eta * s.F * s.d - s.m * g * s.H,
+    impossible: s => {
+      const KE0 = s.eta * s.F * s.d, U = s.m * G * s.H;
+      return KE0 < U ? `With d = ${f2(s.d)} m the pebble starts with only ${nj(KE0)} J of KE, but reaching ${f1(s.H)} m takes ${nj(U)} J of GPE. It will never get that high. Pull farther, then predict.` : null;
+    },
+    solution: s => {
+      const KE0 = s.eta * s.F * s.d, U = s.m * G * s.H;
+      return `KE at launch = ${s.F} N × ${f2(s.d)} m = ${nj(KE0)} J. GPE at ${f1(s.H)} m = mgh = ${f1(s.m)} kg × 10 m/s² × ${f1(s.H)} m = ${nj(U)} J. Energy is conserved, so KE = ${nj(KE0)} J − ${nj(U)} J = <b>${nj(KE0 - U)} J</b>`;
+    },
+    hints: () => ['Find the KE at launch first. With an ideal band it equals the work F × d.', 'On the way up, some KE turns into GPE = mgh. Subtract it.'],
+    mistakes: s => { const KE0 = s.eta * s.F * s.d, U = s.m * G * s.H; return [
+      { v: KE0, msg: "That's the KE at launch. As the pebble climbs, some of its KE becomes GPE." },
+      { v: U, msg: `That's the GPE at ${f1(s.H)} m. How much KE is left over?` },
+      { v: KE0 + U, msg: 'Climbing turns KE into GPE, so subtract the GPE instead of adding it.' },
+    ]; },
+    measured: (f, s) => f.cross ? `Flight check: KE at h = ${f1(s.H)} m was <b>${nj(f.cross.KE)} J</b>.` : `Flight check: this pebble never reached ${f1(s.H)} m.`,
+  },
+  eta: {
+    unit: '%', deps: [],
+    prompt: () => 'Use the test data to find the band\'s efficiency.',
+    answer: s => { const t = s.test; return 0.5 * t.m * t.v * t.v / (t.F * t.d) * 100; },
+    solution: s => { const t = s.test, KE = 0.5 * t.m * t.v * t.v, W = t.F * t.d;
+      return `Energy in: W = F × d = ${t.F} N × ${f2(t.d)} m = ${nj(W)} J. Useful energy out: KE = ½mv² = ½ × ${f1(t.m)} kg × (${f1(t.v)} m/s)² = ${nj(KE)} J. Efficiency = ${nj(KE)} J ÷ ${nj(W)} J × 100% = <b>${nj(KE / W * 100)}%</b>`; },
+    hints: () => ['Efficiency = useful energy out ÷ energy in × 100%.', "Energy in is the work F × d. Useful energy out is the pebble's KE = ½mv²."],
+    mistakes: s => { const t = s.test, W = t.F * t.d, KE = 0.5 * t.m * t.v * t.v; return [
+      { v: KE / W, msg: 'Right idea. Write efficiency as a percent: multiply by 100.' },
+      { v: W / KE * 100, msg: 'You divided input by output. Efficiency = useful output ÷ input.' },
+      { v: 2 * KE / W * 100, msg: 'Over 100% is impossible. Check the ½ in KE = ½mv².' },
+      { v: 0.5 * t.m * t.v / W * 100, msg: 'Square the speed in KE = ½mv².' },
+      { v: t.m * t.v / W * 100, msg: 'Use KE = ½mv² for the useful energy out (square v, and keep the ½).' },
+    ]; },
+    measured: f => `Flight check: this shot turned <b>${nj(f.lost)} J</b> of your ${nj(f.W)} J into heat.`,
+  },
+  lost: {
+    unit: 'J', deps: [],
+    prompt: s => `During that ${f2(s.test.d)} m test pull, how much energy turned into heat and sound in the band?`,
+    answer: s => { const t = s.test; return t.F * t.d - 0.5 * t.m * t.v * t.v; },
+    solution: s => { const t = s.test, W = t.F * t.d, KE = 0.5 * t.m * t.v * t.v;
+      return `Energy is conserved: lost = energy in − useful energy out = ${nj(W)} J − ${nj(KE)} J = <b>${nj(W - KE)} J</b>`; },
+    hints: () => ["Whatever work didn't become KE was turned into heat and sound.", 'Subtract the KE from the work you put in.'],
+    mistakes: s => { const t = s.test, W = t.F * t.d, KE = 0.5 * t.m * t.v * t.v; return [
+      { v: KE, msg: "That's the useful energy that reached the pebble. What's left of the work?" },
+      { v: W, msg: "That's all the energy you put in. Subtract the part that became KE." },
+      { v: W + KE, msg: 'Subtract the KE from the work instead of adding.' },
+    ]; },
+    measured: f => `Flight check: with your ${f2(f.d)} m pull, <b>${nj(f.lost)} J</b> became heat.`,
+  },
+  gpe0: {
+    unit: 'J', deps: [], usesG: true,
+    prompt: s => `Measured from the valley floor, what is the ${f1(s.m)} kg pebble's GPE at launch, ${f1(s.h0)} m up on the cliff?`,
+    answer: (s, g = G) => s.m * g * s.h0,
+    solution: s => `GPE = mgh = ${f1(s.m)} kg × 10 m/s² × ${f1(s.h0)} m = <b>${nj(s.m * G * s.h0)} J</b>`,
+    hints: () => ['GPE = mgh, with h measured from the valley floor.', 'Multiply mass × 10 m/s² × the cliff height.'],
+    mistakes: s => [
+      { v: s.m * s.h0, msg: 'Multiply by g = 10 m/s² too: GPE = mgh.' },
+      { v: s.m * G, msg: 'Include the height: GPE = mgh.' },
+    ],
+    measured: f => `Flight check: GPE at launch was <b>${nj(f.GPE0)} J</b>.`,
+  },
+  keFloor: {
+    unit: 'J', deps: ['d'], usesG: true,
+    prompt: s => `The band is ${pct(s.eta)}% efficient and you pull <b>${f2(s.d)} m</b>. What will the pebble's kinetic energy be when it reaches the valley floor (h = 0)?`,
+    answer: (s, g = G) => s.eta * s.F * s.d + s.m * g * s.h0,
+    solution: s => { const KE0 = s.eta * s.F * s.d, U = s.m * G * s.h0;
+      return `KE at launch = ${dec(s.eta)} × (${s.F} N × ${f2(s.d)} m) = ${nj(KE0)} J. Falling ${f1(s.h0)} m turns all ${nj(U)} J of GPE into KE. KE at the floor = ${nj(KE0)} J + ${nj(U)} J = <b>${nj(KE0 + U)} J</b>`; },
+    hints: () => ['Start with the KE at launch: work × efficiency.', 'As the pebble falls to h = 0, its GPE from part (a) becomes KE. Add it.'],
+    mistakes: s => { const W = s.F * s.d, KE0 = s.eta * W, U = s.m * G * s.h0; return [
+      { v: KE0, msg: "That's the KE at launch. The pebble gains KE as it falls." },
+      { v: W + U, msg: `Remember only ${pct(s.eta)}% of your work becomes KE.` },
+      { v: KE0 - U, msg: 'Falling turns GPE into KE, so add the GPE.' },
+      { v: W, msg: "That's just the work. Apply the efficiency, then add the GPE from the cliff." },
+    ]; },
+    measured: f => f.floor ? `Flight check: KE at h = 0 was <b>${nj(f.floor.KE)} J</b>.`
+      : (f.impact ? `Flight check: it hit at h = ${f2(f.impact.h)} m with <b>${nj(f.impact.KE)} J</b> of KE, before reaching the floor.` : null),
+  },
+};
+
+/* ---------- State ---------- */
+const cv = $('cv'), ctx = cv.getContext('2d');
+const bd = document.createElement('canvas');
+let scale = 1, cssScale = 1;
+let L = LEVELS[0], levelIndex = 0;
+let engine = null, world = null, terrain = [];
+let blocks = [], fiends = [], balloons = [];
+let pebbleBody = null, phase = 'aim';
+let flight = null, lastFlight = null, prevTrail = null;
+const aim = { d: 1.0, th: 45 };
+let pebbleMass = 1, shotsUsed = 0, armed = false;
+let qState = [], revealedAny = false;
+let stepsSinceLaunch = 0, stepsSinceImpact = 0, calmSteps = 0;
+let winTimer = -1, resultShown = false, hitThisStep = false;
+let particles = [], floats = [], breakQueue = [], removeQueue = [];
+let replayT = null, logRows = [], simTime = 0, aiming = false, sandboxCleared = false;
+const sandbox = { F: 150, m: 1, eta: 1, cliff: false, layout: 'L2' };
+const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---------- Saved stars (per browser) ---------- */
+const STORE = 'jouleLaunch.v1';
+let saved = { stars: {} };
+try { const raw = localStorage.getItem(STORE); if (raw) saved = Object.assign({ stars: {} }, JSON.parse(raw)); } catch (e) {}
+function saveStars(id, n) {
+  if ((saved.stars[id] || 0) >= n) return;
+  saved.stars[id] = n;
+  try { localStorage.setItem(STORE, JSON.stringify(saved)); } catch (e) {}
+}
+
+/* ---------- Setup helpers ---------- */
+function currentMass() { return L.sandbox ? sandbox.m : (L.choices ? pebbleMass : L.m); }
+function currentH0() { return L.sandbox ? (sandbox.cliff ? 8 : 0) : (L.h0 || 0); }
+function setup() {
+  return { F: L.sandbox ? sandbox.F : L.F, d: aim.d, th: aim.th, m: currentMass(), eta: L.sandbox ? sandbox.eta : L.eta,
+    h0: currentH0(), H: L.H, test: L.test };
+}
+function qKey(q, s) { return q.deps.map(k => s[k]).join('|'); }
+function targetsLeft() { return fiends.filter(f => f.alive).length + balloons.filter(b => !b.popped).length; }
+function shotsLeft() { return L.sandbox ? Infinity : L.shots - shotsUsed; }
+
+/* ---------- Physics world ---------- */
+function terrainFor(h0, walls) {
+  const R = [], BOT = -8;
+  if (h0 > 0) {
+    R.push({ x1: -6, x2: 46, top: 0, bot: BOT, kind: 'ground' });
+    R.push({ x1: -6, x2: PIT_L, top: h0, bot: 0, kind: 'cliff' });
+    R.push({ x1: PIT_R, x2: CLIFF_X, top: h0, bot: 0, kind: 'cliff' });
+    R.push({ x1: PIT_L, x2: PIT_R, top: h0 - PIT_D, bot: 0, kind: 'cliff' });
+  } else {
+    R.push({ x1: -6, x2: PIT_L, top: 0, bot: BOT, kind: 'ground' });
+    R.push({ x1: PIT_R, x2: 46, top: 0, bot: BOT, kind: 'ground' });
+    R.push({ x1: PIT_L, x2: PIT_R, top: -PIT_D, bot: BOT, kind: 'ground' });
+  }
+  for (const w of walls) R.push({ x1: w.x1, x2: w.x2, top: w.top, bot: 0, kind: 'wall' });
+  return R;
+}
+
+function buildWorld() {
+  engine = Engine.create({ enableSleeping: false, positionIterations: 12, velocityIterations: 10 });
+  engine.gravity.y = G * S / 1000;
+  world = engine.world;
+  pebbleBody = null;
+  terrain = terrainFor(currentH0(), L.walls || []);
+  for (const r of terrain) {
+    Composite.add(world, Bodies.rectangle(PX((r.x1 + r.x2) / 2), PY((r.top + r.bot) / 2), (r.x2 - r.x1) * S, (r.top - r.bot) * S,
+      { isStatic: true, label: 'terrain', friction: 0.9, collisionFilter: { category: CAT_TERRAIN, mask: 0xFFFF } }));
+  }
+  blocks = []; fiends = []; balloons = [];
+  const src = L.sandbox ? (LAYOUTS[sandbox.layout] >= 0 ? LEVELS[LAYOUTS[sandbox.layout]] : null) : L;
+  if (src) {
+    for (const [mat, x, y, w, h] of src.blocks || []) {
+      const b = Bodies.rectangle(PX(x), PY(y + h / 2), w * S, h * S, { label: 'block', friction: 0.8, frictionStatic: 1.2, restitution: 0.05 });
+      Body.setMass(b, MAT[mat].kg * w * h);
+      b.plugin = { mat, w, h, tough: MAT[mat].tough, broken: false };
+      blocks.push(b); Composite.add(world, b);
+    }
+    for (const [x, y] of src.fiends || []) {
+      const f = Bodies.circle(PX(x), PY(y + FIEND_R), FIEND_R * S, { label: 'fiend', friction: 0.9, frictionStatic: 1.5, restitution: 0.1 });
+      Body.setMass(f, FIEND_KG); Body.setInertia(f, Infinity);
+      const rec = { body: f, alive: true, sx: x, sh: y + FIEND_R, wob: Math.random() * TAU };
+      f.plugin = { fiend: rec };
+      fiends.push(rec); Composite.add(world, f);
+    }
+    for (const bl of src.balloons || []) balloons.push({ x: bl.x, H: bl.H, popped: false, popT: 0 });
+  }
+  Events.on(engine, 'collisionStart', onCollisionStart);
+  armed = false;
+  for (let k = 0; k < 120; k++) Engine.update(engine, 1000 / 60);
+  for (const f of fiends) { f.sx = WX(f.body.position.x); f.sh = WH(f.body.position.y); }
+  armed = true;
+}
+
+function onCollisionStart(ev) {
+  if (!armed) return;
+  for (const pair of ev.pairs) {
+    const A = pair.bodyA.parent || pair.bodyA, B = pair.bodyB.parent || pair.bodyB;
+    const rel = Math.hypot(A.velocity.x - B.velocity.x, A.velocity.y - B.velocity.y) * 60 / S;
+    let peb = null, other = null;
+    if (pebbleBody && A === pebbleBody) { peb = A; other = B; } else if (pebbleBody && B === pebbleBody) { peb = B; other = A; }
+    if (peb && flight) {
+      if (other.label === 'fiend') {
+        pair.isActive = false;
+        if (rel > 1) defeatFiend(other.plugin.fiend);
+        continue;
+      }
+      if (flight.free) hitThisStep = true;
+      if (other.label === 'block') {
+        const ke = 0.5 * flight.m * rel * rel;
+        if (ke >= 4) addFloat(peb.position.x, peb.position.y - flight.r * S - 8, nj(ke) + ' J', '#FFE7A8');
+        if (ke >= other.plugin.tough && !other.plugin.broken) {
+          other.plugin.broken = true; pair.isActive = false; breakQueue.push({ body: other, ke });
+        }
+      }
+    } else {
+      for (const [f] of [[A, B], [B, A]]) {
+        if (f.label === 'fiend' && f.plugin.fiend.alive && rel > 3.2) defeatFiend(f.plugin.fiend);
+      }
+    }
+  }
+}
+
+function defeatFiend(rec) {
+  if (!rec.alive) return;
+  rec.alive = false;
+  removeQueue.push(rec.body);
+  const p = rec.body.position;
+  puff(p.x, p.y, '#9D72E6', 16);
+  addFloat(p.x, p.y - 26, 'Poof!', '#E3D2FF');
+  updateHUD();
+}
+function popBalloon(b) {
+  b.popped = true; b.popT = simTime;
+  const X = PX(b.x), Y = PY(b.H + 2.6);
+  confetti(X, Y);
+  puff(PX(b.x), PY(b.H + 0.75), '#9D72E6', 14);
+  addFloat(X, Y - 30, 'Pop!', '#FFE7A8');
+  if (flight) flight.popped = true;
+  updateHUD();
+}
+
+/* ---------- Flight math (exact, g = 10, no drag) ---------- */
+function flightAt(F, t) {
+  const c = Math.cos(F.th), sn = Math.sin(F.th);
+  const vx = F.v0 * c, vh = F.v0 * sn - G * t;
+  const x = F.x0 + vx * t, h = F.h0 + F.v0 * sn * t - 0.5 * G * t * t;
+  const v = Math.hypot(vx, vh);
+  return { x, h, vx, vh, v, KE: 0.5 * F.m * v * v };
+}
+function tGround(F) { const vy = F.v0 * Math.sin(F.th); return (vy + Math.sqrt(vy * vy + 2 * G * F.h0)) / G; }
+function tShow(F) { return Math.min(F.tEnd != null ? F.tEnd : F.t, tGround(F)); }
+function snapAt(F, t) {
+  const p = flightAt(F, t);
+  return { t, x: p.x, h: p.h, v: p.v, KE: p.KE, GPE: F.m * G * p.h, heat: F.lost, total: F.W + F.GPE0, W: F.W };
+}
+function makeFlight(s) {
+  const th = s.th * Math.PI / 180, W = s.F * s.d, KE0 = s.eta * W;
+  return { t: 0, x0: X0, h0: s.h0, th, deg: s.th, d: s.d, m: s.m, r: pebR(s.m), v0: Math.sqrt(2 * KE0 / s.m), W, KE0, lost: W - KE0,
+    GPE0: s.m * G * s.h0, H: L.H != null ? L.H : null, trail: [[X0, s.h0]], peak: null, cross: null, floor: null, impact: null,
+    tEnd: null, free: true, terrainOn: false, popped: false, offMap: false };
+}
+
+/* ---------- Launch and shot flow ---------- */
+function canLaunch() {
+  if (phase !== 'aim' || resultShown || shotsLeft() <= 0) return false;
+  if (L.sandbox) return true;
+  const s = setup();
+  return L.questions.every((qid, i) => qState[i].status !== 'open' && qState[i].key === qKey(QS[qid], s));
+}
+
+function launch() {
+  if (!canLaunch()) return;
+  const s = setup();
+  if (lastFlight) prevTrail = lastFlight.trail;
+  flight = makeFlight(s);
+  pebbleBody = Bodies.circle(PX(X0), PY(s.h0), flight.r * S, { label: 'pebble', friction: 0.5, frictionStatic: 0.6, frictionAir: 0,
+    restitution: 0.25, collisionFilter: { category: 0x0001, mask: 0xFFFF & ~CAT_TERRAIN } });
+  Body.setMass(pebbleBody, s.m);
+  Composite.add(world, pebbleBody);
+  phase = 'flight'; shotsUsed++; stepsSinceLaunch = 0; stepsSinceImpact = 0; calmSteps = 0; replayT = null;
+  $('replay').disabled = true; $('replayOut').textContent = '—';
+  for (const el of document.querySelectorAll('.q-measured')) { el.hidden = true; el.innerHTML = ''; }
+  updateHUD(); updateLaunchBtn();
+}
+
+function finishFreeFlight() {
+  const F = flight;
+  lastFlight = F;
+  const tMax = tShow(F);
+  const rp = $('replay');
+  rp.max = String(Math.max(1, Math.round(tMax * 100)));
+  rp.value = rp.max; rp.disabled = false;
+  $('replayOut').textContent = 'drag to replay';
+  const peak = F.peak && F.peak.h != null ? f2(F.peak.h) : '—';
+  logRows.unshift({ n: logRows.length + 1, lvl: L.sandbox ? 'Sandbox' : String(L.id), m: f1(F.m), d: f2(F.d), th: String(F.deg),
+    W: nj(F.W), KE0: nj(F.KE0), v0: f2(F.v0), peak, ki: F.offMap ? 'off map' : nj(snapAt(F, tMax).KE) });
+  renderLog();
+  if (!L.sandbox) {
+    const s = setup();
+    L.questions.forEach((qid, i) => {
+      const el = document.querySelector(`.q[data-i="${i}"] .q-measured`);
+      const txt = QS[qid].measured(F, s);
+      if (el && txt) { el.innerHTML = txt; el.hidden = false; }
+    });
+  }
+}
+
+function endShot() {
+  if (pebbleBody) { Composite.remove(world, pebbleBody); pebbleBody = null; }
+  flight = null;
+  if (resultShown || winTimer > 0) { phase = 'over'; return; }
+  if (!L.sandbox && shotsUsed >= L.shots && targetsLeft() > 0) { phase = 'over'; finishLevel(false); return; }
+  phase = 'aim';
+  updateHUD(); updateLaunchBtn();
+}
+
+function finishLevel(win) {
+  resultShown = true; phase = 'over';
+  const c = $('ocard');
+  const isLast = levelIndex >= LEVELS.length - 1;
+  if (win) {
+    const stars = [!revealedAny, true, shotsUsed <= L.par];
+    saveStars(L.id, stars.filter(Boolean).length);
+    const lab = ['Predicted without the solution', 'Every Fiend defeated', `Cleared in ${L.par} pebble${L.par > 1 ? 's' : ''} or fewer`];
+    c.innerHTML = `<p class="o-eyebrow">Level ${L.id} · ${L.name}</p>
+      <h2 class="o-title">Fort cleared!</h2>
+      <p class="o-text">You used ${shotsUsed} pebble${shotsUsed > 1 ? 's' : ''}.</p>
+      <ul class="o-stars">${stars.map((on, i) => `<li class="${on ? 'on' : ''}"><span class="s" aria-hidden="true">★</span><span>${lab[i]}${on ? '' : ' (not this time)'}</span></li>`).join('')}</ul>
+      <div class="o-actions"><button type="button" class="btn-primary" id="oNext">${isLast ? 'Open the sandbox' : 'Next level'}</button><button type="button" class="btn-ghost" id="oAgain">Play again</button></div>`;
+    $('oNext').onclick = () => loadLevel(levelIndex + 1);
+  } else {
+    const n = targetsLeft();
+    c.innerHTML = `<p class="o-eyebrow">Level ${L.id} · ${L.name}</p>
+      <h2 class="o-title">Out of pebbles</h2>
+      <p class="o-text">${n} Friction Fiend${n > 1 ? 's are' : ' is'} still standing. Check the energy tracker and flight log, then try a different pull or angle.</p>
+      <div class="o-actions"><button type="button" class="btn-primary" id="oAgain">Try again</button></div>`;
+  }
+  $('oAgain').onclick = () => loadLevel(levelIndex);
+  $('overlay').hidden = false;
+  updateLaunchBtn(); renderNav();
+  setTimeout(() => { const b = c.querySelector('.btn-primary'); if (b) b.focus({ preventScroll: true }); }, 50);
+}
+
+/* ---------- Fixed-step simulation ---------- */
+function step() {
+  simTime += 1 / 60;
+  const F = flight;
+  if (F && F.free && pebbleBody) {
+    const p = flightAt(F, F.t);
+    Body.setPosition(pebbleBody, { x: PX(p.x), y: PY(p.h) });
+    Body.setVelocity(pebbleBody, { x: p.vx * S / 60, y: -p.vh * S / 60 });
+    Body.setAngularVelocity(pebbleBody, 0.12);
+  }
+  hitThisStep = false;
+  Engine.update(engine, 1000 / 60);
+
+  if (F && F.free) {
+    const prev = flightAt(F, F.t);
+    F.t += 1 / 60;
+    const p = flightAt(F, F.t);
+    if (!F.terrainOn && (p.vh < 0 || p.h - F.r > F.h0 + 0.05 || p.x > PIT_R + 4)) {
+      pebbleBody.collisionFilter.mask = 0xFFFF; F.terrainOn = true;
+    }
+    if (!F.peak && prev.vh > 0 && p.vh <= 0) F.peak = flightAt(F, F.v0 * Math.sin(F.th) / G);
+    if (F.H != null && !F.cross && prev.h < F.H && p.h >= F.H) F.cross = { KE: F.KE0 + F.m * G * (F.h0 - F.H) };
+    if (F.h0 > 0 && !F.floor && prev.h > 0 && p.h <= 0) F.floor = { KE: F.KE0 + F.m * G * F.h0 };
+    for (const b of balloons) {
+      if (b.popped || Math.abs(p.x - b.x) > 0.9) continue;
+      if (p.h >= b.H - 0.02 || (F.peak && F.peak.h >= b.H - 0.02)) popBalloon(b);
+    }
+    if (stepsSinceLaunch % 2 === 0) F.trail.push([p.x, p.h]);
+    if (hitThisStep) {
+      F.free = false; F.tEnd = F.t; F.impact = { t: F.t, x: p.x, h: p.h, v: p.v, KE: p.KE };
+      F.trail.push([p.x, p.h]);
+      pebbleBody.frictionAir = 0.012; phase = 'crash'; stepsSinceImpact = 0;
+      finishFreeFlight();
+    } else if (p.x > 34 || p.x < -3 || p.h < -6) {
+      F.free = false; F.tEnd = F.t; F.offMap = true; phase = 'gone'; stepsSinceImpact = 0;
+      if (pebbleBody) { Composite.remove(world, pebbleBody); pebbleBody = null; }
+      finishFreeFlight();
+    }
+  }
+
+  for (const br of breakQueue) {
+    Composite.remove(world, br.body);
+    shards(br.body);
+    if (pebbleBody) {
+      const k = Math.sqrt(Math.max(0.05, 1 - br.body.plugin.tough / br.ke));
+      Body.setVelocity(pebbleBody, { x: pebbleBody.velocity.x * k, y: pebbleBody.velocity.y * k });
+    }
+  }
+  breakQueue.length = 0;
+
+  for (const f of fiends) {
+    if (!f.alive) continue;
+    const x = WX(f.body.position.x), h = WH(f.body.position.y);
+    if (Math.hypot(x - f.sx, h - f.sh) > 1.2 || x < -3 || x > 36 || h < -5) defeatFiend(f);
+  }
+  for (const b of removeQueue) Composite.remove(world, b);
+  removeQueue.length = 0;
+  for (const b of Composite.allBodies(world)) {
+    if (!b.isStatic && b !== pebbleBody && (b.position.x > PX(40) || b.position.y > PY(-8))) { if (b.plugin) b.plugin.gone = true; Composite.remove(world, b); }
+  }
+
+  if (phase === 'flight' || phase === 'crash' || phase === 'gone') {
+    stepsSinceLaunch++;
+    if (phase !== 'flight') {
+      stepsSinceImpact++;
+      const moving = Composite.allBodies(world).some(b => !b.isStatic && b.speed * 60 / S > 0.25);
+      calmSteps = moving ? 0 : calmSteps + 1;
+      if (calmSteps > 40 || stepsSinceImpact > 60 * 6) endShot();
+    } else if (stepsSinceLaunch > 60 * 12) {
+      flight.free = false; flight.tEnd = flight.t; finishFreeFlight(); endShot();
+    }
+  }
+
+  if (!L.sandbox && !resultShown && winTimer < 0 && targetsLeft() === 0) winTimer = 80;
+  if (winTimer > 0 && --winTimer === 0) finishLevel(true);
+  if (L.sandbox && !sandboxCleared && (fiends.length || balloons.length) && targetsLeft() === 0) {
+    sandboxCleared = true; addFloat(CW / 2, 160, 'Fort cleared! Rebuild to play again.', '#FFE7A8', 3);
+  }
+
+  for (const p of particles) { p.x += p.vx; p.y += p.vy; p.vy += p.g; p.vx *= 0.99; p.rot += p.vr; p.life -= 1 / 60; }
+  particles = particles.filter(p => p.life > 0);
+  for (const t of floats) { t.y -= 0.5; t.life -= 1 / 60; }
+  floats = floats.filter(t => t.life > 0);
+}
+
+/* ---------- Effects ---------- */
+function puff(x, y, color, n) {
+  if (reduceMotion) n = Math.ceil(n / 3);
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * TAU, sp = 0.6 + Math.random() * 2;
+    particles.push({ type: 'puff', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 0.5, g: 0.02, life: 0.7 + Math.random() * 0.4, max: 1.1, size: 6 + Math.random() * 8, color, rot: 0, vr: 0 });
+  }
+}
+function confetti(x, y) {
+  const cols = ['#E8574A', '#F7E9D0', '#F7B538', '#5CC6F2'];
+  for (let i = 0; i < (reduceMotion ? 8 : 26); i++) {
+    const a = Math.random() * TAU, sp = 1 + Math.random() * 3;
+    particles.push({ type: 'shard', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 1, g: 0.12, life: 1.2, max: 1.2, size: 5, w: 6, h: 3, color: cols[i % 4], rot: Math.random() * TAU, vr: (Math.random() - 0.5) * 0.4 });
+  }
+}
+function shards(body) {
+  const col = { wood: '#C98E4E', glass: '#BFE9F8', stone: '#9EA6AF' }[body.plugin.mat];
+  const n = reduceMotion ? 4 : 12;
+  for (let i = 0; i < n; i++) {
+    particles.push({ type: 'shard', x: body.position.x + (Math.random() - 0.5) * body.plugin.w * S, y: body.position.y + (Math.random() - 0.5) * body.plugin.h * S,
+      vx: (Math.random() - 0.3) * 4, vy: -Math.random() * 4, g: 0.25, life: 1.0, max: 1.0, w: 6 + Math.random() * 8, h: 4 + Math.random() * 4, color: col, rot: Math.random() * TAU, vr: (Math.random() - 0.5) * 0.5 });
+  }
+}
+function addFloat(x, y, text, color, life = 1.3) { floats.push({ x, y, text, color, life, max: life }); }
+
+/* ---------- Rendering ---------- */
+function resize() {
+  const r = $('frame').getBoundingClientRect();
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  cv.width = Math.max(320, Math.round(r.width * dpr));
+  cv.height = Math.round(cv.width * CH / CW);
+  scale = cv.width / CW;
+  cssScale = Math.max(0.2, r.width / CW);
+  renderBackdrop();
+}
+
+function mesa(c, x, w, h, color) {
+  c.fillStyle = color;
+  c.beginPath();
+  c.moveTo(x - 30, GY); c.lineTo(x + w * 0.08, GY - h); c.lineTo(x + w * 0.35, GY - h); c.lineTo(x + w * 0.4, GY - h - 12);
+  c.lineTo(x + w * 0.78, GY - h - 12); c.lineTo(x + w * 0.84, GY - h + 6); c.lineTo(x + w * 0.92, GY - h + 6); c.lineTo(x + w + 30, GY);
+  c.closePath(); c.fill();
+}
+function cloud(c, x, y, s) {
+  c.fillStyle = 'rgba(255,255,255,0.85)';
+  c.beginPath();
+  for (const [dx, dy, r] of [[0, 0, 26], [30, -12, 30], [62, 0, 24], [30, 8, 26]]) { c.moveTo(x + dx * s + r * s, y + dy * s); c.arc(x + dx * s, y + dy * s, r * s, 0, TAU); }
+  c.fill();
+}
+function label(c, text, X, Y, opt = {}) {
+  c.font = opt.font || '600 16px "IBM Plex Mono", ui-monospace, monospace';
+  const w = c.measureText(text).width, padX = 7, hgt = opt.h || 24;
+  let x = X;
+  if (opt.align === 'center') x = X - w / 2 - padX; else if (opt.align === 'right') x = X - w - padX * 2;
+  c.fillStyle = opt.bg || 'rgba(12,26,44,0.82)';
+  c.beginPath(); c.roundRect(x, Y - hgt / 2, w + padX * 2, hgt, 6); c.fill();
+  c.fillStyle = opt.color || '#EEF3FA';
+  c.textBaseline = 'middle'; c.textAlign = 'left';
+  c.fillText(text, x + padX, Y + 1);
+}
+
+function renderBackdrop() {
+  bd.width = cv.width; bd.height = cv.height;
+  const c = bd.getContext('2d');
+  c.setTransform(scale, 0, 0, scale, 0, 0);
+  const sky = c.createLinearGradient(0, 0, 0, GY);
+  sky.addColorStop(0, '#5DB7E8'); sky.addColorStop(0.6, '#AEDDF3'); sky.addColorStop(1, '#F6E3BF');
+  c.fillStyle = sky; c.fillRect(0, 0, CW, CH);
+  const sun = c.createRadialGradient(1090, 110, 10, 1090, 110, 120);
+  sun.addColorStop(0, 'rgba(255,244,200,1)'); sun.addColorStop(0.3, 'rgba(255,236,170,0.8)'); sun.addColorStop(1, 'rgba(255,236,170,0)');
+  c.fillStyle = sun; c.fillRect(960, 0, 260, 240);
+  c.fillStyle = '#FFF4CF'; c.beginPath(); c.arc(1090, 110, 38, 0, TAU); c.fill();
+  cloud(c, 330, 120, 1); cloud(c, 720, 70, 0.8); cloud(c, 900, 200, 0.7); cloud(c, 120, 230, 0.6);
+  mesa(c, 40, 300, 150, '#E7C7A5'); mesa(c, 430, 260, 105, '#E7C7A5'); mesa(c, 790, 330, 170, '#E7C7A5'); mesa(c, 1120, 220, 120, '#E7C7A5');
+  mesa(c, 250, 220, 70, '#D9A577'); mesa(c, 640, 260, 60, '#D9A577'); mesa(c, 1000, 240, 85, '#D9A577');
+
+  const h0 = currentH0();
+  // pit cavity (back wall)
+  const cavTop = PY(h0), cavBot = PY(h0 - PIT_D);
+  const cav = c.createLinearGradient(0, cavTop, 0, cavBot);
+  cav.addColorStop(0, '#5A3B22'); cav.addColorStop(1, '#2E1D10');
+  c.fillStyle = cav; c.fillRect(PX(PIT_L), cavTop, PX(PIT_R - PIT_L), cavBot - cavTop);
+
+  for (const r of terrain) {
+    const x = PX(r.x1), y = PY(r.top), w = PX(r.x2 - r.x1), hgt = PY(r.bot) - y;
+    if (r.kind === 'ground') {
+      const g = c.createLinearGradient(0, y, 0, y + 120);
+      g.addColorStop(0, '#CF9A5E'); g.addColorStop(1, '#8B5A33');
+      c.fillStyle = g; c.fillRect(x, y, w, hgt);
+      c.fillStyle = '#E8C185'; c.fillRect(x, y, w, 6);
+      c.strokeStyle = 'rgba(90,55,28,0.35)'; c.lineWidth = 2;
+      for (let k = 1; k < 4; k++) { c.beginPath(); c.moveTo(x, y + 26 * k); c.lineTo(x + w, y + 26 * k + (k % 2 ? 3 : -2)); c.stroke(); }
+    } else if (r.kind === 'cliff') {
+      const g = c.createLinearGradient(x, 0, x + w, 0);
+      g.addColorStop(0, '#B97B4D'); g.addColorStop(1, '#9C6038');
+      c.fillStyle = g; c.fillRect(x, y, w, hgt);
+      c.fillStyle = '#E2B47A'; c.fillRect(x, y, w, 6);
+      c.strokeStyle = 'rgba(80,45,20,0.35)'; c.lineWidth = 2;
+      for (let yy = y + 30; yy < y + hgt; yy += 34) { c.beginPath(); c.moveTo(x, yy); c.lineTo(x + w, yy + 4); c.stroke(); }
+    } else if (r.kind === 'wall') {
+      c.fillStyle = '#9AA2AC'; c.fillRect(x, y, w, hgt);
+      c.strokeStyle = '#5E6670'; c.lineWidth = 2; c.strokeRect(x + 1, y + 1, w - 2, hgt - 2);
+      c.lineWidth = 1.5;
+      for (let row = 0, yy = y; yy < y + hgt; yy += 20, row++) {
+        c.beginPath(); c.moveTo(x, yy); c.lineTo(x + w, yy); c.stroke();
+        const off = row % 2 ? w / 2 : w / 4;
+        c.beginPath(); c.moveTo(x + off, yy); c.lineTo(x + off, Math.min(yy + 20, y + hgt)); c.stroke();
+      }
+    }
+  }
+  // pit rim shading
+  c.fillStyle = 'rgba(0,0,0,0.25)';
+  c.fillRect(PX(PIT_L), cavTop, 6, cavBot - cavTop); c.fillRect(PX(PIT_R) - 6, cavTop, 6, cavBot - cavTop);
+
+  // height ruler
+  c.strokeStyle = 'rgba(12,26,44,0.75)'; c.lineWidth = 2;
+  c.beginPath(); c.moveTo(10, PY(0)); c.lineTo(10, PY(13)); c.stroke();
+  const small = { font: '600 14px "IBM Plex Mono", ui-monospace, monospace', h: 21 };
+  for (let m = 0; m <= 13; m++) {
+    const yy = PY(m), long = m % 2 === 0;
+    c.beginPath(); c.moveTo(10, yy); c.lineTo(10 + (long ? 12 : 6), yy); c.stroke();
+    if (long && m > 0) label(c, m + ' m', 26, yy, small);
+  }
+  label(c, 'h = 0', 26, PY(0) - 15, small);
+  if (h0 > 0) label(c, `h₀ = ${f1(h0)} m`, PX(X0), PY(h0) - 58, { align: 'center' });
+
+  // distance ruler (from the sling)
+  const ry = GY + 34;
+  c.strokeStyle = 'rgba(40,22,10,0.7)'; c.lineWidth = 2;
+  c.beginPath(); c.moveTo(PX(X0 + 1), ry); c.lineTo(PX(32), ry); c.stroke();
+  for (let m = 1; X0 + m <= 32; m++) {
+    const xx = PX(X0 + m), long = m % 4 === 0;
+    c.beginPath(); c.moveTo(xx, ry); c.lineTo(xx, ry - (long ? 10 : 5)); c.stroke();
+    if (long) label(c, m + ' m', xx, ry + 18, { ...small, align: 'center', bg: 'rgba(40,22,10,0.6)' });
+  }
+  label(c, 'distance from the sling', PX(X0 + 1), ry + 48, { ...small, bg: 'rgba(40,22,10,0.6)' });
+}
+
+function drawBlock(b) {
+  const { mat, w, h } = b.plugin, W = w * S, Hh = h * S;
+  ctx.save(); ctx.translate(b.position.x, b.position.y); ctx.rotate(b.angle);
+  if (mat === 'wood') {
+    ctx.fillStyle = '#C98E4E'; ctx.fillRect(-W / 2, -Hh / 2, W, Hh);
+    ctx.strokeStyle = '#E0AD72'; ctx.lineWidth = 1.5;
+    const horiz = W >= Hh, n = 2;
+    for (let k = 1; k <= n; k++) {
+      ctx.beginPath();
+      if (horiz) { const yy = -Hh / 2 + Hh * k / (n + 1); ctx.moveTo(-W / 2 + 4, yy); ctx.lineTo(W / 2 - 4, yy); }
+      else { const xx = -W / 2 + W * k / (n + 1); ctx.moveTo(xx, -Hh / 2 + 4); ctx.lineTo(xx, Hh / 2 - 4); }
+      ctx.stroke();
+    }
+    ctx.strokeStyle = '#7A4E24'; ctx.lineWidth = 2; ctx.strokeRect(-W / 2 + 1, -Hh / 2 + 1, W - 2, Hh - 2);
+  } else if (mat === 'glass') {
+    ctx.fillStyle = 'rgba(190,233,248,0.78)'; ctx.fillRect(-W / 2, -Hh / 2, W, Hh);
+    ctx.strokeStyle = 'rgba(255,255,255,0.9)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(-W / 2 + 5, Hh / 2 - 8); ctx.lineTo(-W / 2 + Math.min(W, Hh) * 0.5, -Hh / 2 + 6); ctx.stroke();
+    ctx.strokeStyle = '#4E98B8'; ctx.lineWidth = 2; ctx.strokeRect(-W / 2 + 1, -Hh / 2 + 1, W - 2, Hh - 2);
+  } else {
+    ctx.fillStyle = '#A3ABB5'; ctx.fillRect(-W / 2, -Hh / 2, W, Hh);
+    ctx.fillStyle = 'rgba(70,78,88,0.35)';
+    for (const [px, py, r] of [[-0.25, -0.2, 3], [0.2, 0.15, 4], [-0.1, 0.3, 2.5], [0.3, -0.3, 2]]) { ctx.beginPath(); ctx.arc(px * W, py * Hh, r, 0, TAU); ctx.fill(); }
+    ctx.strokeStyle = '#5E6670'; ctx.lineWidth = 2.5; ctx.strokeRect(-W / 2 + 1, -Hh / 2 + 1, W - 2, Hh - 2);
+  }
+  ctx.restore();
+}
+
+function drawFiend(X, Y, r, wob) {
+  ctx.save(); ctx.translate(X, Y);
+  const t = simTime * 2 + wob;
+  ctx.scale(1 + Math.sin(t) * 0.025, 1 - Math.sin(t) * 0.025);
+  // horns
+  ctx.fillStyle = '#F4B14A'; ctx.strokeStyle = '#8A5A12'; ctx.lineWidth = 1.5;
+  for (const sgn of [-1, 1]) {
+    ctx.beginPath(); ctx.moveTo(sgn * r * 0.25, -r * 0.8); ctx.lineTo(sgn * r * 0.62, -r * 1.42); ctx.lineTo(sgn * r * 0.62, -r * 0.62); ctx.closePath(); ctx.fill(); ctx.stroke();
+  }
+  // fuzzy body
+  ctx.beginPath();
+  const n = 18;
+  for (let i = 0; i <= n * 2; i++) { const a = i / (n * 2) * TAU, rr = i % 2 ? r * 0.96 : r * 1.1; ctx.lineTo(Math.cos(a) * rr, Math.sin(a) * rr); }
+  ctx.closePath();
+  ctx.fillStyle = '#7B4DCC'; ctx.fill(); ctx.strokeStyle = '#43237E'; ctx.lineWidth = 1.5; ctx.stroke();
+  ctx.fillStyle = '#9D72E6'; ctx.beginPath(); ctx.ellipse(0, r * 0.3, r * 0.55, r * 0.45, 0, 0, TAU); ctx.fill();
+  // eyes
+  for (const sgn of [-1, 1]) {
+    ctx.fillStyle = '#FFE066'; ctx.beginPath(); ctx.ellipse(sgn * r * 0.34, -r * 0.2, r * 0.22, r * 0.25, 0, 0, TAU); ctx.fill();
+    ctx.fillStyle = '#1B0F2E'; ctx.beginPath(); ctx.ellipse(sgn * r * 0.34 - r * 0.05, -r * 0.18, r * 0.06, r * 0.17, 0, 0, TAU); ctx.fill();
+  }
+  // grin with one fang
+  ctx.fillStyle = '#FFFFFF'; ctx.strokeStyle = '#2A1550'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(-r * 0.42, r * 0.2); ctx.quadraticCurveTo(0, r * 0.68, r * 0.42, r * 0.2); ctx.quadraticCurveTo(0, r * 0.36, -r * 0.42, r * 0.2); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(r * 0.1, r * 0.31); ctx.lineTo(r * 0.18, r * 0.5); ctx.lineTo(r * 0.24, r * 0.3); ctx.fill();
+  ctx.restore();
+}
+
+function drawPebble(X, Y, rpx, angle, m) {
+  const heavy = m >= 3;
+  ctx.save(); ctx.translate(X, Y);
+  const g = ctx.createRadialGradient(-rpx * 0.35, -rpx * 0.4, rpx * 0.1, 0, 0, rpx);
+  g.addColorStop(0, heavy ? '#8D959F' : '#C3D1DE'); g.addColorStop(1, heavy ? '#3B4149' : '#5C7086');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, rpx, 0, TAU); ctx.fill();
+  ctx.lineWidth = 2; ctx.strokeStyle = heavy ? '#22272D' : '#3E5064'; ctx.stroke();
+  ctx.save(); ctx.rotate(angle);
+  ctx.fillStyle = heavy ? 'rgba(20,24,30,0.4)' : 'rgba(40,58,78,0.35)';
+  for (const [a, d, s] of [[0.4, 0.6, 0.09], [2.1, 0.55, 0.07], [3.6, 0.7, 0.08], [5.0, 0.45, 0.06]]) { ctx.beginPath(); ctx.arc(Math.cos(a) * d * rpx, Math.sin(a) * d * rpx, s * rpx, 0, TAU); ctx.fill(); }
+  ctx.restore();
+  for (const sgn of [-1, 1]) {
+    ctx.fillStyle = '#FFFFFF'; ctx.beginPath(); ctx.arc(sgn * rpx * 0.3 + rpx * 0.08, -rpx * 0.12, rpx * 0.2, 0, TAU); ctx.fill();
+    ctx.fillStyle = '#10161E'; ctx.beginPath(); ctx.arc(sgn * rpx * 0.3 + rpx * 0.15, -rpx * 0.1, rpx * 0.09, 0, TAU); ctx.fill();
+  }
+  ctx.strokeStyle = '#10161E'; ctx.lineWidth = 2; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(-rpx * 0.05, rpx * 0.35); ctx.lineTo(rpx * 0.32, rpx * 0.3); ctx.stroke();
+  ctx.restore();
+}
+
+function slingGeom() {
+  const h0 = currentH0();
+  return { base: [PX(X0), PY(h0 - PIT_D)], crotch: [PX(X0), PY(h0 - 0.75)], tipL: [PX(X0 - 0.4), PY(h0 + 0.32)], tipR: [PX(X0 + 0.4), PY(h0 + 0.32)], rest: [PX(X0), PY(h0 + 0.12)] };
+}
+function drawArm(a, b, w) {
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = '#4E2E14'; ctx.lineWidth = w + 3; ctx.beginPath(); ctx.moveTo(...a); ctx.lineTo(...b); ctx.stroke();
+  ctx.strokeStyle = '#8A5A2E'; ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(...a); ctx.lineTo(...b); ctx.stroke();
+}
+function drawBand(from, to) {
+  ctx.strokeStyle = '#3A1E10'; ctx.lineWidth = 6; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(...from); ctx.lineTo(...to); ctx.stroke();
+}
+function loadedPebblePos() {
+  const h0 = currentH0(), th = aim.th * Math.PI / 180;
+  return [X0 - aim.d * Math.cos(th), h0 - aim.d * Math.sin(th)];
+}
+
+function drawTrail(tr, alpha) {
+  if (!tr) return;
+  ctx.fillStyle = `rgba(255,255,255,${alpha})`; ctx.strokeStyle = `rgba(12,26,44,${alpha * 0.6})`; ctx.lineWidth = 1;
+  for (let i = 0; i < tr.length; i += 2) { ctx.beginPath(); ctx.arc(PX(tr[i][0]), PY(tr[i][1]), 2.6, 0, TAU); ctx.fill(); ctx.stroke(); }
+}
+
+function drawBalloon(b) {
+  if (b.popped) return;
+  const X = PX(b.x), baseY = PY(b.H + 0.3);
+  const sway = Math.sin(simTime * 1.2) * 3;
+  // basket
+  ctx.fillStyle = '#8A5A2E'; ctx.strokeStyle = '#4E2E14'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.roundRect(X - 18, baseY - 18, 36, 18, 3); ctx.fill(); ctx.stroke();
+  ctx.strokeStyle = '#C89A64'; ctx.lineWidth = 1;
+  for (let k = -12; k <= 12; k += 8) { ctx.beginPath(); ctx.moveTo(X + k, baseY - 17); ctx.lineTo(X + k, baseY - 1); ctx.stroke(); }
+  drawFiend(X, baseY - 26, FIEND_R * S * 0.85, 1);
+  ctx.fillStyle = '#8A5A2E'; ctx.fillRect(X - 19, baseY - 19, 38, 5);
+  // ropes and envelope
+  const eY = PY(b.H + 2.6) + sway * 0.3;
+  ctx.strokeStyle = '#5A3A1E'; ctx.lineWidth = 1.5;
+  for (const k of [-16, 16]) { ctx.beginPath(); ctx.moveTo(X + k, baseY - 18); ctx.lineTo(X + k * 0.8 + sway, eY + 34); ctx.stroke(); }
+  ctx.save(); ctx.translate(X + sway, eY);
+  ctx.beginPath(); ctx.ellipse(0, 0, 36, 44, 0, 0, TAU); ctx.clip();
+  for (let k = -3; k <= 3; k++) { ctx.fillStyle = k % 2 ? '#F7E9D0' : '#E8574A'; ctx.fillRect(k * 12 - 6, -46, 12, 92); }
+  ctx.restore();
+  ctx.strokeStyle = '#7D2A20'; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(X + sway, eY, 36, 44, 0, 0, TAU); ctx.stroke();
+}
+
+function draw() {
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.drawImage(bd, 0, 0);
+  ctx.setTransform(scale, 0, 0, scale, 0, 0);
+  const h0 = currentH0();
+
+  // reference line for the level's key height
+  if (L.H != null) {
+    ctx.save(); ctx.setLineDash([10, 8]); ctx.strokeStyle = 'rgba(247,181,56,0.95)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(PX(0.6), PY(L.H)); ctx.lineTo(CW, PY(L.H)); ctx.stroke(); ctx.restore();
+    label(ctx, `h = ${f1(L.H)} m`, PX(5.4), PY(L.H) - 16, { color: '#FFE2A0' });
+  }
+
+  drawTrail(prevTrail, 0.35);
+  if (lastFlight && lastFlight !== flight) drawTrail(lastFlight.trail, 0.85);
+  if (flight) drawTrail(flight.trail, 0.95);
+
+  const sg = slingGeom();
+  drawArm(sg.base, sg.crotch, 11);
+  drawArm(sg.crotch, sg.tipL, 8);
+  const loaded = phase === 'aim' && !resultShown;
+  let pp = null;
+  if (loaded) { const [x, h] = loadedPebblePos(); pp = [PX(x), PY(h)]; }
+  if (pp) drawBand(sg.tipL, pp); else { drawBand(sg.tipL, sg.rest); }
+
+  for (const b of blocks) if (!b.plugin.broken && !b.plugin.gone) drawBlock(b);
+  for (const f of fiends) if (f.alive) drawFiend(f.body.position.x, f.body.position.y, FIEND_R * S, f.wob);
+  for (const b of balloons) drawBalloon(b);
+
+  if (pp) {
+    const m = currentMass(), r = pebR(m) * S;
+    ctx.fillStyle = '#3A1E10'; ctx.beginPath(); ctx.ellipse(pp[0] - r * 0.5, pp[1], r * 0.45, r * 0.75, 0, 0, TAU); ctx.fill();
+    drawPebble(pp[0], pp[1], r, 0, m);
+  }
+  if (pebbleBody) drawPebble(pebbleBody.position.x, pebbleBody.position.y, flight.r * S, pebbleBody.angle, flight.m);
+
+  if (pp) drawBand(sg.tipR, pp); else drawBand(sg.tipR, sg.rest);
+  drawArm(sg.crotch, sg.tipR, 8);
+
+  // peak marker
+  const pf = flight || lastFlight;
+  if (pf && pf.peak) {
+    const X = PX(pf.peak.x), Y = PY(pf.peak.h);
+    if (Y > 10) {
+      ctx.fillStyle = '#F7B538'; ctx.strokeStyle = '#3A2500'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(X, Y - 7); ctx.lineTo(X + 6, Y); ctx.lineTo(X, Y + 7); ctx.lineTo(X - 6, Y); ctx.closePath(); ctx.fill(); ctx.stroke();
+      label(ctx, `peak ${f2(pf.peak.h)} m`, X + 10, Y - 16, { color: '#FFE2A0' });
+    }
+  }
+
+  // aim guide
+  if (loaded) {
+    const th = aim.th * Math.PI / 180, fx = PX(X0), fy = PY(h0);
+    ctx.save(); ctx.setLineDash([6, 6]); ctx.strokeStyle = 'rgba(255,255,255,0.9)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(fx, fy); ctx.lineTo(fx + Math.cos(th) * 2.4 * S, fy - Math.sin(th) * 2.4 * S); ctx.stroke();
+    ctx.setLineDash([]); ctx.strokeStyle = 'rgba(247,181,56,0.95)';
+    ctx.beginPath(); ctx.arc(fx, fy, 1.3 * S, -th, 0); ctx.stroke();
+    ctx.restore();
+    const lx = fx + Math.cos(th / 2) * 1.3 * S + 8, ly = fy - Math.sin(th / 2) * 1.3 * S - 4;
+    label(ctx, `${aim.th}°`, lx, ly, { color: '#FFE2A0' });
+    label(ctx, `d = ${f2(aim.d)} m`, pp[0], pp[1] + pebR(currentMass()) * S + 18 > CH - 12 ? pp[1] - 40 : pp[1] + pebR(currentMass()) * S + 16, { align: 'center' });
+  }
+
+  // replay ghost
+  if (replayT != null && lastFlight) {
+    const t = Math.min(replayT, tShow(lastFlight)), p = flightAt(lastFlight, t);
+    const X = PX(p.x), Y = PY(p.h);
+    ctx.save(); ctx.globalAlpha = 0.9;
+    ctx.setLineDash([4, 5]); ctx.strokeStyle = 'rgba(92,198,242,0.95)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(X, Y); ctx.lineTo(X, PY(0)); ctx.stroke(); ctx.setLineDash([]);
+    ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(X, Y, lastFlight.r * S + 4, 0, TAU); ctx.stroke();
+    ctx.restore();
+    drawPebble(X, Y, lastFlight.r * S, 0, lastFlight.m);
+    label(ctx, `h = ${f2(p.h)} m`, X + lastFlight.r * S + 8, Y, { color: '#BDEBFF' });
+  }
+
+  // particles and floating text
+  for (const p of particles) {
+    const a = Math.max(0, p.life / p.max);
+    ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = p.color;
+    if (p.type === 'puff') { ctx.beginPath(); ctx.arc(p.x, p.y, p.size * (1.4 - a * 0.4), 0, TAU); ctx.fill(); }
+    else { ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); }
+    ctx.restore();
+  }
+  for (const t of floats) {
+    ctx.save(); ctx.globalAlpha = Math.min(1, t.life / t.max * 1.6);
+    ctx.font = '400 24px "Bungee", "Arial Black", sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(12,26,44,0.9)'; ctx.strokeText(t.text, t.x, t.y);
+    ctx.fillStyle = t.color; ctx.fillText(t.text, t.x, t.y);
+    ctx.restore();
+  }
+
+  drawMiniChart();
+
+  // off-screen indicator
+  if (pebbleBody && pebbleBody.position.y < 0) {
+    const X = Math.min(CW - 60, Math.max(60, pebbleBody.position.x));
+    ctx.fillStyle = '#F7B538'; ctx.beginPath(); ctx.moveTo(X, 46); ctx.lineTo(X - 9, 60); ctx.lineTo(X + 9, 60); ctx.closePath(); ctx.fill();
+    label(ctx, `${f1(WH(pebbleBody.position.y))} m`, X, 74, { align: 'center', color: '#FFE2A0' });
+  }
+}
+
+/* ---------- Energy tracker ---------- */
+let lastEnergySig = '';
+function setBar(id, val, total) {
+  const pctH = total > 0 ? Math.max(0, Math.min(100, val / total * 100)) : 0;
+  $('bf' + id).style.height = pctH + '%';
+  $('bv' + id).textContent = val == null ? '—' : nj(val) + ' J';
+}
+function previewSnap() { const F = makeFlight(setup()); return { F, snap: snapAt(F, 0) }; }
+function currentEnergy() {
+  let F = null, snap = null, lab = 'Waiting', live = false, note = '';
+  if (flight && flight.free) { F = flight; snap = snapAt(F, Math.min(F.t, tGround(F))); lab = 'Live'; live = true; }
+  else if (replayT != null && lastFlight) { F = lastFlight; snap = snapAt(F, Math.min(replayT, tShow(F))); lab = 'Replay'; }
+  else if (L.sandbox && phase === 'aim') { const pv = previewSnap(); F = pv.F; snap = pv.snap; lab = 'Preview at launch'; }
+  else if (lastFlight) {
+    F = lastFlight; const tt = tShow(F); snap = snapAt(F, tt);
+    lab = F.offMap ? 'Leaving the map' : (tt < (F.tEnd || 0) - 1e-6 ? 'Back at h = 0' : 'At impact');
+  } else { note = L.sandbox ? '' : 'Launch a pebble to see where its energy goes. Predict first!'; }
+  return { F, snap, lab, live, note };
+}
+function drawMiniChart() {
+  const { snap, lab } = currentEnergy();
+  if (!snap) return;
+  const W = 248, H = 168, x = CW - W - 14, y = Math.max(60, 52 / cssScale);
+  ctx.save();
+  ctx.fillStyle = 'rgba(12,26,44,0.86)'; ctx.beginPath(); ctx.roundRect(x, y, W, H, 10); ctx.fill();
+  ctx.font = '600 14px "IBM Plex Mono", ui-monospace, monospace'; ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+  ctx.fillStyle = '#A9BCD4'; ctx.fillText('Energy · ' + lab, x + 12, y + 16);
+  const bars = [['KE', snap.KE, '#F7B538'], ['GPE', snap.GPE, '#5CC6F2'], ['Heat', snap.heat, '#F47252'], ['Total', snap.total, null]];
+  const top = y + 46, base = y + H - 26, bw = 34, gap = (W - 24 - bw * 4) / 3;
+  ctx.strokeStyle = '#2A4568'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x + 10, base); ctx.lineTo(x + W - 10, base); ctx.stroke();
+  bars.forEach(([name, v, col], i) => {
+    const bx = x + 12 + i * (bw + gap), hh = snap.total > 0 ? Math.max(0, Math.min(1, v / snap.total)) * (base - top) : 0;
+    if (col) { ctx.fillStyle = col; ctx.fillRect(bx, base - hh, bw, hh); }
+    else { ctx.setLineDash([5, 4]); ctx.strokeStyle = '#D9E4F1'; ctx.lineWidth = 2; ctx.strokeRect(bx + 1, base - hh + 1, bw - 2, hh - 1); ctx.setLineDash([]); }
+    ctx.textAlign = 'center'; ctx.fillStyle = '#EEF3FA'; ctx.font = '600 13px "IBM Plex Mono", ui-monospace, monospace';
+    ctx.fillText(nj(v), bx + bw / 2, base - hh - 10);
+    ctx.fillStyle = col || '#D9E4F1'; ctx.font = '600 12px "IBM Plex Mono", ui-monospace, monospace';
+    ctx.fillText(name, bx + bw / 2, base + 13);
+  });
+  ctx.restore();
+}
+function updateEnergyPanel() {
+  const { F, snap, lab, live, note } = currentEnergy();
+  const sig = snap ? [lab, snap.t.toFixed(3), F.W.toFixed(2), snap.v.toFixed(3), snap.total.toFixed(2)].join('|') : 'none|' + note;
+  if (sig === lastEnergySig) return;
+  lastEnergySig = sig;
+  const st = $('eState'); st.textContent = lab; st.classList.toggle('live', live);
+  $('eNote').textContent = note; $('eNote').hidden = !note;
+  if (!snap) {
+    for (const id of ['KE', 'GPE', 'Heat', 'Tot']) setBar(id, null, 0);
+    $('eWork').innerHTML = 'Work you did on the band: <b>—</b>';
+    for (const id of ['rT', 'rH', 'rV', 'rKE', 'rGPE', 'rTot']) $(id).textContent = '—';
+    return;
+  }
+  $('eWork').innerHTML = `Work you did on the band: <b>${nj(snap.W)} J</b>` + (F.GPE0 > 0 ? ` · GPE at launch: <b>${nj(F.GPE0)} J</b>` : '');
+  setBar('KE', snap.KE, snap.total); setBar('GPE', snap.GPE, snap.total); setBar('Heat', snap.heat, snap.total); setBar('Tot', snap.total, snap.total);
+  $('rT').textContent = f2(snap.t) + ' s';
+  $('rH').textContent = f2(snap.h) + ' m';
+  $('rV').textContent = f2(snap.v) + ' m/s';
+  $('rKE').textContent = nj(snap.KE) + ' J';
+  $('rGPE').textContent = nj(snap.GPE) + ' J';
+  $('rTot').textContent = nj(snap.total) + ' J';
+}
+
+/* ---------- Questions UI ---------- */
+function buildQuestions() {
+  const box = $('qList'); box.innerHTML = '';
+  qState = L.questions.map(() => ({ status: 'open', attempts: 0, key: null }));
+  L.questions.forEach((qid, i) => {
+    const q = QS[qid], letter = 'abc'[i];
+    const el = document.createElement('div');
+    el.className = 'q'; el.dataset.i = i;
+    el.innerHTML = `<p class="q-prompt"><span class="q-letter">${letter}</span><span class="q-text"></span></p>
+      <form class="q-row" novalidate><input id="ans${i}" class="q-input" type="text" inputmode="decimal" autocomplete="off" aria-label="Answer to part ${letter}"><span class="q-unit">${q.unit}</span><button class="btn-check" type="submit">Check</button></form>
+      <div class="q-feedback" aria-live="polite"></div>
+      <button class="btn-reveal" type="button" hidden>Show solution</button>
+      <div class="q-solution" hidden></div>
+      <div class="q-measured" hidden></div>`;
+    el.querySelector('form').addEventListener('submit', e => { e.preventDefault(); checkAnswer(i); });
+    el.querySelector('.btn-reveal').addEventListener('click', () => reveal(i));
+    box.appendChild(el);
+  });
+  $('predictCard').hidden = L.sandbox || !L.questions.length;
+  $('sandboxCard').hidden = !L.sandbox;
+  updatePrompts();
+}
+function qEl(i) { return document.querySelector(`.q[data-i="${i}"]`); }
+function setFb(i, html, cls) { const fb = qEl(i).querySelector('.q-feedback'); fb.className = 'q-feedback ' + (cls || ''); fb.innerHTML = html; }
+function updatePrompts() {
+  if (L.sandbox) return;
+  const s = setup();
+  L.questions.forEach((qid, i) => {
+    const q = QS[qid], st = qState[i], el = qEl(i), k = qKey(q, s);
+    if (st.status !== 'open' && st.key !== k) {
+      st.status = 'open'; st.attempts = 0; st.key = null;
+      el.querySelector('.q-input').value = '';
+      el.querySelector('.q-solution').hidden = true;
+      el.querySelector('.btn-reveal').hidden = true;
+      setFb(i, 'Your setup changed, so this answer changed too. Predict again.', 'warn');
+    }
+    el.querySelector('.q-text').innerHTML = q.prompt(s);
+    el.classList.toggle('correct', st.status === 'correct');
+    el.classList.toggle('revealed', st.status === 'revealed');
+    const done = st.status !== 'open';
+    el.querySelector('.q-input').readOnly = done;
+    el.querySelector('.btn-check').disabled = done;
+  });
+  updateGiven(); updateLaunchBtn();
+}
+function tolFor(unit, c) {
+  const a = Math.abs(c);
+  if (unit === 'J') return Math.max(0.6, 0.01 * a);
+  if (unit === 'm/s') return Math.max(0.06, 0.01 * a);
+  if (unit === 'm') return 0.011;
+  if (unit === '%') return 0.6;
+  return 0.01 * a;
+}
+function close(v, c, unit) { return Math.abs(v - c) <= tolFor(unit, c); }
+function checkAnswer(i) {
+  const s = setup(), qid = L.questions[i], q = QS[qid], st = qState[i];
+  if (st.status !== 'open') return;
+  const input = qEl(i).querySelector('.q-input');
+  const m = input.value.replace(/,/g, '').match(/-?\d*\.?\d+(e-?\d+)?/i);
+  if (q.impossible) { const msg = q.impossible(s); if (msg) { setFb(i, msg, 'warn'); return; } }
+  if (!m) { setFb(i, 'Type a number. The unit is already filled in.', 'warn'); return; }
+  const val = parseFloat(m[0]), c = q.answer(s);
+  if (close(val, c, q.unit)) {
+    st.status = 'correct'; st.key = qKey(q, s);
+    setFb(i, `Correct! ${q.solution(s)}`, 'good');
+  } else {
+    st.attempts++;
+    let msg = null;
+    for (const mk of q.mistakes(s)) if (isFinite(mk.v) && close(val, mk.v, q.unit)) { msg = mk.msg; break; }
+    if (!msg && q.usesG && close(val, q.answer(s, 9.8), q.unit)) msg = 'Looks like you used g = 9.8 m/s². This game uses g = 10 m/s².';
+    const hints = q.hints(s);
+    setFb(i, `Not yet. ${msg || hints[Math.min(st.attempts - 1, hints.length - 1)]}`, 'bad');
+    if (st.attempts >= 2) qEl(i).querySelector('.btn-reveal').hidden = false;
+  }
+  updatePrompts();
+}
+function reveal(i) {
+  const s = setup(), q = QS[L.questions[i]], st = qState[i], el = qEl(i);
+  st.status = 'revealed'; st.key = qKey(q, s); revealedAny = true;
+  const sol = el.querySelector('.q-solution'); sol.innerHTML = q.solution(s); sol.hidden = false;
+  el.querySelector('.btn-reveal').hidden = true;
+  el.querySelector('.q-input').value = String(+q.answer(s).toFixed(2));
+  setFb(i, 'Solution shown. Launch is unlocked, but the prediction star is gone for this attempt.', 'warn');
+  updatePrompts();
+}
+
+/* ---------- Panels, HUD, controls ---------- */
+function updateGiven() {
+  const s = setup(), rows = [];
+  if (L.sandbox) {
+    rows.push(['Band force F', `${s.F} N`], ['Pebble mass m', `${f1(s.m)} kg`], ['Band efficiency', `${pct(s.eta)}%`], ['Launch height h₀', `${f1(s.h0)} m`], ['Gravity g', '10 m/s²']);
+  } else {
+    rows.push(['Band force F', `${L.F} N`]);
+    rows.push(['Pebble mass m', L.choices ? `${f1(s.m)} kg (your pick)` : `${f1(L.m)} kg`]);
+    const etaOpen = L.hideEta && qState[0] && qState[0].status === 'open';
+    rows.push(['Band efficiency', etaOpen ? ['? (find it)', 'find'] : (L.eta === 1 ? '100% (ideal)' : `${pct(L.eta)}%`)]);
+    if (L.test) rows.push(['Test pull', `${L.test.F} N over ${f2(L.test.d)} m`], ['Test pebble', `${f1(L.test.m)} kg at ${f1(L.test.v)} m/s`]);
+    rows.push(['Launch height h₀', L.h0 > 0 ? `${f1(L.h0)} m above valley` : '0 m (ground)']);
+    if (L.heightLabel) rows.push([L.heightLabel, `${f1(L.H)} m`]);
+    rows.push(['Gravity g', '10 m/s²']);
+  }
+  $('given').innerHTML = rows.map(([k, v]) => Array.isArray(v) ? `<tr><th>${k}</th><td class="${v[1]}">${v[0]}</td></tr>` : `<tr><th>${k}</th><td>${v}</td></tr>`).join('');
+}
+function renderMission() {
+  $('mEyebrow').textContent = L.sandbox ? 'Free play' : `Level ${L.id} of ${LEVELS.length}`;
+  $('mTitle').textContent = L.name;
+  $('mTags').innerHTML = L.tags.map(t => `<span class="tag">${t}</span>`).join('');
+  $('mBrief').textContent = L.brief;
+  updateGiven();
+}
+function updateHUD() {
+  $('hudLevel').textContent = L.sandbox ? 'Sandbox' : `Level ${L.id} · ${L.name}`;
+  if (L.sandbox) $('hudPebbles').innerHTML = 'Pebbles <b>∞</b>';
+  else {
+    const left = L.shots - shotsUsed;
+    $('hudPebbles').innerHTML = 'Pebbles ' + Array.from({ length: L.shots }, (_, k) => `<i class="dot${k < left ? ' on' : ''}"></i>`).join('');
+  }
+  $('hudFiends').innerHTML = `Fiends left <b>${targetsLeft()}</b>`;
+}
+function updateLaunchBtn() {
+  const b = $('launchBtn');
+  const ok = canLaunch();
+  b.disabled = !ok;
+  if (resultShown) b.textContent = 'Level over';
+  else if (phase !== 'aim') b.textContent = 'In flight…';
+  else if (!ok && !L.sandbox) b.textContent = 'Predict to unlock';
+  else b.textContent = 'Launch';
+}
+function renderControls() {
+  const p = $('pull'), a = $('angle');
+  p.value = aim.d; $('pullOut').textContent = f2(aim.d) + ' m';
+  if (L.lockAngle) { a.max = 90; a.value = 90; a.disabled = true; $('angleOut').textContent = '90° (locked)'; }
+  else { a.max = 85; a.disabled = false; a.value = aim.th; $('angleOut').textContent = aim.th + '°'; }
+  const pw = $('pickWrap');
+  pw.hidden = !L.choices;
+  if (L.choices) {
+    $('pick').innerHTML = L.choices.map(m => `<button type="button" data-m="${m}" aria-pressed="${m === pebbleMass}">${m < 3 ? 'Light' : 'Heavy'} · ${f1(m)} kg</button>`).join('');
+  }
+}
+function renderNav() {
+  const items = LEVELS.map((lv, i) => {
+    const n = saved.stars[lv.id] || 0;
+    const st = `<b>${'★'.repeat(n)}</b>${'☆'.repeat(3 - n)}`;
+    return `<button type="button" class="lvl" data-i="${i}" aria-current="${i === levelIndex}" title="Level ${lv.id}: ${lv.name}" aria-label="Level ${lv.id}: ${lv.name}, ${n} of 3 stars"><span class="n">${lv.id}</span><span class="nm">${lv.name}</span><span class="st">${st}</span></button>`;
+  });
+  items.push(`<button type="button" class="lvl sb" data-i="${LEVELS.length}" aria-current="${levelIndex === LEVELS.length}"><span class="n">∞</span><span class="nm">Sandbox</span></button>`);
+  $('levelNav').innerHTML = items.join('');
+}
+function renderLog() {
+  const tb = $('logBody');
+  if (!logRows.length) { tb.innerHTML = '<tr><td colspan="10" style="text-align:left;color:var(--muted)">No launches yet.</td></tr>'; return; }
+  tb.innerHTML = logRows.map(r => `<tr><td>${r.n}</td><td>${r.lvl}</td><td>${r.m}</td><td>${r.d}</td><td>${r.th}</td><td>${r.W}</td><td>${r.KE0}</td><td>${r.v0}</td><td>${r.peak}</td><td>${r.ki}</td></tr>`).join('');
+}
+
+function setAim(d, th) {
+  d = Math.round(Math.min(D_MAX, Math.max(D_MIN, d)) * 20) / 20;
+  th = L.lockAngle ? L.lockAngle : Math.round(Math.min(85, Math.max(5, th)));
+  if (d === aim.d && th === aim.th) return;
+  aim.d = d; aim.th = th;
+  $('pull').value = d; $('pullOut').textContent = f2(d) + ' m';
+  if (!L.lockAngle) { $('angle').value = th; $('angleOut').textContent = th + '°'; }
+  updatePrompts();
+}
+
+function loadLevel(i) {
+  levelIndex = Math.max(0, Math.min(LEVELS.length, i));
+  L = levelIndex === LEVELS.length ? SANDBOX : LEVELS[levelIndex];
+  resultShown = false; winTimer = -1; phase = 'aim'; shotsUsed = 0; sandboxCleared = false;
+  flight = null; lastFlight = null; prevTrail = null; replayT = null; revealedAny = false;
+  particles = []; floats = []; breakQueue = []; removeQueue = [];
+  pebbleMass = L.choices ? L.choices[0] : (L.m || 1);
+  aim.d = L.d0 || 1.0; aim.th = L.lockAngle || 45;
+  buildWorld();
+  renderBackdrop();
+  renderControls(); renderMission(); buildQuestions(); updateHUD(); renderNav();
+  $('overlay').hidden = true;
+  $('replay').disabled = true; $('replayOut').textContent = '—';
+  lastEnergySig = '';
+  updateLaunchBtn();
+}
+
+/* ---------- Input ---------- */
+function canvasPoint(e) {
+  const r = cv.getBoundingClientRect();
+  return [(e.clientX - r.left) * CW / r.width, (e.clientY - r.top) * CH / r.height];
+}
+function aimFromPoint(X, Y) {
+  const fx = PX(X0), fy = PY(currentH0());
+  const dx = fx - X, dy = Y - fy;
+  const d = Math.hypot(dx, dy) / S;
+  const th = Math.atan2(dy, dx) * 180 / Math.PI;
+  setAim(d, th);
+}
+cv.addEventListener('pointerdown', e => {
+  if (phase !== 'aim' || resultShown) return;
+  const [X, Y] = canvasPoint(e);
+  const fx = PX(X0), fy = PY(currentH0());
+  if (Math.hypot(X - fx, Y - fy) > 4 * S) return;
+  aiming = true; cv.classList.add('aiming');
+  try { cv.setPointerCapture(e.pointerId); } catch (err) {}
+  aimFromPoint(X, Y);
+  e.preventDefault();
+});
+cv.addEventListener('pointermove', e => { if (aiming) { const [X, Y] = canvasPoint(e); aimFromPoint(X, Y); } });
+function endAim() {
+  if (!aiming) return;
+  aiming = false; cv.classList.remove('aiming');
+  if (L.sandbox) launch();
+}
+cv.addEventListener('pointerup', endAim);
+cv.addEventListener('pointercancel', () => { aiming = false; cv.classList.remove('aiming'); });
+cv.addEventListener('keydown', e => {
+  if (e.key === 'ArrowLeft') { setAim(aim.d + 0.05, aim.th); e.preventDefault(); }
+  else if (e.key === 'ArrowRight') { setAim(aim.d - 0.05, aim.th); e.preventDefault(); }
+  else if (e.key === 'ArrowUp') { setAim(aim.d, aim.th + 1); e.preventDefault(); }
+  else if (e.key === 'ArrowDown') { setAim(aim.d, aim.th - 1); e.preventDefault(); }
+  else if (e.key === ' ' || e.key === 'Enter') { launch(); e.preventDefault(); }
+});
+$('pull').addEventListener('input', e => setAim(parseFloat(e.target.value), aim.th));
+$('angle').addEventListener('input', e => setAim(aim.d, parseFloat(e.target.value)));
+$('launchBtn').addEventListener('click', launch);
+$('resetBtn').addEventListener('click', () => loadLevel(levelIndex));
+$('levelNav').addEventListener('click', e => { const b = e.target.closest('.lvl'); if (b) loadLevel(+b.dataset.i); });
+$('pick').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  pebbleMass = +b.dataset.m;
+  for (const x of $('pick').querySelectorAll('button')) x.setAttribute('aria-pressed', String(+x.dataset.m === pebbleMass));
+  updatePrompts();
+});
+$('replay').addEventListener('input', e => {
+  if (!lastFlight) return;
+  replayT = +e.target.value / 100;
+  $('replayOut').textContent = 't = ' + f2(Math.min(replayT, tShow(lastFlight))) + ' s';
+});
+function sbSync() {
+  $('sbFOut').textContent = sandbox.F + ' N'; $('sbMOut').textContent = f1(sandbox.m) + ' kg'; $('sbEOut').textContent = pct(sandbox.eta) + '%';
+  updateGiven(); lastEnergySig = '';
+}
+$('sbF').addEventListener('input', e => { sandbox.F = +e.target.value; sbSync(); });
+$('sbM').addEventListener('input', e => { sandbox.m = +e.target.value; sbSync(); });
+$('sbE').addEventListener('input', e => { sandbox.eta = +e.target.value / 100; sbSync(); });
+$('sbCliff').addEventListener('change', e => { sandbox.cliff = e.target.checked; if (L.sandbox) loadLevel(LEVELS.length); });
+$('sbLayout').addEventListener('change', e => { sandbox.layout = e.target.value; if (L.sandbox) loadLevel(LEVELS.length); });
+$('sbRebuild').addEventListener('click', () => loadLevel(LEVELS.length));
+$('copyLog').addEventListener('click', async () => {
+  const head = ['#', 'Level', 'm (kg)', 'd (m)', 'angle (deg)', 'W (J)', 'KE launch (J)', 'v launch (m/s)', 'Peak h (m)', 'KE at hit (J)'];
+  const rows = logRows.slice().reverse().map(r => [r.n, r.lvl, r.m, r.d, r.th, r.W, r.KE0, r.v0, r.peak, r.ki]);
+  const tsv = [head, ...rows].map(r => r.join('\t')).join('\n');
+  const note = $('copyNote');
+  try { await navigator.clipboard.writeText(tsv); note.textContent = `Copied ${rows.length} launch${rows.length === 1 ? '' : 'es'}. Paste into a spreadsheet.`; }
+  catch (err) { note.textContent = 'Copying is blocked here. Select the table with your mouse and copy it instead.'; }
+});
+
+/* ---------- Main loop ---------- */
+let acc = 0, lastTs = 0;
+function frame(ts) {
+  if (!lastTs) lastTs = ts;
+  acc += Math.min(0.1, (ts - lastTs) / 1000); lastTs = ts;
+  let n = 0;
+  while (acc >= 1 / 60 && n < 5) { step(); acc -= 1 / 60; n++; }
+  if (n === 5) acc = 0;
+  draw(); updateEnergyPanel();
+  requestAnimationFrame(frame);
+}
+
+function start(data) {
+  const i = data && typeof data.levelIndex === 'number' ? data.levelIndex : 0;
+  resize();
+  loadLevel(i);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => renderBackdrop());
+  window.addEventListener('resize', resize);
+  if (window.ResizeObserver) new ResizeObserver(() => resize()).observe($('frame'));
+  requestAnimationFrame(frame);
+}
+try { if (window.claude && window.claude.hot && window.claude.hot.snapshot) window.claude.hot.snapshot(() => ({ levelIndex })); } catch (e) {}
+window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
+})();
+</script>
+</body>
+</html>
