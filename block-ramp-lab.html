@@ -1,0 +1,963 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Block and Ramp Lab: an interactive AP Physics C simulation of a block sliding into a fixed or movable curved ramp, with energy and momentum bar charts.">
+<style>:root{color-scheme:light} body{margin:0} img{max-width:100%} [hidden]{display:none!important}</style>
+<title>Block and Ramp Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: lab bench. Deep-blue title band, wide scene + charts on the left, instrument-style control column on the right; stacks on phones. */
+:root {
+  --bg: #EDF1F7; --surface: #FFFFFF; --surface-2: #F5F7FB; --ink: #12203A; --ink-2: #46526B; --line: #D2D9E5;
+  --brand: #1B3A6B; --brand-hover: #244A86; --on-brand: #FFFFFF; --accent-text: #1B3A6B; --amber: #E3A21A;
+  --sky-top: #F8FBFF; --sky-bot: #E2EAF5; --floor-line: #2A3B5C; --floor-fill: #CBD5E4; --hatch: #9AA9C2;
+  --ramp: #7486A6; --ramp-edge: #2E3E5C; --ramp-label: #FFFFFF; --block: #E3A21A; --block-edge: #7A5200; --block-label: #2B1D00;
+  --vel: #7B3FC4; --mom: #0D7F86; --marker: #B7791F; --trail: #E3A21A;
+  --e-keb: #E3A21A; --e-ker: #3A6DB5; --e-u: #2E8F63; --e-th: #CB4B33; --e-tot: #273042; --earth: #8B6A4A;
+  --grid: #E1E6EF; --axis: #5A6680; --focus: #E3A21A;
+  --band: #1B3A6B; --band-rule: #E3A21A; --band-ink: #FFFFFF; --band-kicker: #F2C24E; --band-lede: #D9E3F3; --band-btn-line: rgba(255,255,255,0.6); --band-btn-hover: rgba(255,255,255,0.12);
+  --font: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-display: "IBM Plex Sans Condensed", "IBM Plex Sans", "Arial Narrow", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0C1424; --surface: #142038; --surface-2: #192842; --ink: #E6ECF6; --ink-2: #A7B3CA; --line: #2A3A59;
+    --brand: #2F5A9E; --brand-hover: #3A69B3; --on-brand: #FFFFFF; --accent-text: #A9C2EE; --amber: #EDB23A;
+    --sky-top: #15233D; --sky-bot: #0F1A2E; --floor-line: #9FB0CF; --floor-fill: #1D2B47; --hatch: #3B4D70;
+    --ramp: #53678C; --ramp-edge: #B3C2DD; --ramp-label: #FFFFFF; --block: #EDB23A; --block-edge: #FFE1A0; --block-label: #2B1D00;
+    --vel: #B98CF2; --mom: #3FC7C9; --marker: #F2C46B; --trail: #EDB23A;
+    --e-keb: #EDB23A; --e-ker: #6E9BE2; --e-u: #4FC28E; --e-th: #EE7458; --e-tot: #D7E1F2; --earth: #C49A72;
+    --grid: #22314F; --axis: #8E9BB5; --focus: #EDB23A;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0C1424; --surface: #142038; --surface-2: #192842; --ink: #E6ECF6; --ink-2: #A7B3CA; --line: #2A3A59;
+  --brand: #2F5A9E; --brand-hover: #3A69B3; --on-brand: #FFFFFF; --accent-text: #A9C2EE; --amber: #EDB23A;
+  --sky-top: #15233D; --sky-bot: #0F1A2E; --floor-line: #9FB0CF; --floor-fill: #1D2B47; --hatch: #3B4D70;
+  --ramp: #53678C; --ramp-edge: #B3C2DD; --ramp-label: #FFFFFF; --block: #EDB23A; --block-edge: #FFE1A0; --block-label: #2B1D00;
+  --vel: #B98CF2; --mom: #3FC7C9; --marker: #F2C46B; --trail: #EDB23A;
+  --e-keb: #EDB23A; --e-ker: #6E9BE2; --e-u: #4FC28E; --e-th: #EE7458; --e-tot: #D7E1F2; --earth: #C49A72;
+  --grid: #22314F; --axis: #8E9BB5; --focus: #EDB23A;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 15px; line-height: 1.45; }
+.band { background: var(--band); border-bottom: 4px solid var(--band-rule); color: var(--band-ink);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.band-inner { max-width: 1320px; margin: 0 auto; padding-block: 14px 12px; display: flex; flex-wrap: wrap; gap: 8px 24px; align-items: end; justify-content: space-between; }
+.kicker { font-size: 11.5px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--band-kicker); margin: 0 0 2px; }
+h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(26px, 3.4vw, 34px); line-height: 1.05; margin: 0; letter-spacing: 0.005em; }
+.lede { margin: 6px 0 0; color: var(--band-lede); max-width: 62ch; font-size: 14px; text-wrap: pretty; }
+.band .btn-ghost { background: transparent; color: var(--band-ink); border: 1.5px solid var(--band-btn-line); }
+.band .btn-ghost:hover { background: var(--band-btn-hover); }
+
+.wrap { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 16px 28px; }
+.lab { max-width: 1320px; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr) 300px; grid-template-areas: "scene ctrl" "rest ctrl"; gap: 14px 16px; align-items: start; }
+.scene-panel { grid-area: scene; }
+.controls { grid-area: ctrl; }
+.rest { grid-area: rest; display: grid; gap: 14px; min-width: 0; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; min-width: 0; }
+.panel-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 14px 0; flex-wrap: wrap; }
+h2 { font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent-text); margin: 0; }
+.panel-note { font-size: 12.5px; color: var(--ink-2); margin: 0; padding: 4px 14px 12px; }
+
+.scene-panel { overflow: hidden; }
+.scene-box { position: relative; }
+#scene { display: block; width: 100%; height: clamp(200px, 27vw, 370px); touch-action: manipulation; }
+.chip { position: absolute; top: 10px; right: 10px; background: var(--surface); color: var(--ink); border: 1px solid var(--line);
+  font-size: 12.5px; font-weight: 600; padding: 4px 10px; border-radius: 999px; display: flex; gap: 6px; align-items: center; }
+.chip .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--amber); }
+.status { position: absolute; left: 10px; top: 10px; max-width: calc(100% - 200px); font-size: 13px; color: var(--ink); background: var(--surface);
+  border: 1px solid var(--line); border-left: 4px solid var(--amber); padding: 5px 10px; border-radius: 6px; }
+.transport { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 10px 12px; border-top: 1px solid var(--line); background: var(--surface-2); }
+.clock { font-family: var(--font-mono); font-size: 14px; color: var(--ink); margin-left: auto; font-variant-numeric: tabular-nums; }
+
+button { font: inherit; cursor: pointer; }
+.btn { display: inline-flex; align-items: center; gap: 7px; border-radius: 8px; padding: 7px 13px; font-weight: 600; font-size: 14px;
+  border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); }
+.btn:hover { border-color: var(--axis); }
+.btn-primary { background: var(--brand); color: var(--on-brand); border-color: var(--brand); min-width: 104px; justify-content: center; }
+.btn-primary:hover { background: var(--brand-hover); border-color: var(--brand-hover); }
+.btn svg { width: 16px; height: 16px; flex: none; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+.seg { display: inline-flex; border: 1.5px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--surface); }
+.seg button { border: 0; background: transparent; color: var(--ink-2); padding: 6px 11px; font-size: 13.5px; font-weight: 600; }
+.seg button + button { border-left: 1.5px solid var(--line); }
+.seg button[aria-checked="true"] { background: var(--brand); color: var(--on-brand); }
+.seg.wide { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
+.seg.wide button { padding: 9px 8px; display: flex; flex-direction: column; align-items: center; gap: 4px; line-height: 1.15; }
+.seg.wide svg { width: 34px; height: 20px; }
+
+.charts { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.chart { display: block; width: 100%; height: 230px; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; padding: 0 14px 12px; font-size: 12.5px; color: var(--ink-2); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+.legend i.line { height: 3px; border-radius: 2px; width: 16px; }
+.legend i.dash { height: 0; width: 16px; border-top: 3px dashed; border-radius: 0; background: none !important; }
+
+.controls { display: grid; gap: 12px; }
+.ctl { padding: 12px 14px 14px; display: grid; gap: 10px; }
+.slider { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; align-items: center; font-size: 14px; }
+.slider input { grid-column: 1 / -1; width: 100%; accent-color: var(--brand); margin: 2px 0 0; }
+.slider output { font-family: var(--font-mono); font-size: 13.5px; color: var(--ink); font-variant-numeric: tabular-nums; }
+.slider.off { opacity: 0.45; }
+.hint { font-size: 12.5px; color: var(--ink-2); margin: -4px 0 0; }
+.check { display: flex; align-items: center; gap: 9px; font-size: 14px; }
+.check input { width: 17px; height: 17px; accent-color: var(--brand); margin: 0; }
+.check i { width: 18px; height: 3px; border-radius: 2px; display: inline-block; margin-left: auto; }
+.switch-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+
+.data-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 14px; }
+.table-scroll { overflow-x: auto; padding: 6px 14px 4px; }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+th, td { padding: 6px 8px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; }
+thead th { font-size: 12px; color: var(--ink-2); font-weight: 600; }
+td { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+td:first-child { font-family: var(--font); font-weight: 600; }
+tr.sum td { font-weight: 600; }
+.extra { display: flex; flex-wrap: wrap; gap: 4px 18px; padding: 6px 14px 12px; font-size: 13.5px; color: var(--ink-2); }
+.extra b { font-family: var(--font-mono); font-weight: 500; color: var(--ink); }
+.moments { list-style: none; margin: 0; padding: 8px 14px 14px; display: grid; gap: 8px; font-size: 13.5px; }
+.moments li { display: grid; grid-template-columns: 64px 1fr; gap: 8px; }
+.moments time { font-family: var(--font-mono); color: var(--ink-2); font-size: 12.5px; padding-top: 1px; }
+.moments .empty { display: block; color: var(--ink-2); }
+
+@media (max-width: 1020px) {
+  .lab { grid-template-columns: minmax(0, 1fr); grid-template-areas: "scene" "ctrl" "rest"; }
+  .controls { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+}
+@media (max-width: 720px) {
+  .charts, .data-grid { grid-template-columns: 1fr; }
+  .status { position: static; max-width: none; margin: 0; border-radius: 0; border-width: 1px 0 0 4px; }
+  .chip { font-size: 11.5px; }
+}
+</style>
+</head>
+<body>
+
+<header class="band">
+  <div class="band-inner">
+    <div>
+      <p class="kicker">AP Physics C · Momentum and Energy</p>
+      <h1>Block and Ramp Lab</h1>
+      <p class="lede">Slide a block into a curved ramp. Bolt the ramp down or let it move, change the masses, add friction, and track where the energy and momentum go.</p>
+    </div>
+    <button class="btn btn-ghost" id="preset" type="button">Load worksheet setup (1 kg, 3 kg, 2 m/s)</button>
+  </div>
+</header>
+
+<div class="wrap">
+<main class="lab">
+    <section class="panel scene-panel" aria-label="Simulation">
+      <div class="scene-box">
+        <canvas id="scene" role="img" aria-label="Block sliding toward a curved ramp on a horizontal track"></canvas>
+        <div class="status" id="status" aria-live="polite">Press Play to launch the block.</div>
+        <div class="chip" id="chip"><span class="dot"></span><span id="chipText">Ramp free to move</span></div>
+      </div>
+      <div class="transport">
+        <button class="btn btn-primary" id="play" type="button" aria-label="Play">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path id="playIcon" d="M4 2.5v11l9-5.5z" fill="currentColor"/></svg><span id="playText">Play</span>
+        </button>
+        <button class="btn" id="stepBtn" type="button" title="Advance 1/30 s">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3v10l7-5z M11 3h2v10h-2z" fill="currentColor"/></svg>Step
+        </button>
+        <button class="btn" id="resetBtn" type="button">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3a5 5 0 1 1-4.6 3H1.5l3-3.4L7.5 6H5.6A3.2 3.2 0 1 0 8 4.8z" fill="currentColor"/></svg>Reset
+        </button>
+        <div class="seg" role="radiogroup" aria-label="Playback speed" id="speedSeg">
+          <button type="button" role="radio" aria-checked="true" data-v="1">Normal</button>
+          <button type="button" role="radio" aria-checked="false" data-v="0.25">Slow ×¼</button>
+        </div>
+        <span class="clock" id="clock">t = 0.00 s</span>
+      </div>
+    </section>
+
+  <div class="rest">
+    <div class="charts">
+      <section class="panel" aria-label="Energy bar chart">
+        <div class="panel-head"><h2>Energy</h2></div>
+        <canvas class="chart" id="energy" role="img" aria-label="Energy bar chart"></canvas>
+        <p class="panel-note">PE is the block's gravitational potential energy, zero at its starting height. Thermal is energy converted by friction. The dashed line marks the starting energy.</p>
+      </section>
+      <section class="panel" aria-label="Momentum bar chart">
+        <div class="panel-head"><h2>Momentum</h2></div>
+        <canvas class="chart" id="momentum" role="img" aria-label="Momentum bar chart"></canvas>
+        <p class="panel-note">Right and up are positive. <b>Earth</b> is the horizontal momentum passed to Earth through the floor (a fixed ramp or floor friction).</p>
+      </section>
+    </div>
+
+    <section class="panel" aria-label="Graph versus time">
+      <div class="panel-head">
+        <h2>Graph vs. time</h2>
+        <div class="seg" role="radiogroup" aria-label="Graph quantity" id="graphSeg">
+          <button type="button" role="radio" aria-checked="true" data-v="velocity">Velocity</button>
+          <button type="button" role="radio" aria-checked="false" data-v="momentum">Momentum</button>
+          <button type="button" role="radio" aria-checked="false" data-v="energy">Energy</button>
+        </div>
+      </div>
+      <canvas class="chart" id="graph" role="img" aria-label="Line graph of the selected quantity versus time"></canvas>
+      <div class="legend" id="graphLegend"></div>
+    </section>
+
+    <div class="data-grid" id="dataGrid">
+      <section class="panel" aria-label="Live values">
+        <div class="panel-head"><h2>Live values</h2></div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th></th><th>v<sub>x</sub> (m/s)</th><th>v<sub>y</sub> (m/s)</th><th>p<sub>x</sub> (kg·m/s)</th><th>p<sub>y</sub> (kg·m/s)</th><th>KE (J)</th></tr></thead>
+            <tbody>
+              <tr><td>Block</td><td id="vbx"></td><td id="vby"></td><td id="pbx"></td><td id="pby"></td><td id="keb"></td></tr>
+              <tr><td>Ramp</td><td id="vrx"></td><td>0.00</td><td id="prx"></td><td>0.00</td><td id="ker"></td></tr>
+              <tr class="sum"><td>Block + ramp</td><td>—</td><td>—</td><td id="psx"></td><td id="psy"></td><td id="kes"></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="extra">
+          <span>Block height h = <b id="hNow"></b></span>
+          <span>Highest so far = <b id="hMax"></b></span>
+          <span>PE = <b id="uNow"></b></span>
+          <span>Thermal = <b id="thNow"></b></span>
+        </div>
+      </section>
+      <section class="panel" aria-label="Key moments">
+        <div class="panel-head"><h2>Key moments</h2></div>
+        <ol class="moments" id="moments"></ol>
+      </section>
+    </div>
+  </div>
+
+  <aside class="controls" aria-label="Controls">
+    <section class="panel ctl">
+      <h2>Ramp</h2>
+      <div class="seg wide" role="radiogroup" aria-label="Ramp mounting" id="rampSeg">
+        <button type="button" role="radio" aria-checked="false" data-v="fixed">
+          <svg viewBox="0 0 34 20" aria-hidden="true"><path d="M3 17h28" stroke="currentColor" stroke-width="2"/><path d="M8 17 Q 20 15 22 4 h5 v13z" fill="currentColor" opacity=".55"/><rect x="9" y="15" width="4" height="5" fill="currentColor"/><rect x="24" y="15" width="4" height="5" fill="currentColor"/></svg>
+          Fixed to floor
+        </button>
+        <button type="button" role="radio" aria-checked="true" data-v="free">
+          <svg viewBox="0 0 34 20" aria-hidden="true"><path d="M3 17h28" stroke="currentColor" stroke-width="2"/><path d="M6 15 Q 16 13 18 3 h5 v12z" fill="currentColor" opacity=".55"/><path d="M25 9h6m-2.5-2.5L31 9l-2.5 2.5" stroke="currentColor" stroke-width="1.8" fill="none"/></svg>
+          Free to move
+        </button>
+      </div>
+    </section>
+
+    <section class="panel ctl">
+      <h2>Masses</h2>
+      <label class="slider" for="m"><span>Block mass</span><output id="mOut" for="m"></output>
+        <input id="m" type="range" min="0.5" max="5" step="0.5" value="1"></label>
+      <label class="slider" id="MRow" for="M"><span>Ramp mass</span><output id="MOut" for="M"></output>
+        <input id="M" type="range" min="0.5" max="10" step="0.5" value="3"></label>
+      <p class="hint" id="MHint" hidden>A fixed ramp acts as part of Earth, so its mass has no effect.</p>
+    </section>
+
+    <section class="panel ctl">
+      <h2>Launch</h2>
+      <label class="slider" for="v0"><span>Initial block speed</span><output id="v0Out" for="v0"></output>
+        <input id="v0" type="range" min="0.5" max="3" step="0.1" value="2"></label>
+    </section>
+
+    <section class="panel ctl">
+      <div class="switch-row">
+        <h2>Friction</h2>
+        <label class="check"><input type="checkbox" id="fric"> On</label>
+      </div>
+      <label class="slider off" id="muFaceRow" for="muFace"><span>Ramp surface μ</span><output id="muFaceOut" for="muFace"></output>
+        <input id="muFace" type="range" min="0" max="0.8" step="0.05" value="0.2" disabled></label>
+      <label class="slider off" id="muFloorRow" for="muFloor"><span>Floor μ (block and ramp)</span><output id="muFloorOut" for="muFloor"></output>
+        <input id="muFloor" type="range" min="0" max="0.3" step="0.01" value="0.05" disabled></label>
+      <p class="hint">Static and kinetic coefficients are equal.</p>
+    </section>
+
+    <section class="panel ctl">
+      <h2>Show</h2>
+      <label class="check"><input type="checkbox" id="showVel" checked> Velocity vectors <i style="background:var(--vel)"></i></label>
+      <label class="check"><input type="checkbox" id="showMom"> Momentum vectors <i style="background:var(--mom)"></i></label>
+      <label class="check"><input type="checkbox" id="showHeight" checked> Height marker <i style="background:var(--marker)"></i></label>
+      <label class="check"><input type="checkbox" id="showTrail" checked> Path of block's center <i style="background:var(--trail)"></i></label>
+      <label class="check"><input type="checkbox" id="showVals" checked> Numbers and key moments</label>
+    </section>
+  </aside>
+</main>
+</div>
+
+<script>
+// ===== Block & ramp physics engine (SI units) =====
+// Block = point mass whose center of mass rides a circular path of radius R
+// (the drawn face has radius R + a, a = half the block height). The ramp moves
+// horizontally only. Contacts: block-face (normal N, friction Ft along tangent)
+// and ramp-floor (normal Nf, friction Ff). Static and kinetic coefficients are equal.
+const Engine = (() => {
+  const G = 9.8;
+  const EPS = 1e-9;
+  const GEOM = { R: 0.6, a: 0.07, bw: 0.22, topW: 0.16, trackL: 3.8, block0: 0.4, toe0: 1.3 };
+
+  function solve(A, b) {
+    const n = b.length;
+    const M = A.map((r, i) => [...r, b[i]]);
+    for (let c = 0; c < n; c++) {
+      let p = c;
+      for (let r = c + 1; r < n; r++) if (Math.abs(M[r][c]) > Math.abs(M[p][c])) p = r;
+      [M[c], M[p]] = [M[p], M[c]];
+      const piv = M[c][c];
+      for (let r = 0; r < n; r++) {
+        if (r === c) continue;
+        const f = M[r][c] / piv;
+        if (f !== 0) for (let k = c; k <= n; k++) M[r][k] -= f * M[c][k];
+      }
+    }
+    return M.map((r, i) => r[n] / r[i]);
+  }
+
+  // Accelerations while the block is on the curved face, for given contact modes.
+  // face: 'static' | +1 | -1 | 0      floor: 'locked' | 'static' | +1 | -1 | 0
+  function arcSolve(p, th, om, face, floor) {
+    const { m, M, muFace: mu, muFloor: mf } = p;
+    const R = GEOM.R, s = Math.sin(th), c = Math.cos(th);
+    const A = [], b = [];
+    // unknowns: [Xdd, thdd, N, Ft, Ff]
+    A.push([m * c, m * R, 0, -1, 0]); b.push(-m * G * s);            // block, tangent
+    A.push([m * s, 0, 1, 0, 0]);      b.push(m * G * c + m * R * om * om); // block, normal
+    A.push([M, 0, -s, c, -1]);        b.push(0);                       // ramp, horizontal
+    if (face === "static") { A.push([0, 1, 0, 0, 0]); b.push(0); }
+    else { A.push([0, 0, mu * face, 1, 0]); b.push(0); }                // Ft = -mu*sign*N
+    if (floor === "locked" || floor === "static") { A.push([1, 0, 0, 0, 0]); b.push(0); }
+    else { A.push([0, 0, mf * floor * c, mf * floor * s, 1]); b.push(-mf * floor * M * G); }
+    const [Xdd, thdd, N, Ft, Ff] = solve(A, b);
+    const Nf = M * G + N * c + Ft * s;
+    return { Xdd, thdd, N, Ft, Ff, Nf };
+  }
+
+  function chooseArcModes(p, st) {
+    const R = GEOM.R;
+    const faceC = p.muFace === 0 ? [0] : Math.abs(st.om * R) > EPS ? [Math.sign(st.om)] : ["static", 1, -1];
+    const floorC = !p.free ? ["locked"] : p.muFloor === 0 ? [0] : Math.abs(st.VX) > EPS ? [Math.sign(st.VX)] : ["static", 1, -1];
+    let first = null;
+    for (const f of faceC) for (const g of floorC) {
+      const r = arcSolve(p, st.th, f === "static" ? 0 : st.om, f, g);
+      if (!first) first = { f, g, r };
+      let ok = true;
+      if (f === "static") ok = ok && Math.abs(r.Ft) <= p.muFace * r.N + 1e-12;
+      else if (faceC.length > 1) ok = ok && r.thdd * f > 0;
+      if (g === "static") ok = ok && Math.abs(r.Ff) <= p.muFloor * r.Nf + 1e-12;
+      else if (floorC.length > 1) ok = ok && r.Xdd * g > 0;
+      if (ok) return { f, g };
+    }
+    return { f: first.f, g: first.g };
+  }
+
+  function create(params) {
+    const p = { m: 1, M: 3, v0: 2, free: true, muFace: 0, muFloor: 0, ...params };
+    const st = {
+      t: 0, mode: "floor", xb: GEOM.block0, vb: p.v0, X: GEOM.toe0, VX: 0,
+      th: 0, om: 0, Eth: 0, hMax: 0, events: [], N: 0, Nf: p.M * G,
+      faceStuck: false, floorStuck: false, done: null,
+    };
+    return { p, st };
+  }
+
+  // Kinetic-friction slide on the floor over dt, stopping exactly if it would reverse.
+  function floorSlide(x, v, mu, mass, dt) {
+    if (mu === 0 || Math.abs(v) <= EPS) return { x: x + v * dt, v: Math.abs(v) <= EPS && mu > 0 ? 0 : v, w: 0 };
+    const a = -mu * G * Math.sign(v);
+    const tStop = Math.abs(v / a);
+    if (tStop <= dt) { const dx = v * tStop / 2; return { x: x + dx, v: 0, w: mu * mass * G * Math.abs(dx) }; }
+    const dx = v * dt + 0.5 * a * dt * dt;
+    return { x: x + dx, v: v + a * dt, w: mu * mass * G * Math.abs(dx) };
+  }
+
+
+  function rk4(p, y0, dt, f, g) {
+    const R = GEOM.R;
+    const deriv = (y) => {
+      const r = arcSolve(p, y[2], y[3], f, g);
+      const P = -r.Ft * R * y[3] - r.Ff * y[1]; // power dissipated by friction
+      return [y[1], r.Xdd, y[3], r.thdd, P];
+    };
+    const add = (y, k, h) => y.map((v, i) => v + k[i] * h);
+    const k1 = deriv(y0), k2 = deriv(add(y0, k1, dt / 2)), k3 = deriv(add(y0, k2, dt / 2)), k4 = deriv(add(y0, k3, dt));
+    return y0.map((v, i) => v + (dt / 6) * (k1[i] + 2 * k2[i] + 2 * k3[i] + k4[i]));
+  }
+
+  // Advance while the block is on the face. If a sliding contact would stop
+  // (and reverse) inside the step, locate that instant, stop it exactly there,
+  // then re-pick contact modes for the rest of the step.
+  function arcAdvance(sim, dt, depth) {
+    const { p, st } = sim;
+    const R = GEOM.R;
+    const { f, g } = chooseArcModes(p, st);
+    if (f === "static") st.om = 0;
+    if (g === "static" || g === "locked") st.VX = 0;
+    st.faceStuck = f === "static"; st.floorStuck = g === "static";
+    const y0 = [st.X, st.VX, st.th, st.om, st.Eth];
+    // which sliding contacts with friction could stop? index into y: 3 = omega, 1 = VX
+    const watch = [];
+    if (typeof f === "number" && f !== 0 && p.muFace > 0) watch.push([3, f]);
+    if (typeof g === "number" && g !== 0 && p.muFloor > 0) watch.push([1, g]);
+    let h = dt, y = rk4(p, y0, h, f, g), stopIdx = -1;
+    const flipped = (yy) => watch.find(([i, sg]) => yy[i] * sg <= 0);
+    if (watch.length && flipped(y)) {
+      // secant/bisection on the earliest stopping contact
+      let lo = 0, hi = dt;
+      for (let it = 0; it < 30; it++) {
+        const mid = 0.5 * (lo + hi);
+        const ym = rk4(p, y0, mid, f, g);
+        if (flipped(ym)) hi = mid; else lo = mid;
+        if (hi - lo < 1e-9) break;
+      }
+      h = hi; y = rk4(p, y0, h, f, g);
+      const w = flipped(y); stopIdx = w ? w[0] : -1;
+    }
+    const omOld = st.om, thOld = st.th, VXOld = st.VX;
+    [st.X, st.VX, st.th, st.om, st.Eth] = y;
+    if (stopIdx === 3) st.om = 0;
+    if (stopIdx === 1) st.VX = 0;
+    if (f === "static") st.om = 0;
+    if (g === "static" || g === "locked") st.VX = 0;
+    // peak of the climb (relative motion up the face stops)
+    if (omOld > 0 && st.om <= 0) {
+      const fr = Math.min(1, Math.max(0, omOld / ((omOld - y[3]) || 1)));
+      const thP = thOld + (y[2] - thOld) * fr;
+      const VXP = VXOld + (y[1] - VXOld) * fr;
+      st.events.push({ type: "peak", t: st.t + h * fr, h: R * (1 - Math.cos(thP)), VX: VXP });
+    }
+    if (st.th >= Math.PI / 2) { st.th = Math.PI / 2 - 1e-6; st.om = Math.min(st.om, 0); }
+    const r = arcSolve(p, st.th, st.om, f, g);
+    st.N = r.N; st.Nf = r.Nf; st.Ft = r.Ft;
+    if (st.th <= 0 && st.om <= 0) {
+      st.mode = "floor"; st.vb = st.VX + R * st.om; st.xb = st.X + R * Math.sin(st.th); st.th = 0; st.om = 0;
+      if (st.vb < st.VX - 1e-6) st.events.push({ type: "leave", t: st.t + h, vb: st.vb, VX: st.VX });
+      // finish the remaining time on the floor
+      if (dt - h > 1e-12) floorAdvance(sim, dt - h);
+      return;
+    }
+    if (dt - h > 1e-12 && depth < 6) arcAdvance(sim, dt - h, depth + 1);
+  }
+
+  function floorAdvance(sim, dt) {
+    const { p, st } = sim;
+    const b = floorSlide(st.xb, st.vb, p.muFloor, p.m, dt);
+    let r = { x: st.X, v: 0, w: 0 };
+    if (p.free) r = floorSlide(st.X, st.VX, p.muFloor, p.M, dt);
+    st.xb = b.x; st.vb = b.v; st.X = r.x; st.VX = r.v; st.Eth += b.w + r.w;
+    st.N = 0; st.Ft = 0; st.Nf = p.M * G; st.faceStuck = false; st.floorStuck = p.free && st.VX === 0;
+  }
+
+  function step(sim, dt) {
+    const { p, st } = sim;
+    const R = GEOM.R;
+    if (st.mode === "floor") {
+      floorAdvance(sim, dt);
+      if (st.xb >= st.X && st.vb - st.VX > EPS) {
+        st.mode = "arc"; st.th = 0; st.om = (st.vb - st.VX) / R;
+        st.events.push({ type: "contact", t: st.t + dt, vb: st.vb, VX: st.VX });
+      }
+    } else {
+      arcAdvance(sim, dt, 0);
+    }
+    st.t += dt;
+    const h = st.mode === "arc" ? R * (1 - Math.cos(st.th)) : 0;
+    if (h > st.hMax) st.hMax = h;
+  }
+
+  // Derived quantities for display
+  function measure(sim) {
+    const { p, st } = sim;
+    const R = GEOM.R;
+    let bx, by, vbx, vby, h;
+    if (st.mode === "arc") {
+      bx = st.X + R * Math.sin(st.th); by = GEOM.a + R * (1 - Math.cos(st.th));
+      vbx = st.VX + R * Math.cos(st.th) * st.om; vby = R * Math.sin(st.th) * st.om;
+      h = R * (1 - Math.cos(st.th));
+    } else { bx = st.xb; by = GEOM.a; vbx = st.vb; vby = 0; h = 0; }
+    const KEb = 0.5 * p.m * (vbx * vbx + vby * vby);
+    const KEr = 0.5 * p.M * st.VX * st.VX;
+    const U = p.m * G * h;
+    const E0 = 0.5 * p.m * p.v0 * p.v0;
+    const pbx = p.m * vbx, pby = p.m * vby, prx = p.M * st.VX;
+    return {
+      bx, by, vbx, vby, h, KEb, KEr, U, Eth: st.Eth, Etot: KEb + KEr + U + st.Eth, E0,
+      pbx, pby, prx, psx: pbx + prx, psy: pby, pEarth: p.m * p.v0 - (pbx + prx),
+      VX: st.VX, X: st.X, th: st.th, onRamp: st.mode === "arc",
+    };
+  }
+
+  function atRest(sim) {
+    const { st } = sim;
+    if (st.VX !== 0) return false;
+    if (st.mode === "floor") return st.vb === 0;
+    return st.om === 0 && st.faceStuck;
+  }
+
+  return { G, GEOM, create, step, measure, atRest, arcSolve };
+})();
+if (typeof module !== "undefined") module.exports = Engine;
+
+</script>
+<script>
+(() => {
+  const E = Engine, GEOM = E.GEOM;
+  const $ = (id) => document.getElementById(id);
+  const P = { m: 1, M: 3, v0: 2, free: true, fric: false, muFace: 0.2, muFloor: 0.05 };
+  const show = { vel: true, mom: false, height: true, trail: true, vals: true };
+  const DT = 0.0005, SAMPLE = 0.01, TMAX = 40;
+  const RF = GEOM.R + GEOM.a;                 // drawn face radius
+  const RAMP_W = RF + GEOM.topW;               // ramp footprint
+  let sim, hist, nextSample, running = false, ended = null, speed = 1, lastTs = null, graphMode = "velocity";
+
+  const params = () => ({ m: P.m, M: P.M, v0: P.v0, free: P.free,
+    muFace: P.fric ? P.muFace : 0, muFloor: P.fric ? P.muFloor : 0 });
+
+  // ---------- simulation control ----------
+  function reset(msg) {
+    sim = E.create(params()); hist = []; nextSample = 0; ended = null; running = false; lastTs = null;
+    record();
+    setStatus(msg || "Press Play to launch the block.");
+    syncPlay(); render();
+  }
+  function record() {
+    const q = E.measure(sim);
+    hist.push({ t: sim.st.t, ...q });
+    nextSample = sim.st.t + SAMPLE - 1e-9;
+  }
+  function checkEnd() {
+    const q = E.measure(sim);
+    if (q.bx - GEOM.bw / 2 <= 0) return "The block reached the left end of the track.";
+    if (sim.st.X + RAMP_W >= GEOM.trackL) return "The ramp reached the right end of the track.";
+    if (E.atRest(sim)) return sim.st.mode === "arc" ? "Friction holds the block at rest on the ramp." : "Everything has come to rest.";
+    if (sim.st.t >= TMAX) return "Time limit reached.";
+    return null;
+  }
+  function advance(seconds) {
+    const n = Math.max(1, Math.round(seconds / DT));
+    for (let i = 0; i < n; i++) {
+      E.step(sim, DT);
+      if (sim.st.t >= nextSample) record();
+      const end = checkEnd();
+      if (end) { record(); finish(end); break; }
+    }
+  }
+  function finish(msg) {
+    ended = msg; running = false; syncPlay();
+    setStatus(msg + " Press Reset to run it again.");
+  }
+  function loop(ts) {
+    if (running) {
+      if (lastTs != null) advance(Math.min(0.05, (ts - lastTs) / 1000) * speed);
+      lastTs = ts;
+      render();
+      requestAnimationFrame(loop);
+    } else lastTs = null;
+  }
+  function play() {
+    if (ended) reset();
+    running = true; lastTs = null; syncPlay();
+    setStatus(sim.st.t === 0 ? "Running." : "Running.");
+    requestAnimationFrame(loop);
+  }
+  function pause() { running = false; syncPlay(); if (!ended) setStatus("Paused."); render(); }
+  function syncPlay() {
+    $("playText").textContent = running ? "Pause" : ended ? "Replay" : "Play";
+    $("play").setAttribute("aria-label", $("playText").textContent);
+    $("playIcon").setAttribute("d", running ? "M3.5 2.5h3v11h-3z M9.5 2.5h3v11h-3z" : "M4 2.5v11l9-5.5z");
+  }
+  function setStatus(t) { $("status").textContent = t; }
+
+  // ---------- controls ----------
+  function bindSlider(id, key, fmt) {
+    const el = $(id), out = $(id + "Out");
+    const upd = () => { out.textContent = fmt(+el.value); };
+    el.addEventListener("input", () => { P[key] = +el.value; upd(); reset("Settings changed. Press Play."); });
+    upd();
+  }
+  bindSlider("m", "m", (v) => v.toFixed(1) + " kg");
+  bindSlider("M", "M", (v) => v.toFixed(1) + " kg");
+  bindSlider("v0", "v0", (v) => v.toFixed(1) + " m/s");
+  bindSlider("muFace", "muFace", (v) => v.toFixed(2));
+  bindSlider("muFloor", "muFloor", (v) => v.toFixed(2));
+
+  function segment(id, onPick) {
+    const seg = $(id);
+    seg.addEventListener("click", (e) => {
+      const b = e.target.closest("button"); if (!b) return;
+      seg.querySelectorAll("button").forEach((x) => x.setAttribute("aria-checked", String(x === b)));
+      onPick(b.dataset.v);
+    });
+    seg.addEventListener("keydown", (e) => {
+      if (!["ArrowLeft", "ArrowRight"].includes(e.key)) return;
+      const bs = [...seg.querySelectorAll("button")];
+      const i = bs.findIndex((x) => x.getAttribute("aria-checked") === "true");
+      const j = (i + (e.key === "ArrowRight" ? 1 : bs.length - 1)) % bs.length;
+      bs[j].click(); bs[j].focus(); e.preventDefault();
+    });
+  }
+  const setSeg = (id, v) => $(id).querySelectorAll("button").forEach((x) => x.setAttribute("aria-checked", String(x.dataset.v === v)));
+  segment("rampSeg", (v) => { P.free = v === "free"; syncRamp(); reset("Settings changed. Press Play."); });
+  segment("speedSeg", (v) => { speed = +v; });
+  segment("graphSeg", (v) => { graphMode = v; render(); });
+
+  function syncRamp() {
+    $("chipText").textContent = P.free ? "Ramp free to move" : "Ramp fixed to floor";
+    $("MRow").classList.toggle("off", !P.free);
+    $("MHint").hidden = P.free;
+  }
+  function syncFric() {
+    for (const id of ["muFace", "muFloor"]) { $(id).disabled = !P.fric; $(id + "Row").classList.toggle("off", !P.fric); }
+  }
+  $("fric").addEventListener("change", (e) => { P.fric = e.target.checked; syncFric(); reset("Settings changed. Press Play."); });
+  const showMap = { showVel: "vel", showMom: "mom", showHeight: "height", showTrail: "trail", showVals: "vals" };
+  for (const [id, k] of Object.entries(showMap)) $(id).addEventListener("change", (e) => { show[k] = e.target.checked; render(); });
+
+  $("play").addEventListener("click", () => (running ? pause() : play()));
+  $("stepBtn").addEventListener("click", () => {
+    if (ended) return;
+    if (running) pause();
+    advance(1 / 30); if (!ended) setStatus("Stepped 1/30 s. Paused."); render();
+  });
+  $("resetBtn").addEventListener("click", () => reset());
+  $("preset").addEventListener("click", () => {
+    Object.assign(P, { m: 1, M: 3, v0: 2, free: true, fric: false });
+    $("m").value = 1; $("M").value = 3; $("v0").value = 2; $("fric").checked = false;
+    for (const id of ["m", "M", "v0"]) $(id).dispatchEvent(new Event("input"));
+    setSeg("rampSeg", "free"); syncRamp(); syncFric();
+    reset("Worksheet setup loaded: 1 kg block, 3 kg ramp, 2 m/s. Press Play.");
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.target.closest("input, button, select, textarea")) return;
+    if (e.code === "Space") { e.preventDefault(); running ? pause() : play(); }
+    else if (e.key === "r" || e.key === "R") reset();
+  });
+
+  // ---------- drawing helpers ----------
+  let C = {};
+  function readTokens() {
+    const cs = getComputedStyle(document.documentElement);
+    const keys = ["ink", "ink-2", "line", "surface", "sky-top", "sky-bot", "floor-line", "floor-fill", "hatch", "ramp", "ramp-edge", "ramp-label",
+      "block", "block-edge", "block-label", "vel", "mom", "marker", "trail", "e-keb", "e-ker", "e-u", "e-th", "e-tot", "earth", "grid", "axis", "amber"];
+    C = {}; for (const k of keys) C[k] = cs.getPropertyValue("--" + k).trim();
+  }
+  function fit(canvas) {
+    const r = canvas.getBoundingClientRect(), dpr = Math.min(3, window.devicePixelRatio || 1);
+    const w = Math.max(1, Math.round(r.width * dpr)), h = Math.max(1, Math.round(r.height * dpr));
+    if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+    const ctx = canvas.getContext("2d"); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { ctx, W: r.width, H: r.height };
+  }
+  const font = (px, w = 500) => `${w} ${px}px "IBM Plex Sans", system-ui, sans-serif`;
+  const mono = (px) => `500 ${px}px "IBM Plex Mono", ui-monospace, monospace`;
+  function arrow(ctx, x1, y1, x2, y2, color, w) {
+    const dx = x2 - x1, dy = y2 - y1, L = Math.hypot(dx, dy); if (L < 2) return;
+    const ux = dx / L, uy = dy / L, hl = Math.min(12, 4 + L * 0.35), hw = hl * 0.6;
+    ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = w; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2 - ux * hl * 0.8, y2 - uy * hl * 0.8); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x2, y2); ctx.lineTo(x2 - ux * hl - uy * hw, y2 - uy * hl + ux * hw);
+    ctx.lineTo(x2 - ux * hl + uy * hw, y2 - uy * hl - ux * hw); ctx.closePath(); ctx.fill();
+  }
+  function label(ctx, text, x, y, color, align = "left", f = font(12, 600)) {
+    ctx.font = f; ctx.textAlign = align; ctx.textBaseline = "middle";
+    ctx.lineWidth = 3.5; ctx.strokeStyle = C["sky-top"]; ctx.lineJoin = "round"; ctx.strokeText(text, x, y);
+    ctx.fillStyle = color; ctx.fillText(text, x, y);
+  }
+  function niceStep(range, n) {
+    const raw = range / n, p = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / p;
+    return (f < 1.5 ? 1 : f < 3 ? 2 : f < 7 ? 5 : 10) * p;
+  }
+  const fx = (v, d = 2) => (Math.abs(v) < 0.5 * Math.pow(10, -d) ? 0 : v).toFixed(d);
+
+  // ---------- scene ----------
+  function drawScene() {
+    const { ctx, W, H } = fit($("scene"));
+    const xr = [-0.12, GEOM.trackL + 0.12];
+    const s = W / (xr[1] - xr[0]);
+    const floorY = H - Math.max(26, 0.16 * s);
+    const X = (x) => (x - xr[0]) * s, Y = (y) => floorY - y * s;
+    const q = E.measure(sim), st = sim.st, p = sim.p;
+
+    const g = ctx.createLinearGradient(0, 0, 0, floorY);
+    g.addColorStop(0, C["sky-top"]); g.addColorStop(1, C["sky-bot"]);
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    // floor
+    ctx.fillStyle = C["floor-fill"]; ctx.fillRect(0, floorY, W, H - floorY);
+    ctx.save(); ctx.beginPath(); ctx.rect(0, floorY, W, H - floorY); ctx.clip();
+    ctx.strokeStyle = C.hatch; ctx.lineWidth = 1;
+    for (let x = -H; x < W + H; x += 9) { ctx.beginPath(); ctx.moveTo(x, H); ctx.lineTo(x + (H - floorY), floorY); ctx.stroke(); }
+    ctx.restore();
+    ctx.strokeStyle = C["floor-line"]; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(0, floorY); ctx.lineTo(W, floorY); ctx.stroke();
+    if (p.muFloor > 0) { // rough floor texture
+      ctx.fillStyle = C["floor-line"];
+      for (let x = X(0); x < X(GEOM.trackL); x += 5) ctx.fillRect(x, floorY - 2.2, 1.6, 2.2);
+    }
+    // track end posts
+    for (const xe of [0, GEOM.trackL]) {
+      ctx.fillStyle = C["floor-line"]; ctx.fillRect(X(xe) - 2, floorY - 0.12 * s, 4, 0.12 * s);
+    }
+    // scale bar
+    const sb = 0.5 * s, sx = 14, sy = floorY + Math.min(18, (H - floorY) / 2);
+    ctx.strokeStyle = C.ink; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(sx, sy - 4); ctx.lineTo(sx, sy + 4); ctx.moveTo(sx, sy); ctx.lineTo(sx + sb, sy); ctx.moveTo(sx + sb, sy - 4); ctx.lineTo(sx + sb, sy + 4); ctx.stroke();
+    ctx.font = font(11.5, 600); ctx.fillStyle = C.ink; ctx.textAlign = "left"; ctx.textBaseline = "middle";
+    ctx.fillText("0.5 m", sx + sb + 6, sy);
+
+    // height marker (start height and highest point)
+    if (show.height && st.hMax > 0.002) {
+      const y0 = Y(GEOM.a), y1 = Y(GEOM.a + st.hMax);
+      const xm = X(st.X + RAMP_W) + 14;
+      ctx.setLineDash([5, 4]); ctx.strokeStyle = C.marker; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(X(0), y1); ctx.lineTo(Math.min(W - 4, xm + 8), y1); ctx.stroke();
+      ctx.globalAlpha = 0.6; ctx.beginPath(); ctx.moveTo(X(0), y0); ctx.lineTo(Math.min(W - 4, xm + 8), y0); ctx.stroke(); ctx.globalAlpha = 1;
+      ctx.setLineDash([]);
+      if (xm + 60 < W) {
+        arrow(ctx, xm, (y0 + y1) / 2, xm, y1, C.marker, 1.5); arrow(ctx, xm, (y0 + y1) / 2, xm, y0, C.marker, 1.5);
+        label(ctx, show.vals ? `h = ${st.hMax.toFixed(3)} m` : "h", xm + 7, (y0 + y1) / 2, C.marker, "left", font(12.5, 700));
+      }
+    }
+    // trail of block CoM
+    if (show.trail && hist.length > 1) {
+      ctx.strokeStyle = C.trail; ctx.lineWidth = 1.5; ctx.globalAlpha = 0.55; ctx.setLineDash([2, 3]);
+      ctx.beginPath(); hist.forEach((h, i) => (i ? ctx.lineTo(X(h.bx), Y(h.by)) : ctx.moveTo(X(h.bx), Y(h.by))));
+      ctx.lineTo(X(q.bx), Y(q.by)); ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1;
+    }
+
+    // ramp
+    const toe = st.X;
+    ctx.beginPath(); ctx.moveTo(X(toe), Y(0));
+    for (let i = 1; i <= 48; i++) { const ph = (i / 48) * Math.PI / 2; ctx.lineTo(X(toe + RF * Math.sin(ph)), Y(RF - RF * Math.cos(ph))); }
+    ctx.lineTo(X(toe + RAMP_W), Y(RF)); ctx.lineTo(X(toe + RAMP_W), Y(0)); ctx.closePath();
+    ctx.fillStyle = C.ramp; ctx.fill(); ctx.strokeStyle = C["ramp-edge"]; ctx.lineWidth = 2; ctx.lineJoin = "round"; ctx.stroke();
+    if (p.muFace > 0) { // rough face
+      ctx.strokeStyle = C["ramp-edge"]; ctx.lineWidth = 1.2;
+      for (let ph = 0.03; ph < Math.PI / 2; ph += 0.045) {
+        const x = toe + RF * Math.sin(ph), y = RF - RF * Math.cos(ph), nx = -Math.sin(ph), ny = Math.cos(ph);
+        ctx.beginPath(); ctx.moveTo(X(x), Y(y)); ctx.lineTo(X(x - nx * 0.022), Y(y - ny * 0.022)); ctx.stroke();
+      }
+    }
+    if (!p.free) { // bolted feet
+      for (const fxp of [toe + RF * 0.62, toe + RAMP_W - 0.07]) {
+        ctx.fillStyle = C["ramp-edge"];
+        ctx.fillRect(X(fxp) - 0.05 * s, Y(0) - 0.035 * s, 0.1 * s, 0.035 * s + 3);
+        ctx.fillStyle = C["sky-top"];
+        ctx.beginPath(); ctx.arc(X(fxp), Y(0) - 0.017 * s, Math.max(1.5, 0.009 * s), 0, 7); ctx.fill();
+      }
+    }
+    ctx.font = font(Math.max(10, Math.min(15, 0.055 * s)), 700); ctx.fillStyle = C["ramp-label"];
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText(p.M.toFixed(1) + " kg", X(toe + RAMP_W - 0.21), Y(0.095));
+
+    // block
+    ctx.save(); ctx.translate(X(q.bx), Y(q.by)); ctx.rotate(-q.th);
+    const bw = GEOM.bw * s, bh = 2 * GEOM.a * s;
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(-bw / 2, -bh / 2, bw, bh, Math.min(6, bh * 0.25)); else ctx.rect(-bw / 2, -bh / 2, bw, bh);
+    ctx.fillStyle = C.block; ctx.fill(); ctx.strokeStyle = C["block-edge"]; ctx.lineWidth = 1.8; ctx.stroke();
+    ctx.font = font(Math.max(9, Math.min(14, 0.05 * s)), 700); ctx.fillStyle = C["block-label"];
+    ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(p.m.toFixed(1) + " kg", 0, 0.5);
+    ctx.restore();
+
+    // vectors
+    const vs = 0.26 * s;                 // px per (m/s)
+    const ps = (0.55 * s) / (p.m * p.v0); // initial block momentum -> 0.55 m
+    const rampAnchor = [X(toe + RAMP_W - GEOM.topW / 2), Y(RF + 0.06)];
+    if (show.vel) {
+      const bx0 = X(q.bx), by0 = Y(q.by);
+      if (Math.hypot(q.vbx, q.vby) > 0.01) {
+        const x2 = bx0 + q.vbx * vs, y2 = by0 - q.vby * vs;
+        arrow(ctx, bx0, by0, x2, y2, C.vel, 3);
+        label(ctx, show.vals ? `v = ${Math.hypot(q.vbx, q.vby).toFixed(2)} m/s` : "v", x2 + (q.vbx >= 0 ? 6 : -6), y2 - 10, C.vel, q.vbx >= 0 ? "left" : "right");
+      }
+      if (Math.abs(q.VX) > 0.01) {
+        const [ax, ay] = rampAnchor, x2 = ax + q.VX * vs;
+        arrow(ctx, ax, ay, x2, ay, C.vel, 3);
+        label(ctx, show.vals ? `V = ${Math.abs(q.VX).toFixed(2)} m/s` : "V", x2 + (q.VX >= 0 ? 6 : -6), ay, C.vel, q.VX >= 0 ? "left" : "right");
+      }
+    }
+    if (show.mom) {
+      const off = 0.2 * s;
+      const bx0 = X(q.bx), by0 = Y(q.by) - off;
+      if (Math.hypot(q.pbx, q.pby) > 0.01) {
+        const x2 = bx0 + q.pbx * ps, y2 = by0 - q.pby * ps;
+        arrow(ctx, bx0, by0, x2, y2, C.mom, 3);
+        label(ctx, show.vals ? `p = ${Math.hypot(q.pbx, q.pby).toFixed(2)} kg·m/s` : "p", x2 + (q.pbx >= 0 ? 6 : -6), y2 - 10, C.mom, q.pbx >= 0 ? "left" : "right");
+      }
+      if (Math.abs(q.prx) > 0.01) {
+        const ax = rampAnchor[0], ay = rampAnchor[1] - (show.vel ? 0.13 * s : 0), x2 = ax + q.prx * ps;
+        arrow(ctx, ax, ay, x2, ay, C.mom, 3);
+        label(ctx, show.vals ? `P = ${Math.abs(q.prx).toFixed(2)} kg·m/s` : "P", x2 + (q.prx >= 0 ? 6 : -6), ay, C.mom, q.prx >= 0 ? "left" : "right");
+      }
+    }
+  }
+
+  // ---------- energy bars ----------
+  function drawEnergy(q) {
+    const { ctx, W, H } = fit($("energy"));
+    ctx.clearRect(0, 0, W, H);
+    const pad = { l: 46, r: 12, t: 22, b: 38 };
+    const top = q.E0 * 1.12, step = niceStep(top, 4);
+    const ymax = Math.ceil(top / step) * step;
+    const Y = (v) => H - pad.b - (v / ymax) * (H - pad.t - pad.b);
+    ctx.font = mono(11); ctx.textAlign = "right"; ctx.textBaseline = "middle";
+    for (let v = 0; v <= ymax + 1e-9; v += step) {
+      ctx.strokeStyle = C.grid; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(pad.l, Y(v)); ctx.lineTo(W - pad.r, Y(v)); ctx.stroke();
+      ctx.fillStyle = C["ink-2"]; ctx.fillText(+v.toFixed(3) + "", pad.l - 6, Y(v));
+    }
+    ctx.save(); ctx.translate(12, (pad.t + H - pad.b) / 2); ctx.rotate(-Math.PI / 2);
+    ctx.font = font(11.5, 600); ctx.textAlign = "center"; ctx.fillStyle = C["ink-2"]; ctx.fillText("Energy (J)", 0, 0); ctx.restore();
+    // initial energy reference
+    ctx.setLineDash([4, 3]); ctx.strokeStyle = C["e-tot"]; ctx.lineWidth = 1.3;
+    ctx.beginPath(); ctx.moveTo(pad.l, Y(q.E0)); ctx.lineTo(W - pad.r, Y(q.E0)); ctx.stroke(); ctx.setLineDash([]);
+    const bars = [["KE block", q.KEb, "e-keb"], ["KE ramp", q.KEr, "e-ker"], ["PE", q.U, "e-u"], ["Thermal", q.Eth, "e-th"], ["Total", q.Etot, "e-tot"]];
+    const slot = (W - pad.l - pad.r) / bars.length, bwid = Math.min(46, slot * 0.62);
+    bars.forEach(([name, v, col], i) => {
+      const cx = pad.l + slot * (i + 0.5), y = Y(Math.max(0, v));
+      ctx.fillStyle = C[col]; ctx.fillRect(cx - bwid / 2, y, bwid, Y(0) - y);
+      ctx.fillStyle = C.ink; ctx.font = font(11.5, 600); ctx.textAlign = "center"; ctx.textBaseline = "top";
+      ctx.fillText(name, cx, H - pad.b + 7);
+      if (show.vals) { ctx.font = mono(11); ctx.textBaseline = "bottom"; ctx.fillText(fx(v), cx, y - 3); }
+    });
+    ctx.strokeStyle = C.axis; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(pad.l, Y(0)); ctx.lineTo(W - pad.r, Y(0)); ctx.stroke();
+  }
+
+  // ---------- momentum bars ----------
+  function drawMomentum(q) {
+    const { ctx, W, H } = fit($("momentum"));
+    ctx.clearRect(0, 0, W, H);
+    const pad = { l: 46, r: 12, t: 20, b: 40 };
+    const pp = sim.p, lossy = !pp.free || pp.muFloor > 0;
+    const pmax = lossy ? 2 * pp.m * pp.v0 : Math.max(pp.m * pp.v0, (2 * pp.m * pp.M * pp.v0) / (pp.m + pp.M)), step = niceStep(pmax, 3);
+    const lim = Math.ceil(pmax / step) * step;
+    const Y = (v) => pad.t + (1 - (v + lim) / (2 * lim)) * (H - pad.t - pad.b);
+    ctx.font = mono(11); ctx.textAlign = "right"; ctx.textBaseline = "middle";
+    for (let v = -lim; v <= lim + 1e-9; v += step) {
+      ctx.strokeStyle = C.grid; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(pad.l, Y(v)); ctx.lineTo(W - pad.r, Y(v)); ctx.stroke();
+      ctx.fillStyle = C["ink-2"]; ctx.fillText(+v.toFixed(3) + "", pad.l - 6, Y(v));
+    }
+    ctx.save(); ctx.translate(12, (pad.t + H - pad.b) / 2); ctx.rotate(-Math.PI / 2);
+    ctx.font = font(11.5, 600); ctx.textAlign = "center"; ctx.fillStyle = C["ink-2"]; ctx.fillText("Momentum (kg·m/s)", 0, 0); ctx.restore();
+    const bars = [["Block", q.pbx, "e-keb", "x"], ["Ramp", q.prx, "e-ker", "x"], ["Sum", q.psx, "e-tot", "x"], ["Earth", q.pEarth, "earth", "x"], ["Sum", q.psy, "e-tot", "y"]];
+    const plotW = W - pad.l - pad.r, gap = plotW * 0.06, slot = (plotW - gap) / bars.length, bwid = Math.min(40, slot * 0.6);
+    bars.forEach(([name, v, col, ax], i) => {
+      const cx = pad.l + slot * (i + 0.5) + (ax === "y" ? gap : 0);
+      const y0 = Y(0), y = Y(Math.max(-lim, Math.min(lim, v)));
+      ctx.fillStyle = C[col];
+      if (name === "Earth") { ctx.globalAlpha = 0.85; }
+      ctx.fillRect(cx - bwid / 2, Math.min(y, y0), bwid, Math.abs(y - y0)); ctx.globalAlpha = 1;
+      ctx.fillStyle = C.ink; ctx.font = font(11.5, 600); ctx.textAlign = "center"; ctx.textBaseline = "top";
+      ctx.fillText(name, cx, H - pad.b + 6);
+      ctx.font = font(10.5, 600); ctx.fillStyle = C["ink-2"]; ctx.fillText(ax === "x" ? "x" : "y", cx, H - pad.b + 21);
+      if (show.vals) {
+        ctx.font = mono(11); ctx.fillStyle = C.ink;
+        ctx.textBaseline = v >= 0 ? "bottom" : "top"; ctx.fillText(fx(v), cx, v >= 0 ? y - 3 : y + 3);
+      }
+    });
+    const xs = pad.l + slot * 4 + gap / 2;
+    ctx.strokeStyle = C.line; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(xs, pad.t); ctx.lineTo(xs, H - pad.b + 30); ctx.stroke();
+    ctx.strokeStyle = C.axis; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(pad.l, Y(0)); ctx.lineTo(W - pad.r, Y(0)); ctx.stroke();
+  }
+
+  // ---------- graph vs time ----------
+  const SERIES = {
+    velocity: { unit: "Velocity (m/s)", lines: [
+      ["Block vₓ", (h) => h.vbx, "e-keb", false], ["Ramp Vₓ", (h) => h.VX, "e-ker", false], ["Block v_y", (h) => h.vby, "e-keb", true]] },
+    momentum: { unit: "Momentum (kg·m/s)", lines: [
+      ["Block pₓ", (h) => h.pbx, "e-keb", false], ["Ramp pₓ", (h) => h.prx, "e-ker", false],
+      ["Block + ramp pₓ", (h) => h.psx, "e-tot", false], ["Block + ramp p_y", (h) => h.psy, "e-tot", true]] },
+    energy: { unit: "Energy (J)", lines: [
+      ["KE block", (h) => h.KEb, "e-keb", false], ["KE ramp", (h) => h.KEr, "e-ker", false], ["PE", (h) => h.U, "e-u", false],
+      ["Thermal", (h) => h.Eth, "e-th", false], ["Total", (h) => h.Etot, "e-tot", false]] },
+  };
+  function buildLegend() {
+    $("graphLegend").innerHTML = SERIES[graphMode].lines.map(([n, , col, dash]) =>
+      `<span><i class="${dash ? "dash" : "line"}" style="${dash ? "border-color" : "background"}:var(--${col})"></i>${n.replace("_y", "<sub>y</sub>")}</span>`).join("");
+  }
+  let legendFor = null;
+  function drawGraph() {
+    if (legendFor !== graphMode) { buildLegend(); legendFor = graphMode; }
+    const { ctx, W, H } = fit($("graph"));
+    ctx.clearRect(0, 0, W, H);
+    const pad = { l: 50, r: 14, t: 14, b: 34 };
+    const S = SERIES[graphMode];
+    const tEnd = hist.length ? hist[hist.length - 1].t : 0;
+    const T = Math.max(2, Math.ceil((tEnd + 0.25) / 0.5) * 0.5);
+    let lo = 0, hi = 0;
+    const p = sim.p;
+    if (graphMode === "velocity") { hi = p.v0; lo = -p.v0; }
+    else if (graphMode === "momentum") { hi = p.m * p.v0; lo = -p.m * p.v0; }
+    else { hi = 0.5 * p.m * p.v0 * p.v0; }
+    for (const h of hist) for (const [, fn] of S.lines) { const v = fn(h); if (v > hi) hi = v; if (v < lo) lo = v; }
+    const span = hi - lo || 1; hi += span * 0.06; if (lo < 0) lo -= span * 0.06;
+    const step = niceStep(hi - lo, 4); lo = Math.floor(lo / step) * step; hi = Math.ceil(hi / step) * step;
+    const X = (t) => pad.l + (t / T) * (W - pad.l - pad.r), Y = (v) => pad.t + (1 - (v - lo) / (hi - lo)) * (H - pad.t - pad.b);
+    ctx.font = mono(11); ctx.textAlign = "right"; ctx.textBaseline = "middle";
+    for (let v = lo; v <= hi + 1e-9; v += step) {
+      ctx.strokeStyle = Math.abs(v) < 1e-9 ? C.axis : C.grid; ctx.lineWidth = Math.abs(v) < 1e-9 ? 1.2 : 1;
+      ctx.beginPath(); ctx.moveTo(pad.l, Y(v)); ctx.lineTo(W - pad.r, Y(v)); ctx.stroke();
+      ctx.fillStyle = C["ink-2"]; ctx.fillText(+v.toFixed(3) + "", pad.l - 6, Y(v));
+    }
+    const ts = T <= 4 ? 0.5 : T <= 10 ? 1 : 2;
+    ctx.textAlign = "center"; ctx.textBaseline = "top";
+    for (let t = 0; t <= T + 1e-9; t += ts) {
+      ctx.strokeStyle = C.grid; ctx.beginPath(); ctx.moveTo(X(t), pad.t); ctx.lineTo(X(t), H - pad.b); ctx.stroke();
+      ctx.fillStyle = C["ink-2"]; ctx.fillText(+t.toFixed(1) + "", X(t), H - pad.b + 5);
+    }
+    ctx.font = font(11.5, 600); ctx.fillText("Time (s)", (pad.l + W - pad.r) / 2, H - 14);
+    ctx.save(); ctx.translate(12, (pad.t + H - pad.b) / 2); ctx.rotate(-Math.PI / 2); ctx.textBaseline = "middle";
+    ctx.fillText(S.unit, 0, 0); ctx.restore();
+    for (const [, fn, col, dash] of S.lines) {
+      ctx.strokeStyle = C[col]; ctx.lineWidth = 2.2; ctx.setLineDash(dash ? [6, 4] : []); ctx.lineJoin = "round";
+      ctx.beginPath(); hist.forEach((h, i) => (i ? ctx.lineTo(X(h.t), Y(fn(h))) : ctx.moveTo(X(h.t), Y(fn(h))))); ctx.stroke();
+    }
+    ctx.setLineDash([]);
+    if (hist.length) { ctx.strokeStyle = C.amber; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(X(sim.st.t), pad.t); ctx.lineTo(X(sim.st.t), H - pad.b); ctx.stroke(); }
+  }
+
+  // ---------- readouts ----------
+  const dir = (v) => (Math.abs(v) < 0.005 ? "0.00 m/s" : `${Math.abs(v).toFixed(2)} m/s ${v < 0 ? "left" : "right"}`);
+  function updateData(q) {
+    const set = (id, v) => { $(id).textContent = v; };
+    set("vbx", fx(q.vbx)); set("vby", fx(q.vby)); set("pbx", fx(q.pbx)); set("pby", fx(q.pby)); set("keb", fx(q.KEb, 3));
+    set("vrx", fx(q.VX)); set("prx", fx(q.prx)); set("ker", fx(q.KEr, 3));
+    set("psx", fx(q.psx)); set("psy", fx(q.psy)); set("kes", fx(q.KEb + q.KEr, 3));
+    set("hNow", q.h.toFixed(3) + " m"); set("hMax", sim.st.hMax.toFixed(3) + " m");
+    set("uNow", fx(q.U, 3) + " J"); set("thNow", fx(q.Eth, 3) + " J");
+    $("clock").textContent = `t = ${sim.st.t.toFixed(2)} s`;
+    const items = sim.st.events.map((e) => {
+      if (e.type === "contact") return [e.t, sim.p.free && Math.abs(e.VX) > 0.005 ? `Block reaches the ramp at ${dir(e.vb)}; ramp moving ${dir(e.VX)}.` : `Block reaches the ramp at ${dir(e.vb)}.`];
+      if (e.type === "peak") return [e.t, sim.p.free
+        ? `Highest point: h = ${e.h.toFixed(3)} m. Block and ramp move together at ${dir(e.VX)}.`
+        : `Highest point: h = ${e.h.toFixed(3)} m. The block is momentarily at rest.`];
+      return [e.t, `Block back on the floor: block ${dir(e.vb)}, ramp ${dir(e.VX)}.`];
+    });
+    if (ended) items.push([sim.st.t, ended]);
+    $("moments").innerHTML = items.length
+      ? items.map(([t, txt]) => `<li><time>${t.toFixed(2)} s</time><span>${txt}</span></li>`).join("")
+      : `<li class="empty">Events appear here as the block reaches the ramp, peaks, and leaves.</li>`;
+    $("dataGrid").hidden = !show.vals;
+  }
+
+  function render() {
+    readTokens();
+    const q = E.measure(sim);
+    drawScene(); drawEnergy(q); drawMomentum(q); drawGraph(); updateData(q);
+  }
+
+  // initial outputs, theme and resize handling
+  syncRamp(); syncFric();
+  reset();
+  const ro = new ResizeObserver(() => render());
+  ["scene", "energy", "momentum", "graph"].forEach((id) => ro.observe($(id)));
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", render);
+  new MutationObserver(render).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(render);
+})();
+</script>
+
+</body>
+</html>
