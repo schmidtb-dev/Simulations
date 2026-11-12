@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Work Lab</title>
+<style>html,body{margin:0} [hidden]{display:none!important} :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700&display=swap">
+<style>
+/* Layout: simulation stage on the left, control panel on the right, screen tabs pinned to the bottom (classroom-sim style).
+   One light "lab room" look on purpose, so the projector, the Chromebooks and the worksheet all match. */
+:root{
+  --navy:#152238; --navy-2:#24365A; --navy-3:#3A4F78;
+  --page:#E9EEF5; --panel:#FFFFFF; --panel-2:#F6F8FB; --line:#C7D1DF; --ink:#16202F; --muted:#526075;
+  --force:#D9570B; --motion:#2463D6; --work:#6A3FC8; --work-dark:#45278A; --work-tint:#F1ECFB;
+  --tired:#C2335E; --go:#1F7F45; --go-dark:#16623A; --focus:#F2B705;
+  --font-head:'Poppins','Segoe UI',system-ui,sans-serif;
+  --font-body:'Inter','Segoe UI',system-ui,sans-serif;
+  color-scheme:light;
+}
+html,body{height:100%}
+body{background:var(--page);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.4;-webkit-font-smoothing:antialiased}
+*{box-sizing:border-box}
+button,input{font:inherit}
+.app{display:flex;flex-direction:column;min-height:100%}
+
+/* top bar */
+.topbar{background:var(--navy);color:#fff;display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  padding-block:8px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--font-head);font-weight:700;font-size:20px;letter-spacing:.01em}
+.brand svg{flex:none}
+.screen-title{font-family:var(--font-head);font-weight:600;font-size:15px;color:#C9D6EE;padding-left:14px;border-left:1px solid var(--navy-3)}
+.top-spacer{flex:1}
+.btn-reset{background:transparent;color:#fff;border:1.5px solid #7F92B5;border-radius:8px;padding:6px 12px;font-weight:600;font-size:14px;cursor:pointer}
+.btn-reset:hover{background:var(--navy-2)}
+
+/* main grid */
+main{flex:1;padding-block:12px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.screen{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:12px;max-width:1440px;margin:0 auto;align-items:start}
+.stage{display:flex;flex-direction:column;gap:12px;min-width:0}
+.canvas-wrap{position:relative;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:#EAF2FA;box-shadow:0 1px 2px rgba(21,34,56,.08)}
+.canvas-wrap canvas{display:block;width:100%;aspect-ratio:2/1;max-height:max(250px,calc(100vh - 330px));min-height:240px}
+/* results strip under the canvas */
+.card.strip{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px 22px;align-items:center;padding:10px 16px;border-color:#CDBDF0;background:linear-gradient(90deg,#fff,var(--work-tint))}
+.strip-k{font-family:var(--font-head);font-weight:600;font-size:14px;color:var(--navy);line-height:1.2}
+.strip-k span{display:block;font-family:var(--font-body);font-weight:500;font-size:12.5px;color:var(--muted)}
+.card.strip .meter-num{font-size:38px}
+.strip-meter{display:flex;align-items:center;gap:16px}
+.strip-bar{display:flex;flex-direction:column;gap:8px;min-width:0}
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.tile{border:1px solid #DCE3ED;background:var(--panel-2);border-radius:10px;padding:8px 12px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.tile .k{font-size:12.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.tile .v{font-weight:700;font-size:24px;font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:8px;line-height:1.1}
+.tile.f .v{color:var(--force)} .tile.d .v{color:var(--motion)}
+.tile.w{background:var(--work-tint);border-color:#CDBDF0} .tile.w .v{color:var(--work-dark);font-size:28px}
+.tile.t .tired-bar{margin-top:6px}
+.tile .dir{background:var(--force)} .tile.d .dir{background:var(--motion)}
+.check.inline{border:0;padding:0;background:transparent;border-radius:0}
+.math-chip{position:absolute;left:12px;top:12px;background:rgba(255,255,255,.95);border:2px solid var(--work);color:var(--work-dark);
+  border-radius:10px;padding:8px 12px;font-weight:700;font-size:clamp(14px,1.6vw,19px);font-variant-numeric:tabular-nums;max-width:calc(100% - 24px)}
+.math-chip small{display:block;font-weight:600;font-size:12px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin-bottom:2px}
+
+/* panel + cards */
+.panel{display:flex;flex-direction:column;gap:12px;min-width:0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 14px;display:flex;flex-direction:column;gap:8px}
+.card-h{font-family:var(--font-head);font-weight:600;font-size:15px;margin:0;color:var(--navy);display:flex;align-items:center;gap:8px}
+.hint{margin:0;font-size:13px;color:var(--muted)}
+.ctl{display:flex;flex-direction:column;gap:4px}
+.ctl-label{font-weight:600;font-size:14px;display:flex;justify-content:space-between;align-items:baseline}
+.ctl-label .sym{font-family:var(--font-head);font-weight:700;font-size:13px;padding:1px 8px;border-radius:999px;color:#fff}
+.sym.f{background:var(--force)} .sym.d{background:var(--motion)} .sym.m{background:var(--navy-3)}
+.picker{display:grid;grid-template-columns:44px 1fr 44px;gap:6px;align-items:stretch}
+.step{border:1.5px solid var(--line);background:var(--panel-2);border-radius:8px;font-size:16px;color:var(--navy);cursor:pointer;min-height:38px}
+.step:hover:not(:disabled){background:#E4EAF3;border-color:#9FB0C8}
+.step:disabled{opacity:.35;cursor:not-allowed}
+.val{display:flex;align-items:center;justify-content:center;border:1.5px solid var(--navy);border-radius:8px;background:#fff;
+  font-weight:700;font-size:20px;font-variant-numeric:tabular-nums;min-height:38px}
+input[type=range]{width:100%;accent-color:var(--navy);margin:0;height:22px}
+input[type=range]:disabled{opacity:.4}
+.range-ends{display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);margin-top:-5px}
+.go{background:var(--go);color:#fff;border:0;border-radius:10px;padding:12px 14px;font-family:var(--font-head);font-weight:700;font-size:18px;cursor:pointer;
+  box-shadow:0 3px 0 var(--go-dark);display:flex;align-items:center;justify-content:center;gap:10px}
+.go:hover:not(:disabled){filter:brightness(1.07)}
+.go:active:not(:disabled){transform:translateY(2px);box-shadow:0 1px 0 var(--go-dark)}
+.go:disabled{background:#8FA59A;box-shadow:none;cursor:wait}
+.status{margin:0;font-size:13.5px;color:var(--muted);min-height:2.5em}
+.status.done{color:var(--go-dark);font-weight:600}
+
+.meter-card{border-color:#CDBDF0;background:linear-gradient(#fff, var(--work-tint))}
+.meter-num{font-weight:700;font-size:40px;line-height:1;color:var(--work-dark);font-variant-numeric:tabular-nums;display:flex;align-items:baseline;gap:6px}
+.meter-num .u{font-size:22px;color:var(--work)}
+.meter-bar{height:16px;border-radius:999px;background:#E3DAF6;overflow:hidden;border:1px solid #CDBDF0}
+.meter-fill{height:100%;width:0;background:var(--work);border-radius:999px}
+.meter-scale{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;margin-top:-4px}
+.meter-sub{margin:0;font-size:13px;color:var(--muted)}
+
+.check{display:flex;align-items:center;gap:10px;font-weight:600;cursor:pointer;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 14px}
+.check input{width:20px;height:20px;accent-color:var(--work);margin:0}
+
+/* readouts (screen 2 + 3) */
+.readouts{display:grid;gap:8px}
+.ro{display:grid;grid-template-columns:1fr auto;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;background:var(--panel-2);border:1px solid #DCE3ED}
+.ro .k{font-size:13.5px;font-weight:600;color:var(--muted)}
+.ro .v{font-weight:700;font-size:18px;font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:8px}
+.ro.f .v{color:var(--force)} .ro.d .v{color:var(--motion)}
+.dir{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:6px;color:#fff;font-size:16px;line-height:1}
+.ro.f .dir{background:var(--force)} .ro.d .dir{background:var(--motion)}
+.dir.none{background:#A8B3C4 !important;font-size:16px}
+.tired-bar{height:12px;border-radius:999px;background:#F6DCE5;overflow:hidden;border:1px solid #EBB9CA}
+.tired-fill{height:100%;width:0;background:var(--tired)}
+.weight-box{background:var(--panel-2);border:1px dashed #9FB0C8;border-radius:8px;padding:6px 10px;font-size:14px;line-height:1.35}
+.weight-box b{font-size:17px;color:var(--force);font-variant-numeric:tabular-nums}
+
+/* scenario list */
+.scn-list{display:grid;gap:6px}
+.scn{display:grid;grid-template-columns:32px 1fr;align-items:center;gap:10px;text-align:left;border:1.5px solid var(--line);background:#fff;border-radius:10px;padding:7px 10px;cursor:pointer;font-weight:600;font-size:14px;color:var(--ink)}
+.scn .badge{width:32px;height:32px;border-radius:8px;background:var(--panel-2);border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:var(--font-head);font-weight:700;font-size:16px;color:var(--navy)}
+.scn:hover:not(:disabled){border-color:#8FA2C0}
+.scn[aria-pressed=true]{border-color:var(--navy);background:#EEF3FB;box-shadow:inset 4px 0 0 var(--navy)}
+.scn[aria-pressed=true] .badge{background:var(--navy);color:#fff;border-color:var(--navy)}
+.scn:disabled{cursor:wait;opacity:.6}
+.scn-desc{margin:0;font-size:14px;background:#FFF8E6;border:1px solid #F0D9A0;border-radius:8px;padding:8px 10px}
+.why{margin:0;font-size:14px;background:var(--work-tint);border:1.5px solid #CDBDF0;border-radius:8px;padding:8px 10px;color:#2E1A63}
+.why b{color:var(--work-dark)}
+
+/* logs */
+.log-h{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.ghost{background:transparent;border:1.5px solid var(--line);border-radius:8px;padding:4px 10px;font-weight:600;font-size:13px;color:var(--muted);cursor:pointer}
+.ghost:hover{border-color:#8FA2C0;color:var(--ink)}
+.table-wrap{overflow:auto;max-height:190px;border:1px solid #DCE3ED;border-radius:8px}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:14.5px}
+th,td{padding:6px 10px;text-align:center;border-bottom:1px solid #E6EBF2}
+th{background:var(--panel-2);font-size:12.5px;font-weight:700;color:var(--muted);position:sticky;top:0;text-transform:uppercase;letter-spacing:.03em}
+td.w{font-weight:700;color:var(--work-dark)}
+tr.new td{animation:flash 1.2s ease-out}
+@keyframes flash{from{background:#E9E0FB}to{background:transparent}}
+tr.empty td{color:var(--muted);font-style:italic;padding:12px}
+
+/* bottom tabs */
+.tabs{position:sticky;bottom:0;z-index:5;background:var(--navy);display:flex;justify-content:center;gap:8px;flex-wrap:wrap;
+  padding-top:8px;padding-bottom:calc(8px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.tab{display:flex;align-items:center;gap:10px;background:transparent;border:2px solid transparent;color:#C9D6EE;border-radius:12px;padding:6px 14px 6px 8px;cursor:pointer;font-family:var(--font-head);font-weight:600;font-size:15px}
+.tab .ico{width:44px;height:34px;border-radius:8px;background:var(--navy-2);display:flex;align-items:center;justify-content:center}
+.tab .num{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#C9D6EE;color:var(--navy);font-size:13px;font-weight:700;margin-right:2px}
+.tab:hover{color:#fff;background:var(--navy-2)}
+.tab[aria-selected=true]{color:var(--navy);background:#fff;border-color:var(--focus)}
+.tab[aria-selected=true] .ico{background:#E6ECF6}
+.tab[aria-selected=true] .num{background:var(--navy);color:#fff}
+
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+@media (max-width:900px){
+  .screen{grid-template-columns:minmax(0,1fr)}
+  .tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .card.strip{grid-template-columns:minmax(0,1fr)}
+  .canvas-wrap canvas{max-height:none;min-height:0}
+  .screen-title{display:none}
+  .tab{font-size:13px;padding:5px 10px 5px 6px}
+  .tab .ico{width:34px;height:28px}
+}
+@media (max-width:480px){ .tab .label-long{display:none} .tab .ico{display:none} .tabs{gap:4px} }
+@media (prefers-reduced-motion:reduce){ tr.new td{animation:none} }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><rect x="3" y="11" width="15" height="15" rx="2" fill="#D9A15B" stroke="#8A5526" stroke-width="1.5"/><path d="M5.5 23.5 L15.5 13.5" stroke="#8A5526" stroke-width="1.5"/><path d="M19 15 H27 M23.5 11.5 L27 15 L23.5 18.5" stroke="#F28A3C" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Work Lab
+    </div>
+    <div class="screen-title" id="screenTitle">Screen 1 · Push</div>
+    <div class="top-spacer"></div>
+    <button class="btn-reset" id="resetScreen" type="button">↺ Reset this screen</button>
+  </header>
+
+  <main>
+    <!-- ============ SCREEN 1: PUSH ============ -->
+    <section class="screen" id="screen-push" aria-label="Screen 1: Push">
+      <div class="stage">
+        <div class="canvas-wrap">
+          <canvas id="pushCanvas" role="img" aria-label="A person pushes a wooden box along a floor with a tape measure marked in meters."></canvas>
+          <div class="math-chip" id="pushChip" hidden></div>
+        </div>
+        <div class="card strip">
+          <div class="strip-meter">
+            <div class="strip-k">Work Meter<span>work done by your push</span></div>
+            <div class="meter-num"><span id="pushW">0</span><span class="u">J</span></div>
+          </div>
+          <div class="strip-bar">
+            <div class="meter-bar"><div class="meter-fill" id="pushBar"></div></div>
+            <div class="meter-scale"><span>0 J</span><span>500</span><span>1000</span><span>1500</span><span>2000 J</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="log-h"><h2 class="card-h">Push log</h2><button class="ghost" id="pushClear" type="button">Clear log</button></div>
+          <div class="table-wrap"><table>
+            <thead><tr><th>Push #</th><th>Force F (N)</th><th>Distance d (m)</th><th>Work W (J)</th></tr></thead>
+            <tbody id="pushLog"></tbody>
+          </table></div>
+        </div>
+      </div>
+      <aside class="panel" aria-label="Push controls">
+        <div class="card">
+          <h2 class="card-h">Set your push</h2>
+          <div class="ctl">
+            <label class="ctl-label" for="pushF-range">Force <span class="sym f">F</span></label>
+            <div class="picker"><button class="step" id="pushF-dec" type="button" aria-label="Less force">◀</button><output class="val" id="pushF-out" for="pushF-range"></output><button class="step" id="pushF-inc" type="button" aria-label="More force">▶</button></div>
+            <input type="range" id="pushF-range" min="0" max="200" step="10" value="100" aria-label="Force in newtons">
+            <div class="range-ends"><span>0 N</span><span>200 N</span></div>
+          </div>
+          <div class="ctl">
+            <label class="ctl-label" for="pushD-range">Distance <span class="sym d">d</span></label>
+            <div class="picker"><button class="step" id="pushD-dec" type="button" aria-label="Shorter distance">◀</button><output class="val" id="pushD-out" for="pushD-range"></output><button class="step" id="pushD-inc" type="button" aria-label="Longer distance">▶</button></div>
+            <input type="range" id="pushD-range" min="0" max="10" step="1" value="2" aria-label="Distance in meters">
+            <div class="range-ends"><span>0 m</span><span>10 m</span></div>
+          </div>
+          <button class="go" id="pushGo" type="button">▶ Push the box</button>
+          <p class="status" id="pushStatus" aria-live="polite">Set the force and the distance. Then press <b>Push the box</b>.</p>
+        </div>
+        <label class="check"><input type="checkbox" id="pushMath"> Show the math</label>
+      </aside>
+    </section>
+
+    <!-- ============ SCREEN 2: WORK OR NOT ============ -->
+    <section class="screen" id="screen-won" aria-label="Screen 2: Work or Not?" hidden>
+      <div class="stage">
+        <div class="canvas-wrap">
+          <canvas id="wonCanvas" role="img" aria-label="An animated scene for the chosen situation, with an orange force arrow and a blue motion arrow."></canvas>
+        </div>
+        <div class="tiles" aria-live="polite">
+          <div class="tile f"><span class="k">Your force</span><span class="v"><span id="wonF">0 N</span><span class="dir" id="wonFdir">→</span></span></div>
+          <div class="tile d"><span class="k">Distance moved</span><span class="v"><span id="wonD">0.0 m</span><span class="dir" id="wonDdir">→</span></span></div>
+          <div class="tile w"><span class="k">Work Meter</span><span class="v"><span id="wonW">0</span>&nbsp;J</span></div>
+          <div class="tile t"><span class="k">How tired you feel</span><div class="tired-bar"><div class="tired-fill" id="wonTired"></div></div></div>
+        </div>
+        <div class="card">
+          <p class="scn-desc" id="wonDesc"></p>
+          <p class="why" id="wonWhy" hidden></p>
+        </div>
+      </div>
+      <aside class="panel" aria-label="Work or Not controls">
+        <div class="card">
+          <h2 class="card-h">Pick a situation</h2>
+          <div class="scn-list" id="scnList"></div>
+          <button class="go" id="wonGo" type="button">▶ Play</button>
+        </div>
+        <label class="check"><input type="checkbox" id="wonShowWhy"> Show why</label>
+      </aside>
+    </section>
+
+    <!-- ============ SCREEN 3: LIFT ============ -->
+    <section class="screen" id="screen-lift" aria-label="Screen 3: Lift" hidden>
+      <div class="stage">
+        <div class="canvas-wrap">
+          <canvas id="liftCanvas" role="img" aria-label="A hand lifts a box straight up with a spring scale, next to a shelf and a tall tape measure in meters."></canvas>
+          <div class="math-chip" id="liftChip" hidden></div>
+        </div>
+        <div class="card strip">
+          <div class="strip-meter">
+            <div class="strip-k">Work Meter<span>work done by your lift</span></div>
+            <div class="meter-num"><span id="liftW">0</span><span class="u">J</span></div>
+          </div>
+          <div class="strip-bar">
+            <div class="meter-bar"><div class="meter-fill" id="liftBar"></div></div>
+            <div class="meter-scale"><span>0 J</span><span>50</span><span>100</span><span>150</span><span>200 J</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="log-h"><h2 class="card-h">Lift log</h2><button class="ghost" id="liftClear" type="button">Clear log</button></div>
+          <div class="table-wrap"><table>
+            <thead><tr><th>Lift #</th><th>Mass (kg)</th><th>Force = Weight (N)</th><th>Height d (m)</th><th>Work W (J)</th></tr></thead>
+            <tbody id="liftLog"></tbody>
+          </table></div>
+        </div>
+      </div>
+      <aside class="panel" aria-label="Lift controls">
+        <div class="card">
+          <h2 class="card-h">Set your lift</h2>
+          <div class="ctl">
+            <label class="ctl-label" for="liftM-range">Mass <span class="sym m">m</span></label>
+            <div class="picker"><button class="step" id="liftM-dec" type="button" aria-label="Less mass">◀</button><output class="val" id="liftM-out" for="liftM-range"></output><button class="step" id="liftM-inc" type="button" aria-label="More mass">▶</button></div>
+            <input type="range" id="liftM-range" min="1" max="10" step="1" value="2" aria-label="Mass in kilograms">
+            <div class="range-ends"><span>1 kg</span><span>10 kg</span></div>
+          </div>
+          <div class="weight-box" id="liftWeight"></div>
+          <div class="ctl">
+            <label class="ctl-label" for="liftH-range">Height <span class="sym d">d</span></label>
+            <div class="picker"><button class="step" id="liftH-dec" type="button" aria-label="Lower">◀</button><output class="val" id="liftH-out" for="liftH-range"></output><button class="step" id="liftH-inc" type="button" aria-label="Higher">▶</button></div>
+            <input type="range" id="liftH-range" min="0.5" max="2" step="0.5" value="1" aria-label="Height in meters">
+            <div class="range-ends"><span>0.5 m</span><span>2.0 m</span></div>
+          </div>
+          <button class="go" id="liftGo" type="button">▶ Lift the box</button>
+          <p class="status" id="liftStatus" aria-live="polite">Set the mass and the height. Then press <b>Lift the box</b>.</p>
+        </div>
+        <label class="check"><input type="checkbox" id="liftMath"> Show the math</label>
+      </aside>
+    </section>
+  </main>
+
+  <nav class="tabs" role="tablist" aria-label="Simulation screens">
+    <button class="tab" role="tab" id="tab-push" data-screen="push" aria-selected="true" type="button">
+      <span class="ico"><svg width="34" height="22" viewBox="0 0 34 22" aria-hidden="true"><rect x="12" y="6" width="13" height="13" rx="1.5" fill="#D9A15B" stroke="#8A5526" stroke-width="1.3"/><circle cx="6" cy="5" r="2.6" fill="#E0AE8A"/><path d="M6 8 L8 14 M7 10 L12 11 M8 14 L5 20 M8 14 L10 20" stroke="#0E9384" stroke-width="2.2" stroke-linecap="round" fill="none"/><path d="M27 12 H33 M30.5 9.5 L33 12 L30.5 14.5" stroke="#F28A3C" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      <span><span class="num">1</span> Push</span>
+    </button>
+    <button class="tab" role="tab" id="tab-won" data-screen="won" aria-selected="false" type="button">
+      <span class="ico"><svg width="34" height="22" viewBox="0 0 34 22" aria-hidden="true"><rect x="3" y="2" width="9" height="18" fill="#B5523B"/><path d="M3 6.5 H12 M3 11 H12 M3 15.5 H12 M7.5 2 V6.5 M5 6.5 V11 M9.5 11 V15.5 M7 15.5 V20" stroke="#EAD9C6" stroke-width="1"/><text x="23" y="17" text-anchor="middle" font-family="Poppins,sans-serif" font-weight="700" font-size="16" fill="#FFD166">?</text></svg></span>
+      <span><span class="num">2</span> Work or Not<span class="label-long">?</span></span>
+    </button>
+    <button class="tab" role="tab" id="tab-lift" data-screen="lift" aria-selected="false" type="button">
+      <span class="ico"><svg width="34" height="22" viewBox="0 0 34 22" aria-hidden="true"><rect x="9" y="11" width="10" height="10" rx="1.2" fill="#D9A15B" stroke="#8A5526" stroke-width="1.2"/><path d="M14 11 V4" stroke="#C9D6EE" stroke-width="1.4"/><path d="M26 18 V4 M23 7 L26 4 L29 7" stroke="#F28A3C" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><rect x="2" y="2" width="3" height="19" fill="#F5C518"/></svg></span>
+      <span><span class="num">3</span> Lift</span>
+    </button>
+  </nav>
+</div>
+
+<script>
+(() => {
+'use strict';
+const $ = (s) => document.querySelector(s);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const smooth = (t) => t * t * (3 - 2 * t);
+const f1 = (v) => (Math.round(v * 10) / 10).toFixed(1);
+const fJ = (v) => Math.round(v).toLocaleString('en-US');
+// The box moves at a steady speed: short ease-in and ease-out so the motion reads clearly, constant in the middle.
+const steady = (t) => { const a = 0.08; if (t <= 0) return 0; if (t >= 1) return 1;
+  const v = 1 / (1 - a); if (t < a) return v * t * t / (2 * a); if (t > 1 - a) return 1 - v * (1 - t) * (1 - t) / (2 * a); return v * (t - a / 2); };
+
+/* ---------------- Stage: world (meters, y up) -> canvas pixels ---------------- */
+class Stage {
+  constructor(canvas, world, draw) {
+    this.c = canvas; this.ctx = canvas.getContext('2d'); this.world = world; this.drawFn = draw; this.w = 0; this.h = 0;
+    new ResizeObserver(() => { this.resize(); this.draw(); }).observe(canvas);
+  }
+  resize() {
+    const r = this.c.getBoundingClientRect(); if (!r.width) return;
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    this.w = r.width; this.h = r.height;
+    this.c.width = Math.round(r.width * dpr); this.c.height = Math.round(r.height * dpr);
+    this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const W = this.world, ww = W.x1 - W.x0, wh = W.y1 - W.y0;
+    this.s = Math.min(this.w / ww, this.h / wh);
+    this.ox = (this.w - ww * this.s) / 2 - W.x0 * this.s;
+    this.oy = this.h + W.y0 * this.s;
+  }
+  X(x) { return this.ox + x * this.s; }
+  Y(y) { return this.oy - y * this.s; }
+  fs(m, lo = 12, hi = 18) { return clamp(m * this.s, lo, hi); }
+  draw() { if (!this.w) return; this.ctx.clearRect(0, 0, this.w, this.h); this.drawFn(this.ctx, this); }
+}
+
+/* ---------------- drawing helpers ---------------- */
+const C = {
+  wallTop: '#DCE8F4', wallBot: '#EEF4FA', base: '#B9C8DA', floor: '#D7B98C', floorFace: '#C9A675', floorLine: '#8C6A3F',
+  tape: '#F5C518', tapeEdge: '#B38D00', crate: '#D9A15B', crateD: '#8A5526', brick: '#B5523B', mortar: '#EAD9C6',
+  skin: '#D9A07A', hair: '#3A2A22', shirt: '#0E9384', shirtD: '#0A6E63', pants: '#2A4A8C', pantsD: '#1E3566', shoe: '#23262B',
+  force: '#D9570B', motion: '#2463D6', ink: '#16202F', muted: '#526075', shelf: '#8B6B4A', shelfD: '#5E4630'
+};
+function font(px, w = 600, fam = 'Inter') { return `${w} ${Math.round(px)}px ${fam}, "Segoe UI", system-ui, sans-serif`; }
+function label(ctx, txt, x, y, { color = C.ink, px = 14, weight = 700, align = 'center', base = 'middle', halo = true, fam = 'Inter' } = {}) {
+  ctx.font = font(px, weight, fam); ctx.textAlign = align; ctx.textBaseline = base;
+  if (halo) { ctx.lineWidth = Math.max(3, px * 0.32); ctx.strokeStyle = 'rgba(255,255,255,.95)'; ctx.lineJoin = 'round'; ctx.strokeText(txt, x, y); }
+  ctx.fillStyle = color; ctx.fillText(txt, x, y);
+}
+function arrowPx(ctx, x1, y1, x2, y2, color, w = 8) {
+  const L = Math.hypot(x2 - x1, y2 - y1); if (L < 2) return;
+  const ux = (x2 - x1) / L, uy = (y2 - y1) / L, head = Math.min(L * 0.55, w * 2.4), hw = w * 1.35;
+  const bx = x2 - ux * head, by = y2 - uy * head, px = -uy, py = ux;
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(x1 + px * w / 2, y1 + py * w / 2); ctx.lineTo(bx + px * w / 2, by + py * w / 2); ctx.lineTo(bx + px * hw, by + py * hw);
+  ctx.lineTo(x2, y2); ctx.lineTo(bx - px * hw, by - py * hw); ctx.lineTo(bx - px * w / 2, by - py * w / 2); ctx.lineTo(x1 - px * w / 2, y1 - py * w / 2); ctx.closePath();
+  ctx.fillStyle = color; ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.lineWidth = 2; ctx.lineJoin = 'round'; ctx.stroke(); ctx.fill();
+  ctx.restore();
+}
+function arrowW(ctx, S, x1, y1, x2, y2, color, wm = 0.075) { arrowPx(ctx, S.X(x1), S.Y(y1), S.X(x2), S.Y(y2), color, clamp(wm * S.s, 5, 11)); }
+function dimArrow(ctx, S, x1, x2, y, color, text, below = true) { // double-headed measuring arrow (horizontal)
+  const X1 = S.X(x1), X2 = S.X(x2), Y = S.Y(y);
+  if (Math.abs(X2 - X1) > 4) {
+    ctx.save(); ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(X1, Y); ctx.lineTo(X2, Y); ctx.stroke();
+    const tri = (x, dir) => { ctx.beginPath(); ctx.moveTo(x, Y); ctx.lineTo(x - dir * 9, Y - 6); ctx.lineTo(x - dir * 9, Y + 6); ctx.closePath(); ctx.fill(); };
+    const dir = X2 > X1 ? 1 : -1; if (Math.abs(X2 - X1) > 20) { tri(X2, dir); tri(X1, -dir); }
+    ctx.beginPath(); ctx.moveTo(X1, Y - 9); ctx.lineTo(X1, Y + 9); ctx.moveTo(X2, Y - 9); ctx.lineTo(X2, Y + 9); ctx.stroke();
+    ctx.restore();
+  }
+  if (text) label(ctx, text, (X1 + X2) / 2, Y + (below ? 1 : -1) * S.fs(0.2, 13, 17), { color, px: S.fs(0.2, 13, 17) });
+}
+function roundRect(ctx, x, y, w, h, r) { ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x, y, w, h, r) : ctx.rect(x, y, w, h); }
+
+function room(ctx, S) {
+  const g = ctx.createLinearGradient(0, 0, 0, S.Y(0));
+  g.addColorStop(0, C.wallTop); g.addColorStop(1, C.wallBot);
+  ctx.fillStyle = g; ctx.fillRect(0, 0, S.w, S.Y(0));
+  ctx.fillStyle = C.base; ctx.fillRect(0, S.Y(0.12), S.w, 0.12 * S.s);
+  ctx.fillStyle = C.floorFace; ctx.fillRect(0, S.Y(0), S.w, S.h - S.Y(0));
+  ctx.fillStyle = C.floorLine; ctx.fillRect(0, S.Y(0) - 1, S.w, 3);
+}
+function tapeH(ctx, S, x0, x1, step = 1, minor = 0.5, unitAll = false) {
+  const top = S.Y(-0.04), hgt = clamp(0.26 * S.s, 18, 30);
+  ctx.fillStyle = C.tape; ctx.fillRect(S.X(x0 - 0.12), top, S.X(x1 + 0.12) - S.X(x0 - 0.12), hgt);
+  ctx.strokeStyle = C.tapeEdge; ctx.lineWidth = 1; ctx.strokeRect(S.X(x0 - 0.12), top, S.X(x1 + 0.12) - S.X(x0 - 0.12), hgt);
+  ctx.strokeStyle = '#1a1a1a';
+  for (let v = x0; v <= x1 + 1e-6; v += minor) {
+    const major = Math.abs(v / step - Math.round(v / step)) < 1e-6;
+    ctx.lineWidth = major ? 2 : 1; ctx.beginPath(); ctx.moveTo(S.X(v), top); ctx.lineTo(S.X(v), top + hgt * (major ? 0.42 : 0.24)); ctx.stroke();
+    if (major) label(ctx, (v === x1 || unitAll) ? `${Math.round(v * 10) / 10} m` : `${Math.round(v * 10) / 10}`, S.X(v), top + hgt * 0.72, { px: clamp(hgt * 0.42, 10, 13), halo: false, color: '#1a1a1a' });
+  }
+}
+function tapeV(ctx, S, x, y0, y1, step = 0.5, minor = 0.1) {
+  const wpx = clamp(0.3 * S.s, 22, 34), left = S.X(x) - wpx;
+  ctx.fillStyle = C.tape; ctx.fillRect(left, S.Y(y1 + 0.06), wpx, S.Y(y0) - S.Y(y1 + 0.06));
+  ctx.strokeStyle = C.tapeEdge; ctx.lineWidth = 1; ctx.strokeRect(left, S.Y(y1 + 0.06), wpx, S.Y(y0) - S.Y(y1 + 0.06));
+  ctx.strokeStyle = '#1a1a1a';
+  for (let v = y0; v <= y1 + 1e-6; v += minor) {
+    const major = Math.abs(v / step - Math.round(v / step)) < 1e-6;
+    ctx.lineWidth = major ? 2 : 1; ctx.beginPath(); ctx.moveTo(left + wpx, S.Y(v)); ctx.lineTo(left + wpx - wpx * (major ? 0.4 : 0.22), S.Y(v)); ctx.stroke();
+    if (major) label(ctx, (Math.round(v * 10) / 10).toFixed(1), left + wpx * 0.36, S.Y(v), { px: clamp(wpx * 0.38, 10, 12.5), halo: false, color: '#1a1a1a' });
+  }
+  label(ctx, 'meters', left + wpx / 2, S.Y(y1 + 0.06) - 10, { px: 12, color: C.muted, weight: 600 });
+}
+function crate(ctx, S, x, y, w, h, tag) {
+  const X = S.X(x), Y = S.Y(y + h), W = w * S.s, H = h * S.s, b = Math.min(W, H) * 0.13;
+  ctx.save();
+  ctx.fillStyle = 'rgba(0,0,0,.12)'; ctx.beginPath(); ctx.ellipse(X + W / 2, S.Y(y) + 2, W * 0.55, 4, 0, 0, Math.PI * 2); if (y < 0.02) ctx.fill();
+  roundRect(ctx, X, Y, W, H, Math.max(2, W * 0.04)); ctx.fillStyle = C.crate; ctx.fill();
+  ctx.lineWidth = Math.max(1.5, 0.022 * S.s); ctx.strokeStyle = C.crateD; ctx.stroke();
+  ctx.strokeRect(X + b, Y + b, W - 2 * b, H - 2 * b);
+  ctx.beginPath(); ctx.moveTo(X + b, Y + H - b); ctx.lineTo(X + W - b, Y + b); ctx.stroke();
+  if (tag) {
+    const px = clamp(Math.min(W, H) * 0.24, 11, 16); ctx.font = font(px, 700); const tw = ctx.measureText(tag).width + 10;
+    roundRect(ctx, X + W / 2 - tw / 2, Y + H / 2 - px * 0.75, tw, px * 1.5, 4); ctx.fillStyle = '#fff'; ctx.fill(); ctx.strokeStyle = C.crateD; ctx.lineWidth = 1; ctx.stroke();
+    label(ctx, tag, X + W / 2, Y + H / 2 + 1, { px, halo: false, color: C.ink });
+  }
+  ctx.restore();
+}
+function brickWall(ctx, S, x, w, h) {
+  const X = S.X(x), W = w * S.s, top = S.Y(h), H = h * S.s, bh = 0.2 * S.s, bw = 0.4 * S.s;
+  ctx.save(); ctx.beginPath(); ctx.rect(X, top, W, H); ctx.clip();
+  ctx.fillStyle = C.mortar; ctx.fillRect(X, top, W, H);
+  for (let r = 0; r * bh < H; r++) {
+    const off = (r % 2) * bw / 2;
+    for (let c = -1; c * bw < W + bw; c++) { ctx.fillStyle = (r + c) % 3 === 0 ? '#A9493A' : C.brick; ctx.fillRect(X + c * bw + off + 1.5, S.Y(0) - (r + 1) * bh + 1.5, bw - 3, bh - 3); }
+  }
+  ctx.restore(); ctx.strokeStyle = '#7A3428'; ctx.lineWidth = 2; ctx.strokeRect(X, top, W, H);
+}
+function shelf(ctx, S, x0, x1, y) {
+  ctx.fillStyle = C.shelf; ctx.fillRect(S.X(x0), S.Y(y), S.X(x1) - S.X(x0), Math.max(6, 0.06 * S.s));
+  ctx.fillStyle = C.shelfD; ctx.fillRect(S.X(x0), S.Y(y) + Math.max(6, 0.06 * S.s) - 2, S.X(x1) - S.X(x0), 2);
+  // bracket + post
+  ctx.fillStyle = '#9AA6B6'; ctx.fillRect(S.X(x1) - 6, S.Y(Math.max(y, 0.2) + 0.25), 6, S.Y(0) - S.Y(Math.max(y, 0.2) + 0.25));
+  ctx.beginPath(); ctx.moveTo(S.X(x1) - 6, S.Y(y) + 6); ctx.lineTo(S.X(x1) - 6, S.Y(y - 0.25)); ctx.lineTo(S.X(x1) - 6 - 0.25 * S.s, S.Y(y) + 6); ctx.closePath(); ctx.fill();
+}
+
+/* ---- simple two-bone IK (world coords) ---- */
+function ik(a, t, l1, l2, bend) {
+  let dx = t.x - a.x, dy = t.y - a.y, d = Math.hypot(dx, dy); const maxd = l1 + l2 - 1e-4;
+  if (d > maxd) { dx *= maxd / d; dy *= maxd / d; d = maxd; }
+  if (d < 1e-4) d = 1e-4;
+  const ang = Math.atan2(dy, dx) + bend * Math.acos(clamp((l1 * l1 + d * d - l2 * l2) / (2 * l1 * d), -1, 1));
+  return { j: { x: a.x + l1 * Math.cos(ang), y: a.y + l1 * Math.sin(ang) }, e: { x: a.x + dx, y: a.y + dy } };
+}
+/* ---- a person, side view, facing right ----
+   o.x feet center; o.hipY; o.hipDx; o.lean (rad, + = forward); o.feet [front, back]; o.hands [front, back]; o.shake; o.sweat (0..1) */
+function person(ctx, S, o) {
+  const s = S.s, jit = o.shake ? (Math.random() - 0.5) * 0.018 : 0;
+  const hip = { x: o.x + (o.hipDx || 0) + jit, y: (o.hipY ?? 0.92) };
+  const lean = o.lean || 0;
+  const sh = { x: hip.x + 0.52 * Math.sin(lean), y: hip.y + 0.52 * Math.cos(lean) };
+  const neck = { x: hip.x + 0.58 * Math.sin(lean), y: hip.y + 0.58 * Math.cos(lean) };
+  const head = { x: hip.x + 0.71 * Math.sin(lean), y: hip.y + 0.71 * Math.cos(lean) };
+  const feet = o.feet || [{ x: o.x + 0.1, y: 0 }, { x: o.x - 0.1, y: 0 }];
+  const hands = o.hands || [{ x: sh.x + 0.06, y: sh.y - 0.6 }, { x: sh.x - 0.03, y: sh.y - 0.6 }];
+  const P = (p) => [S.X(p.x), S.Y(p.y)];
+  const line = (pts, color, wm) => { ctx.strokeStyle = color; ctx.lineWidth = Math.max(2, wm * s); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.beginPath(); ctx.moveTo(...P(pts[0])); for (let i = 1; i < pts.length; i++) ctx.lineTo(...P(pts[i])); ctx.stroke(); };
+  const leg = (f, color) => { const k = ik(hip, f, 0.47, 0.47, +1); line([hip, k.j, k.e], color, 0.13);
+    ctx.fillStyle = C.shoe; ctx.beginPath(); ctx.ellipse(S.X(k.e.x + 0.06), S.Y(k.e.y + 0.035), 0.1 * s, 0.045 * s, 0, 0, Math.PI * 2); ctx.fill(); };
+  const arm = (h, color) => { const k = ik(sh, h, 0.32, 0.34, -1); line([sh, k.j, k.e], color, 0.095);
+    ctx.fillStyle = C.skin; ctx.beginPath(); ctx.arc(...P(k.e), Math.max(2.5, 0.048 * s), 0, Math.PI * 2); ctx.fill(); };
+  ctx.save();
+  leg(feet[1], C.pantsD);
+  arm(hands[1], C.shirtD);
+  ctx.fillStyle = C.pants; ctx.beginPath(); ctx.arc(...P(hip), 0.12 * s, 0, Math.PI * 2); ctx.fill();
+  line([{ x: hip.x + 0.02 * Math.sin(lean), y: hip.y + 0.05 }, sh], C.shirt, 0.27);
+  line([sh, neck], C.skin, 0.08);
+  // head
+  ctx.fillStyle = C.skin; ctx.beginPath(); ctx.arc(...P(head), 0.125 * s, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = C.hair; ctx.beginPath(); ctx.arc(...P(head), 0.13 * s, Math.PI * 0.95 - lean, Math.PI * 1.95 - lean * 0.2); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = C.ink; ctx.beginPath(); ctx.arc(S.X(head.x + 0.065 * Math.cos(lean) + 0.01), S.Y(head.y + 0.02 - 0.06 * Math.sin(lean)), Math.max(1.5, 0.018 * s), 0, Math.PI * 2); ctx.fill();
+  leg(feet[0], C.pants);
+  if (!o.armAfter) arm(hands[0], C.shirt);
+  if (o.sweat > 0) {
+    ctx.fillStyle = 'rgba(80,160,230,' + clamp(o.sweat, 0, 1) + ')';
+    const drops = [[-0.2, 0.08], [-0.24, -0.06], [0.16, 0.16]];
+    drops.slice(0, 1 + Math.floor(o.sweat * 2.99)).forEach(([dx, dy], i) => {
+      const x = S.X(head.x + dx), y = S.Y(head.y + dy) + ((performance.now() / 18 + i * 9) % 10), r = Math.max(2.5, 0.03 * s);
+      ctx.beginPath(); ctx.moveTo(x, y - r * 2.2); ctx.quadraticCurveTo(x + r * 1.2, y, x, y + r); ctx.quadraticCurveTo(x - r * 1.2, y, x, y - r * 2.2); ctx.fill();
+    });
+  }
+  ctx.restore();
+  return () => { ctx.save(); arm(hands[0], C.shirt); ctx.restore(); }; // draws the front arm on top (call after the box)
+}
+function gait(cx, phase, amp = 0.22) { // feet for walking
+  const a = { x: cx + amp * Math.sin(phase), y: Math.max(0, 0.07 * Math.cos(phase)) };
+  const b = { x: cx - amp * Math.sin(phase), y: Math.max(0, -0.07 * Math.cos(phase)) };
+  return [a, b];
+}
+
+/* ---------------- number pickers ---------------- */
+function picker(id, { unit, dec = 0, onChange }) {
+  const range = $('#' + id + '-range'), out = $('#' + id + '-out'), dn = $('#' + id + '-dec'), up = $('#' + id + '-inc');
+  const step = +range.step, min = +range.min, max = +range.max, init = +range.value;
+  let locked = false;
+  const api = {
+    get value() { return +range.value; },
+    set(v, silent) { v = clamp(Math.round(v / step) * step, min, max); v = Math.round(v * 100) / 100; range.value = v; out.textContent = v.toFixed(dec) + ' ' + unit;
+      dn.disabled = locked || v <= min; up.disabled = locked || v >= max; range.disabled = locked; if (!silent && onChange) onChange(v); },
+    lock(flag) { locked = flag; api.set(+range.value, true); },
+    reset() { api.set(init); }
+  };
+  range.addEventListener('input', () => api.set(+range.value));
+  dn.addEventListener('click', () => api.set(+range.value - step));
+  up.addEventListener('click', () => api.set(+range.value + step));
+  api.set(init, true);
+  return api;
+}
+
+/* ---------------- animation loop ---------------- */
+const screens = {};
+let active = 'push', rafId = 0, last = 0;
+function kick() { if (!rafId) { last = performance.now(); rafId = requestAnimationFrame(loop); } }
+function loop(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  let again = false;
+  Object.values(screens).forEach((s) => { if (s.tick(dt)) again = true; });
+  const scr = screens[active]; if (scr) scr.stage.draw();
+  rafId = again ? requestAnimationFrame(loop) : 0;
+}
+function addLogRow(tbody, cells, wIndex) {
+  const empty = tbody.querySelector('tr.empty'); if (empty) empty.remove();
+  tbody.querySelectorAll('tr.new').forEach((r) => r.classList.remove('new'));
+  const tr = document.createElement('tr'); tr.className = 'new';
+  cells.forEach((c, i) => { const td = document.createElement('td'); td.textContent = c; if (i === wIndex) td.className = 'w'; tr.appendChild(td); });
+  tbody.appendChild(tr); const wrap = tbody.closest('.table-wrap'); wrap.scrollTop = wrap.scrollHeight;
+}
+function emptyLog(tbody, cols, text) { tbody.innerHTML = `<tr class="empty"><td colspan="${cols}">${text}</td></tr>`; }
+
+/* =====================================================================
+   SCREEN 1 — PUSH
+   ===================================================================== */
+(function () {
+  const BOX = 0.8;
+  const st = { x: 0, anim: null, W: 0, n: 0 };
+  const chip = $('#pushChip'), status = $('#pushStatus'), go = $('#pushGo'), mathBox = $('#pushMath'), log = $('#pushLog');
+  const F = picker('pushF', { unit: 'N', onChange: () => resetBox() });
+  const D = picker('pushD', { unit: 'm', onChange: () => resetBox() });
+  emptyLog(log, 4, 'Your pushes will be listed here.');
+
+  function resetBox() { if (st.anim) return; st.x = 0; st.W = 0; setMeter(); status.className = 'status';
+    status.innerHTML = 'Set the force and the distance. Then press <b>Push the box</b>.'; stage.draw(); }
+  function setMeter() {
+    $('#pushW').textContent = fJ(st.W); $('#pushBar').style.width = clamp(st.W / 2000 * 100, 0, 100) + '%';
+    const f = F.value, dshow = st.anim ? f1(st.x) : (Number.isInteger(st.x) ? st.x : f1(st.x));
+    chip.innerHTML = `<small>The math</small>W = F × d = ${f} N × ${dshow} m = ${fJ(st.W)} J`;
+    chip.hidden = !mathBox.checked;
+  }
+  mathBox.addEventListener('change', setMeter);
+
+  go.addEventListener('click', () => {
+    if (st.anim) return;
+    const f = F.value, d = D.value;
+    if (f === 0) { st.x = 0; st.W = 0; setMeter(); stage.draw(); status.className = 'status';
+      status.innerHTML = 'Your force is <b>0 N</b>, so you are not pushing. Make the force bigger than 0 N.'; return; }
+    st.x = 0; st.W = 0;
+    st.anim = { t: 0, dur: d === 0 ? 2.2 : Math.max(1.2, d * 0.55), f, d };
+    F.lock(true); D.lock(true); go.disabled = true; status.className = 'status';
+    status.textContent = d === 0 ? 'Pushing… the box does not move.' : 'Pushing…';
+    kick();
+  });
+  $('#pushClear').addEventListener('click', () => { st.n = 0; emptyLog(log, 4, 'Your pushes will be listed here.'); });
+
+  function tick(dt) {
+    const a = st.anim; if (!a) return false;
+    a.t = Math.min(a.dur, a.t + dt);
+    const p = a.t / a.dur;
+    st.x = a.d * steady(p); st.W = a.f * st.x; st.phase = (st.phase || 0) + dt * 7;
+    if (p >= 1) {
+      st.x = a.d; st.W = a.f * a.d; st.anim = null; st.n++;
+      addLogRow(log, [st.n, a.f, a.d, fJ(st.W)], 3);
+      F.lock(false); D.lock(false); go.disabled = false; status.className = 'status done';
+      status.textContent = a.d === 0 ? `Done. The box moved 0 m, so the work is 0 J.` : `Done! You did ${fJ(st.W)} J of work.`;
+      setMeter(); return false;
+    }
+    setMeter(); return true;
+  }
+  function draw(ctx, S) {
+    room(ctx, S);
+    tapeH(ctx, S, 0, 10, 1, 0.5);
+    const d = st.anim ? st.anim.d : D.value, fsz = S.fs(0.2, 12, 15);
+    // START (green) and STOP (red) lines; the FRONT of the box starts at 0 m and stops at d
+    const vline = (x, color) => { ctx.save(); ctx.setLineDash([6, 5]); ctx.strokeStyle = color; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.moveTo(S.X(x), S.Y(0)); ctx.lineTo(S.X(x), S.Y(1.0)); ctx.stroke(); ctx.restore(); };
+    vline(0, '#1F7F45'); vline(d, '#C2335E');
+    label(ctx, 'START', S.X(0) - 8, S.Y(-0.55), { px: fsz, color: '#1F7F45', align: 'right' });
+    label(ctx, 'STOP', S.X(d) + 8, S.Y(-0.55), { px: fsz, color: '#C2335E', align: 'left' });
+    const x = st.x, f = st.anim ? st.anim.f : F.value, moving = !!st.anim && st.anim.d > 0;
+    const back = x - BOX, px = back - 0.5, pushing = f > 0;
+    const feet = moving ? gait(px - 0.18, st.phase, 0.24) : [{ x: px + 0.02, y: 0 }, { x: px - 0.42, y: 0 }];
+    person(ctx, S, pushing ? { x: px, hipY: 0.86, lean: 0.62, feet, hands: [{ x: back - 0.005, y: 0.7 }, { x: back - 0.005, y: 0.6 }], shake: !!st.anim && st.anim.d === 0, sweat: st.anim && st.anim.d === 0 ? st.anim.t / st.anim.dur : 0 }
+                          : { x: px - 0.15, feet: [{ x: px - 0.05, y: 0 }, { x: px - 0.25, y: 0 }] });
+    crate(ctx, S, back, 0, BOX, BOX);
+    // force arrow (above the box)
+    if (f > 0) {
+      const len = f * 0.008, y = BOX + 0.3, x0 = back + BOX / 2;
+      arrowW(ctx, S, x0, y, x0 + len, y, C.force, 0.085);
+      label(ctx, `F = ${f} N`, S.X(x0 + Math.max(len, 0.5) / 2), S.Y(y + 0.27), { color: C.force, px: S.fs(0.24, 13, 19) });
+    }
+    // distance arrow (under the tape)
+    if (x > 0.02) dimArrow(ctx, S, 0, x, -0.55, C.motion, '');
+    if (x > 0.02) label(ctx, `d = ${st.anim ? f1(x) : (Number.isInteger(x) ? x : f1(x))} m`, S.X(x / 2), S.Y(-0.55) + S.fs(0.24, 15, 19), { color: C.motion, px: S.fs(0.22, 13, 17) });
+  }
+  const stage = new Stage($('#pushCanvas'), { x0: -2.7, x1: 11.4, y0: -1.0, y1: 2.4 }, draw);
+  screens.push = { stage, tick, reset() { if (st.anim) return; F.reset(); D.reset(); mathBox.checked = false; st.n = 0; emptyLog(log, 4, 'Your pushes will be listed here.'); resetBox(); setMeter(); } };
+  setMeter();
+})();
+
+/* =====================================================================
+   SCREEN 2 — WORK OR NOT?
+   ===================================================================== */
+(function () {
+  const SC = {
+    A: { name: 'Push a box across the floor', F: 100, fDir: '→', d: 3, dDir: '→', dur: 3.4, tired: 0.5,
+         desc: 'You push a heavy box with a force of <b>100 N</b>. The box slides across the floor.',
+         why: '<b>Work is done.</b> The box moves, and it moves the <b>same direction</b> as your push. W = 100 N × 3 m = 300 J.' },
+    B: { name: 'Push on a brick wall', F: 200, fDir: '→', d: 0, dDir: '', dur: 3.6, tired: 0.92,
+         desc: 'You push on a brick wall as hard as you can, with a force of <b>200 N</b>.',
+         why: '<b>No work.</b> You pushed hard and got tired, but the wall <b>did not move</b>. No distance means no work: W = 200 N × 0 m = 0 J.' },
+    C: { name: 'Hold a box still', F: 50, fDir: '↑', d: 0, dDir: '', dur: 3.6, tired: 0.6,
+         desc: 'You hold a box in your arms and stand still. Your arms push <b>up</b> on the box with <b>50 N</b>.',
+         why: '<b>No work.</b> Your arms push up, but the box <b>does not move</b>. No distance means no work: W = 0 J.' },
+    D: { name: 'Carry a box across the room', F: 50, fDir: '↑', d: 4, dDir: '→', dur: 4.2, tired: 0.66,
+         desc: 'You carry the same box across the room at a steady speed. Your arms push <b>up</b> on it with <b>50 N</b>.',
+         why: '<b>No work by your arms.</b> Your force points <b>UP</b>, but the box moves <b>SIDEWAYS</b>. The force is not in the direction of the motion, so it does no work.' },
+    E: { name: 'Lift a box onto a shelf', F: 50, fDir: '↑', d: 1.5, dDir: '↑', dur: 3.4, tired: 0.55,
+         desc: 'You lift the same box from the floor straight up onto a shelf. Your arms push <b>up</b> with <b>50 N</b>.',
+         why: '<b>Work is done.</b> Your force points <b>UP</b> and the box moves <b>UP</b>, the same direction. W = 50 N × 1.5 m = 75 J.' }
+  };
+  const st = { key: 'A', p: 0, playing: false, played: false, phase: 0 };
+  const list = $('#scnList'), go = $('#wonGo'), whyBox = $('#wonWhy'), showWhy = $('#wonShowWhy');
+  Object.entries(SC).forEach(([k, s]) => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'scn'; b.dataset.k = k; b.setAttribute('aria-pressed', k === st.key);
+    b.innerHTML = `<span class="badge">${k}</span><span>${s.name}</span>`; b.addEventListener('click', () => choose(k)); list.appendChild(b);
+  });
+  function choose(k) { if (st.playing) return; st.key = k; st.p = 0; st.played = false;
+    list.querySelectorAll('.scn').forEach((b) => b.setAttribute('aria-pressed', b.dataset.k === k)); update(); stage.draw(); }
+  go.addEventListener('click', () => { if (st.playing) return; st.p = 0; st.playing = true; st.played = false;
+    go.disabled = true; list.querySelectorAll('.scn').forEach((b) => (b.disabled = true)); update(); kick(); });
+  showWhy.addEventListener('change', update);
+
+  function dist() { const s = SC[st.key]; return s.d * steady(st.p); }
+  function update() {
+    const s = SC[st.key], d = dist(), active = st.playing || st.played;
+    $('#wonDesc').innerHTML = `<b>${st.key}. ${s.name}.</b> ${s.desc}`;
+    $('#wonF').textContent = (active ? s.F : 0) + ' N';
+    const fd = $('#wonFdir'); fd.textContent = active ? (s.fDir === '↑' ? '↑' : '→') : '–'; fd.classList.toggle('none', !active);
+    fd.setAttribute('aria-label', active ? (s.fDir === '↑' ? 'up' : 'to the right') : 'none');
+    $('#wonD').textContent = f1(d) + ' m';
+    const dd = $('#wonDdir'); const moved = d > 0.001; dd.textContent = moved ? s.dDir : '–'; dd.classList.toggle('none', !moved);
+    dd.setAttribute('aria-label', moved ? (s.dDir === '↑' ? 'up' : 'to the right') : 'no motion');
+    const parallel = s.fDir === s.dDir; const W = parallel ? s.F * d : 0;
+    $('#wonW').textContent = fJ(W);
+    $('#wonTired').style.width = (active ? s.tired * clamp(st.p * 1.1, 0, 1) * 100 : 0) + '%';
+    whyBox.hidden = !(showWhy.checked && st.played); whyBox.innerHTML = s.why;
+    go.textContent = st.played ? '↺ Play again' : '▶ Play';
+  }
+  function tick(dt) {
+    if (!st.playing) return false;
+    const s = SC[st.key]; st.p = Math.min(1, st.p + dt / s.dur); st.phase += dt * 7;
+    if (st.p >= 1) { st.playing = false; st.played = true; go.disabled = false; list.querySelectorAll('.scn').forEach((b) => (b.disabled = false)); update(); return false; }
+    update(); return true;
+  }
+  function boxArrows(ctx, S, bx, by, bw, bh, s, moving) {
+    // force arrow: orange; motion arrow: blue
+    const fs = S.fs(0.22, 13, 18), on = st.playing || st.played;
+    if (!on) return;
+    if (s.fDir === '↑') {
+      const x = bx + bw * 0.35, y0 = by + bh + 0.05, len = 0.6;
+      arrowW(ctx, S, x, y0, x, y0 + len, C.force); label(ctx, `F = ${s.F} N`, S.X(x), S.Y(y0 + len) - fs * 0.9, { color: C.force, px: fs });
+      if (s.dDir === '↑' && moving) { const x2 = bx + bw + 0.22; arrowW(ctx, S, x2, by + 0.05, x2, by + 0.05 + 0.55, C.motion); label(ctx, 'motion', S.X(x2) + 10, S.Y(by + 0.35), { color: C.motion, px: fs, align: 'left' }); }
+      if (s.dDir === '→' && moving) { const y = by + bh * 0.5; arrowW(ctx, S, bx + bw + 0.12, y, bx + bw + 0.82, y, C.motion); label(ctx, 'motion', S.X(bx + bw + 0.47), S.Y(y + 0.2), { color: C.motion, px: fs }); }
+    } else {
+      const y = by + bh + 0.3, x0 = bx + bw / 2, len = s.F * 0.008;
+      arrowW(ctx, S, x0, y, x0 + len, y, C.force); label(ctx, `F = ${s.F} N`, S.X(x0 + len / 2), S.Y(y + 0.22), { color: C.force, px: fs });
+      if (moving) { const y2 = y + 0.52; arrowW(ctx, S, x0, y2, x0 + 0.8, y2, C.motion); label(ctx, 'motion', S.X(x0 + 0.4), S.Y(y2 + 0.2), { color: C.motion, px: fs }); }
+    }
+  }
+  function draw(ctx, S) {
+    room(ctx, S);
+    const s = SC[st.key], k = st.key, on = st.playing || st.played, d = dist(), fs = S.fs(0.22, 13, 18);
+    const strain = st.playing ? st.p : (st.played ? 1 : 0);
+    if (k === 'A' || k === 'D') tapeH(ctx, S, 0, 7, 1, 0.5);
+    if (k === 'A') {
+      const x = 1 + d, B = 0.75, px = x - 0.48;
+      const feet = st.playing ? gait(px - 0.18, st.phase, 0.24) : [{ x: px + 0.02, y: 0 }, { x: px - 0.42, y: 0 }];
+      person(ctx, S, { x: px, hipY: 0.86, lean: 0.62, feet, hands: [{ x: x - 0.005, y: 0.68 }, { x: x - 0.005, y: 0.58 }] });
+      crate(ctx, S, x, 0, B, B);
+      boxArrows(ctx, S, x, 0, B, B, s, st.playing || (st.played && d > 0));
+      ctx.save(); ctx.setLineDash([6, 5]); ctx.strokeStyle = C.muted; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(S.X(1), S.Y(0)); ctx.lineTo(S.X(1), S.Y(1.2)); ctx.stroke(); ctx.restore();
+      if (d > 0.02) dimArrow(ctx, S, 1, x, -0.5, C.motion, `moved ${f1(d)} m`);
+    }
+    if (k === 'B') {
+      brickWall(ctx, S, 4.4, 0.7, 2.2);
+      const px = 3.55;
+      person(ctx, S, { x: px, hipY: 0.88, lean: 0.55, feet: [{ x: px + 0.08, y: 0 }, { x: px - 0.42, y: 0 }],
+        hands: [{ x: 4.395, y: 1.22 }, { x: 4.395, y: 1.1 }], shake: st.playing, sweat: strain > 0.25 ? strain : 0 });
+      if (on) { arrowW(ctx, S, 3.3, 1.95, 4.38, 1.95, C.force); label(ctx, `F = ${s.F} N`, S.X(3.84), S.Y(1.95) - fs * 1.2, { color: C.force, px: fs }); }
+      if (st.played) label(ctx, 'The wall moves 0 m', S.X(4.75), S.Y(-0.35), { color: C.motion, px: fs });
+    }
+    if (k === 'C' || k === 'D') {
+      const startX = k === 'C' ? 3.2 : 1.0, px = startX + d, B = 0.46, bx = px + 0.27, by = 0.92;
+      const feet = (k === 'D' && st.playing) ? gait(px, st.phase, 0.22) : [{ x: px + 0.1, y: 0 }, { x: px - 0.1, y: 0 }];
+      const armCD = person(ctx, S, { x: px, hipY: 0.92, lean: 0.04, feet, hands: [{ x: bx + 0.07, y: by + 0.17 }, { x: bx + 0.1, y: by + 0.26 }], armAfter: true,
+        shake: k === 'C' && st.playing && st.p > 0.4, sweat: k === 'C' && strain > 0.45 ? strain : 0 });
+      crate(ctx, S, bx, by, B, B, '5 kg'); armCD();
+      boxArrows(ctx, S, bx, by, B, B, s, k === 'D' && (st.playing || st.played));
+      if (k === 'D') {
+        ctx.save(); ctx.setLineDash([6, 5]); ctx.strokeStyle = C.muted; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(S.X(1.27), S.Y(0)); ctx.lineTo(S.X(1.27), S.Y(0.85)); ctx.stroke(); ctx.restore();
+        if (d > 0.02) dimArrow(ctx, S, 1.27, bx, -0.5, C.motion, `moved ${f1(d)} m`);
+      }
+      if (k === 'C' && st.played) label(ctx, 'The box moves 0 m', S.X(bx + B / 2), S.Y(-0.35), { color: C.motion, px: fs });
+    }
+    if (k === 'E') {
+      const px = 3.0, B = 0.46, bx = px + 0.42, hb = d, kk = clamp(hb / 0.75, 0, 1), top = 1.5;
+      shelf(ctx, S, bx + B + 0.06, bx + B + 1.25, top);
+      tapeV(ctx, S, 1.75, 0, 2.5, 0.5, 0.1);
+      ctx.save(); ctx.setLineDash([5, 5]); ctx.strokeStyle = C.muted; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(S.X(1.75), S.Y(top)); ctx.lineTo(S.X(bx + B + 0.06), S.Y(top)); ctx.stroke(); ctx.restore();
+      const armE = person(ctx, S, { x: px, hipY: lerp(0.42, 0.92, smooth(kk)), hipDx: -0.12 * (1 - smooth(kk)), lean: lerp(0.78, 0.05, smooth(kk)), armAfter: true,
+        feet: [{ x: px + 0.1, y: 0 }, { x: px - 0.15, y: 0 }], hands: [{ x: bx + 0.08, y: hb + 0.17 }, { x: bx + 0.12, y: hb + 0.26 }] });
+      crate(ctx, S, bx, hb, B, B, '5 kg'); armE();
+      boxArrows(ctx, S, bx, hb, B, B, s, st.playing || st.played);
+      if (hb > 0.03) { // vertical measuring arrow
+        const X = S.X(2.05); ctx.save(); ctx.strokeStyle = C.motion; ctx.fillStyle = C.motion; ctx.lineWidth = 2.5;
+        ctx.beginPath(); ctx.moveTo(X, S.Y(0)); ctx.lineTo(X, S.Y(hb)); ctx.stroke(); ctx.beginPath(); ctx.moveTo(X - 9, S.Y(hb)); ctx.lineTo(X + 9, S.Y(hb)); ctx.stroke();
+        ctx.restore(); label(ctx, `up ${f1(hb)} m`, X + 8, S.Y(hb / 2), { color: C.motion, px: fs, align: 'left' });
+      }
+    }
+  }
+  const stage = new Stage($('#wonCanvas'), { x0: -0.6, x1: 7.6, y0: -0.85, y1: 3.0 }, draw);
+  screens.won = { stage, tick, reset() { if (st.playing) return; showWhy.checked = false; choose('A'); } };
+  update();
+})();
+
+/* =====================================================================
+   SCREEN 3 — LIFT
+   ===================================================================== */
+(function () {
+  const g = 10;
+  const st = { y: 0, anim: null, W: 0, n: 0 };
+  const chip = $('#liftChip'), status = $('#liftStatus'), go = $('#liftGo'), mathBox = $('#liftMath'), log = $('#liftLog');
+  const M = picker('liftM', { unit: 'kg', onChange: () => resetBox() });
+  const H = picker('liftH', { unit: 'm', dec: 1, onChange: () => resetBox() });
+  emptyLog(log, 5, 'Your lifts will be listed here.');
+  const size = (m) => 0.42 + 0.024 * m;
+
+  function weightText() { const m = st.anim ? st.anim.m : M.value;
+    $('#liftWeight').innerHTML = `Weight = ${m} kg × 10 = <b>${m * g} N</b><br><span class="hint">Lifting force = weight</span>`; }
+  function resetBox() { if (st.anim) return; st.y = 0; st.W = 0; weightText(); setMeter(); status.className = 'status';
+    status.innerHTML = 'Set the mass and the height. Then press <b>Lift the box</b>.'; stage.draw(); }
+  function setMeter() {
+    const m = st.anim ? st.anim.m : M.value, F = m * g;
+    $('#liftW').textContent = fJ(st.W); $('#liftBar').style.width = clamp(st.W / 200 * 100, 0, 100) + '%';
+    chip.innerHTML = `<small>The math</small>W = F × d = ${F} N × ${f1(st.y)} m = ${fJ(st.W)} J`;
+    chip.hidden = !mathBox.checked;
+  }
+  mathBox.addEventListener('change', setMeter);
+  go.addEventListener('click', () => {
+    if (st.anim) return;
+    st.y = 0; st.W = 0;
+    st.anim = { t: 0, m: M.value, h: H.value, dur: Math.max(1.4, H.value * 1.6) };
+    M.lock(true); H.lock(true); go.disabled = true; status.className = 'status'; status.textContent = 'Lifting…'; kick();
+  });
+  $('#liftClear').addEventListener('click', () => { st.n = 0; emptyLog(log, 5, 'Your lifts will be listed here.'); });
+  function tick(dt) {
+    const a = st.anim; if (!a) return false;
+    a.t = Math.min(a.dur, a.t + dt); const p = a.t / a.dur;
+    st.y = a.h * steady(p); st.W = a.m * g * st.y;
+    if (p >= 1) {
+      st.y = a.h; st.W = a.m * g * a.h; st.anim = null; st.n++;
+      addLogRow(log, [st.n, a.m, a.m * g, a.h.toFixed(1), fJ(st.W)], 4);
+      M.lock(false); H.lock(false); go.disabled = false; status.className = 'status done'; status.textContent = `Done! You did ${fJ(st.W)} J of work.`;
+      setMeter(); return false;
+    }
+    setMeter(); return true;
+  }
+  function draw(ctx, S) {
+    room(ctx, S);
+    const m = st.anim ? st.anim.m : M.value, h = st.anim ? st.anim.h : H.value, F = m * g, B = size(m), bx = -B / 2, y = st.y, fs = S.fs(0.2, 13, 18);
+    tapeV(ctx, S, -1.05, 0, 2.0, 0.5, 0.1);
+    // target shelf + dashed line
+    const sx0 = B / 2 + 0.5, sx1 = sx0 + 1.2;
+    shelf(ctx, S, sx0, sx1, h);
+    ctx.save(); ctx.setLineDash([6, 5]); ctx.strokeStyle = C.muted; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(S.X(-1.05), S.Y(h)); ctx.lineTo(S.X(sx0), S.Y(h)); ctx.stroke(); ctx.restore();
+    label(ctx, `Shelf: ${h.toFixed(1)} m`, S.X((sx0 + sx1) / 2 - 0.1), S.Y(h) + S.fs(0.26, 18, 24), { px: S.fs(0.2, 12, 15), color: C.ink });
+    // rope loop on the box
+    const top = y + B, hookY = top + 0.16;
+    ctx.strokeStyle = '#6B5B45'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(S.X(bx + 0.06), S.Y(top)); ctx.lineTo(S.X(0), S.Y(hookY)); ctx.lineTo(S.X(-bx - 0.06), S.Y(top)); ctx.stroke();
+    // spring scale
+    const sb = hookY + 0.05, sh = 0.4, sw = 0.16;
+    ctx.strokeStyle = '#3B4658'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(S.X(0), S.Y(hookY + 0.025), 0.025 * S.s, Math.PI * 0.1, Math.PI * 1.25); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(S.X(0), S.Y(hookY + 0.05)); ctx.lineTo(S.X(0), S.Y(sb)); ctx.stroke();
+    roundRect(ctx, S.X(-sw / 2), S.Y(sb + sh), sw * S.s, sh * S.s, 6); ctx.fillStyle = '#EEF2F7'; ctx.fill(); ctx.strokeStyle = '#3B4658'; ctx.lineWidth = 2; ctx.stroke();
+    const w0 = sb + 0.04, w1 = sb + sh - 0.04; // window
+    ctx.fillStyle = '#fff'; ctx.fillRect(S.X(-0.045), S.Y(w1), 0.09 * S.s, (w1 - w0) * S.s); ctx.strokeStyle = '#9AA6B6'; ctx.lineWidth = 1; ctx.strokeRect(S.X(-0.045), S.Y(w1), 0.09 * S.s, (w1 - w0) * S.s);
+    for (let i = 0; i <= 10; i++) { const yy = w1 - (w1 - w0) * i / 10; ctx.beginPath(); ctx.moveTo(S.X(-0.045), S.Y(yy)); ctx.lineTo(S.X(i % 5 ? -0.01 : 0.01), S.Y(yy)); ctx.strokeStyle = '#3B4658'; ctx.stroke(); }
+    const ind = w1 - (w1 - w0) * clamp(F / 100, 0, 1);
+    ctx.fillStyle = '#C2335E'; ctx.fillRect(S.X(-0.055), S.Y(ind) - 2, 0.11 * S.s, 4);
+    ctx.strokeStyle = '#3B4658'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(S.X(0), S.Y(sb + sh + 0.045), 0.04 * S.s, 0, Math.PI * 2); ctx.stroke();
+    // reading tag
+    const tagX = S.X(sw / 2 + 0.08), tagY = S.Y(sb + sh * 0.55), tpx = S.fs(0.2, 13, 17);
+    ctx.font = font(tpx, 700); const tw = ctx.measureText(`Scale: ${F} N`).width + 14;
+    roundRect(ctx, tagX, tagY - tpx, tw, tpx * 2, 6); ctx.fillStyle = '#fff'; ctx.fill(); ctx.strokeStyle = '#3B4658'; ctx.lineWidth = 1.5; ctx.stroke();
+    label(ctx, `Scale: ${F} N`, tagX + tw / 2, tagY + 1, { px: tpx, halo: false });
+    // hand + sleeve from above
+    const hy = sb + sh + 0.09;
+    ctx.fillStyle = C.shirt; ctx.fillRect(S.X(-0.1), 0, 0.2 * S.s, S.Y(hy + 0.18));
+    ctx.fillStyle = C.shirtD; ctx.fillRect(S.X(-0.1), S.Y(hy + 0.18) - 5, 0.2 * S.s, 5);
+    roundRect(ctx, S.X(-0.09), S.Y(hy + 0.18), 0.18 * S.s, 0.15 * S.s, 0.06 * S.s); ctx.fillStyle = C.skin; ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,.25)'; ctx.lineWidth = 1; for (let i = 1; i < 4; i++) { ctx.beginPath(); ctx.moveTo(S.X(-0.09 + 0.045 * i), S.Y(hy + 0.07)); ctx.lineTo(S.X(-0.09 + 0.045 * i), S.Y(hy + 0.035)); ctx.stroke(); }
+    label(ctx, 'Your hand', S.X(-0.16), S.Y(hy + 0.12), { px: S.fs(0.16, 11, 14), color: C.muted, align: 'right', weight: 600 });
+    // box
+    crate(ctx, S, bx, y, B, B, `${m} kg`);
+    // force arrow (right of the box), length grows with the force
+    const fx = B / 2 + 0.2, fy0 = y + B * 0.3, flen = Math.max(0.25, F * 0.008);
+    arrowW(ctx, S, fx, fy0, fx, fy0 + flen, C.force, 0.07);
+    label(ctx, `F = ${F} N`, S.X(fx) + 10, S.Y(fy0 + flen * 0.5), { color: C.force, px: fs, align: 'left' });
+    // height arrow
+    if (y > 0.02) {
+      const X = S.X(-B / 2 - 0.2); ctx.save(); ctx.strokeStyle = C.motion; ctx.fillStyle = C.motion; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.moveTo(X, S.Y(0)); ctx.lineTo(X, S.Y(y)); ctx.stroke(); ctx.beginPath(); ctx.moveTo(X - 9, S.Y(y)); ctx.lineTo(X + 9, S.Y(y)); ctx.moveTo(X - 9, S.Y(0)); ctx.lineTo(X + 9, S.Y(0)); ctx.stroke();
+      ctx.restore(); label(ctx, `d = ${f1(y)} m`, X - 10, S.Y(y / 2), { color: C.motion, px: fs, align: 'right' });
+    }
+  }
+  const stage = new Stage($('#liftCanvas'), { x0: -1.75, x1: 2.6, y0: -0.12, y1: 3.65 }, draw);
+  screens.lift = { stage, tick, reset() { if (st.anim) return; M.reset(); H.reset(); mathBox.checked = false; st.n = 0; emptyLog(log, 5, 'Your lifts will be listed here.'); resetBox(); } };
+  weightText(); setMeter();
+})();
+
+/* ---------------- tabs + routing ---------------- */
+const TITLES = { push: 'Screen 1 · Push', won: 'Screen 2 · Work or Not?', lift: 'Screen 3 · Lift' };
+const HASH = { push: 'push', won: 'work-or-not', lift: 'lift' };
+function show(name, fromHash) {
+  if (!screens[name]) name = 'push';
+  active = name;
+  document.querySelectorAll('.screen').forEach((s) => (s.hidden = s.id !== 'screen-' + name));
+  document.querySelectorAll('.tab').forEach((t) => t.setAttribute('aria-selected', t.dataset.screen === name));
+  $('#screenTitle').textContent = TITLES[name];
+  if (!fromHash) { try { history.replaceState(null, '', '#' + HASH[name]); } catch (e) { /* ignore */ } }
+  requestAnimationFrame(() => { const s = screens[name]; s.stage.resize(); s.stage.draw(); kick(); });
+}
+document.querySelectorAll('.tab').forEach((t) => t.addEventListener('click', () => show(t.dataset.screen)));
+$('#resetScreen').addEventListener('click', () => screens[active].reset());
+function fromHash() { const h = (location.hash || '').slice(1); const k = Object.keys(HASH).find((k) => HASH[k] === h); show(k || 'push', true); }
+window.addEventListener('hashchange', fromHash);
+fromHash();
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => Object.values(screens).forEach((s) => s.stage.draw()));
+})();
+</script>
+</body>
+</html>
