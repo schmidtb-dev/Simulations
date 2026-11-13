@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Last Bell</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Caveat:wght@600;700&display=swap">
+<style>
+/* Layout: a teacher's desk on graph paper. Intake card on the left, the hall pass and headline numbers on the right,
+   then the plan-book pages stack below: countdown, pension by age, early-vs-wait, the full table, fine print. */
+:root{
+  --paper:#edf2f5; --grid:#dde6ec; --card:#fbfcfd; --ink:#16253a; --ink2:#46576a; --ink3:#66778a; --rule:#d2dce4;
+  --blue:#2457c5; --blue-tint:#c3d3f2; --amber:#c96f12; --red:#c0392b; --hl:#ffe45e; --hl-ink:#16253a;
+  --pass:#fff6c9; --pass-edge:#e3cf6c; --hl-mark:#ffe45e; --zone:rgba(36,87,197,.07); --good:#1e7b45; --warn:#9a5b00;
+  --shadow:0 1px 0 rgba(22,37,58,.06), 0 8px 24px -12px rgba(22,37,58,.18);
+  --f-display:"Bricolage Grotesque","Avenir Next","Segoe UI",system-ui,sans-serif;
+  --f-body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-hand:"Caveat","Bradley Hand","Segoe Print","Comic Sans MS",cursive;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#15201b; --grid:#1b2822; --card:#1d2a24; --ink:#edf1ea; --ink2:#b9c6bd; --ink3:#93a198; --rule:#33443b;
+    --blue:#6a8eee; --blue-tint:#2f4170; --amber:#c97a24; --red:#ff8b7b; --hl:#f0d548; --hl-ink:#15201b;
+    --pass:#24332b; --pass-edge:#5b7064; --zone:rgba(106,142,238,.10); --good:#5cc58a; --warn:#e2a54a;
+    --shadow:0 1px 0 rgba(0,0,0,.25), 0 10px 28px -14px rgba(0,0,0,.6);
+    --hl-mark:#5a5226;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#15201b; --grid:#1b2822; --card:#1d2a24; --ink:#edf1ea; --ink2:#b9c6bd; --ink3:#93a198; --rule:#33443b;
+  --blue:#6a8eee; --blue-tint:#2f4170; --amber:#c97a24; --red:#ff8b7b; --hl:#f0d548; --hl-ink:#15201b;
+  --pass:#24332b; --pass-edge:#5b7064; --zone:rgba(106,142,238,.10); --good:#5cc58a; --warn:#e2a54a;
+  --shadow:0 1px 0 rgba(0,0,0,.25), 0 10px 28px -14px rgba(0,0,0,.6);
+  --hl-mark:#5a5226;
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+body{
+  background-color:var(--paper);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:24px 24px;
+  color:var(--ink); font-family:var(--f-body); font-size:16px; line-height:1.5;
+}
+.page{max-width:1180px; margin:0 auto; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); padding-block:28px 56px; display:grid; gap:40px}
+h1,h2,h3{font-family:var(--f-display); text-wrap:balance; margin:0; line-height:1.1}
+p{margin:0}
+.num{font-variant-numeric:tabular-nums}
+a{color:var(--blue)}
+:focus-visible{outline:3px solid var(--blue); outline-offset:2px; border-radius:4px}
+
+/* Masthead */
+.masthead{display:grid; gap:10px; max-width:760px}
+.eyebrow{font-size:.78rem; letter-spacing:.12em; text-transform:uppercase; color:var(--ink3); font-weight:700}
+.masthead h1{font-size:clamp(2.6rem, 7vw, 4.6rem); font-weight:800; letter-spacing:-.02em}
+.masthead h1 .bell{display:inline-block; position:relative}
+.masthead h1 .bell::after{content:""; position:absolute; left:-2%; right:-2%; bottom:.08em; height:.32em; background:var(--hl-mark); z-index:-1; transform:skew(-8deg)}
+.masthead h1 span{position:relative; z-index:0}
+.lede{color:var(--ink2); font-size:1.08rem; max-width:62ch}
+
+/* Top area */
+.top{display:grid; grid-template-columns:minmax(0,370px) minmax(0,1fr); gap:24px; align-items:start}
+@media (max-width:920px){ .top{grid-template-columns:minmax(0,1fr)} }
+
+.card{background:var(--card); border:1px solid var(--rule); border-radius:10px; box-shadow:var(--shadow)}
+.intake{padding:20px; display:grid; gap:16px}
+.intake h2{font-size:1.15rem}
+.intake .sub{font-size:.88rem; color:var(--ink3); margin-top:2px}
+.row2{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+.field{display:grid; gap:5px; min-width:0}
+.field label, .field .lbl{font-size:.8rem; font-weight:700; color:var(--ink2); letter-spacing:.02em}
+.field small{font-size:.76rem; color:var(--ink3); line-height:1.35}
+input[type=number], select{
+  width:100%; font:inherit; font-size:1rem; color:var(--ink); background:var(--paper); border:1px solid var(--rule);
+  border-radius:7px; padding:9px 10px; font-variant-numeric:tabular-nums;
+}
+input[type=number]:focus, select:focus{border-color:var(--blue)}
+.money{position:relative}
+.money::before{content:"$"; position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--ink3)}
+.money input{padding-left:22px}
+.seg{display:grid; grid-template-columns:1fr 1fr; border:1px solid var(--rule); border-radius:8px; overflow:hidden; background:var(--paper)}
+.seg input{position:absolute; opacity:0; pointer-events:none}
+.seg label{padding:8px 8px; text-align:center; font-size:.82rem; font-weight:700; color:var(--ink2); cursor:pointer; line-height:1.25}
+.seg label small{display:block; font-weight:400; font-size:.72rem; color:var(--ink3)}
+.seg input:checked + label{background:var(--blue); color:#fff}
+.seg input:checked + label small{color:rgba(255,255,255,.85)}
+.seg input:focus-visible + label{outline:3px solid var(--blue); outline-offset:-3px}
+.checks{display:grid; gap:8px}
+.check{display:flex; gap:10px; align-items:flex-start; font-size:.9rem; color:var(--ink2); cursor:pointer}
+.check input{width:18px; height:18px; margin:2px 0 0; accent-color:var(--blue); flex:none}
+.check b{color:var(--ink)}
+.slider{display:grid; gap:6px}
+.slider-top{display:flex; justify-content:space-between; align-items:baseline; gap:8px}
+.slider-top output{font-family:var(--f-display); font-weight:800; font-size:1.5rem; color:var(--blue)}
+input[type=range]{width:100%; accent-color:var(--blue); margin:0}
+.btn{font:inherit; font-size:.85rem; font-weight:700; color:var(--ink2); background:transparent; border:1px dashed var(--rule); border-radius:7px; padding:8px 12px; cursor:pointer; justify-self:start}
+.btn:hover{border-color:var(--blue); color:var(--blue)}
+.divider{border:0; border-top:1px dashed var(--rule); margin:2px 0}
+
+/* Hall pass */
+.results{display:grid; gap:18px; min-width:0}
+.pass{
+  position:relative; background:var(--pass); border:2px solid var(--pass-edge); border-radius:6px;
+  padding:0 0 18px 0; box-shadow:var(--shadow); overflow:hidden;
+}
+.pass::before{ /* punched hole */
+  content:""; position:absolute; top:16px; right:18px; width:18px; height:18px; border-radius:50%;
+  background:var(--paper); border:2px solid var(--pass-edge);
+}
+.pass-head{display:flex; flex-wrap:wrap; gap:4px 16px; align-items:baseline; padding:12px 56px 10px 20px; border-bottom:2px dashed var(--pass-edge)}
+.pass-head .tag{font-family:var(--f-display); font-weight:800; letter-spacing:.18em; font-size:1rem}
+.pass-head .dest{font-size:.85rem; color:var(--ink2)}
+.pass-body{display:grid; grid-template-columns:auto minmax(0,1fr) auto; gap:20px; align-items:center; padding:18px 20px 6px}
+@media (max-width:620px){ .pass-body{grid-template-columns:auto minmax(0,1fr)} .grade{grid-column:1 / -1; justify-self:start; flex-direction:row; gap:12px} }
+.count{display:grid; justify-items:center; min-width:96px}
+.count-num{font-family:var(--f-display); font-weight:800; font-size:clamp(3.6rem, 9vw, 5.4rem); line-height:.9; letter-spacing:-.03em; font-variant-numeric:tabular-nums}
+.count-unit{font-size:.78rem; text-transform:uppercase; letter-spacing:.1em; color:var(--ink2); font-weight:700; text-align:center}
+.pass-text{display:grid; gap:6px; min-width:0}
+.pass-text h2{font-size:clamp(1.35rem, 2.6vw, 1.75rem); font-weight:800}
+.pass-text p{color:var(--ink2)}
+.grade{display:flex; flex-direction:column; align-items:center; gap:2px}
+.grade-label{font-size:.7rem; text-transform:uppercase; letter-spacing:.1em; color:var(--ink3); font-weight:700}
+.grade-mark{
+  font-family:var(--f-hand); font-weight:700; font-size:2.6rem; color:var(--red); line-height:1;
+  width:74px; height:64px; display:grid; place-items:center; border:2.5px solid var(--red); border-radius:50% 46% 52% 44% / 48% 52% 46% 50%;
+  transform:rotate(-6deg);
+}
+.pass-fields{display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:10px 16px; padding:10px 20px 0}
+@media (max-width:620px){ .pass-fields{grid-template-columns:repeat(2, minmax(0,1fr))} }
+.pass-fields div{display:grid; gap:2px; border-bottom:1.5px solid var(--pass-edge); padding-bottom:4px; min-width:0}
+.pass-fields span{font-size:.7rem; text-transform:uppercase; letter-spacing:.1em; color:var(--ink3); font-weight:700}
+.pass-fields b{font-size:1rem; font-variant-numeric:tabular-nums; overflow-wrap:anywhere}
+.pass-fields .sig{font-family:var(--f-hand); font-size:1.35rem; font-weight:700; line-height:1}
+.redpen{font-family:var(--f-hand); font-weight:700; color:var(--red); font-size:1.5rem; line-height:1.15}
+.pass .redpen{padding:12px 20px 0; transform:rotate(-1.2deg); transform-origin:left}
+
+/* KPI tiles */
+.kpis{display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px}
+@media (max-width:1100px){ .kpis{grid-template-columns:repeat(2, minmax(0,1fr))} }
+.kpi{padding:14px 14px 12px; display:grid; gap:4px; align-content:start}
+.kpi .k{font-size:.72rem; text-transform:uppercase; letter-spacing:.1em; color:var(--ink3); font-weight:700}
+.kpi .v{font-family:var(--f-display); font-weight:800; font-size:1.6rem; line-height:1.1; font-variant-numeric:tabular-nums}
+.kpi .d{font-size:.84rem; color:var(--ink2)}
+
+/* Sections */
+.sec{display:grid; gap:16px}
+.sec-head{display:grid; gap:6px; max-width:760px}
+.sec-head h2{font-size:clamp(1.5rem, 3.2vw, 2.1rem); font-weight:800}
+.sec-head p{color:var(--ink2)}
+.sec-head .eyebrow{color:var(--blue)}
+
+/* Countdown tiles */
+.tiles{display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px}
+@media (max-width:900px){ .tiles{grid-template-columns:repeat(2, minmax(0,1fr))} }
+.tile{padding:14px; display:grid; gap:2px; align-content:start}
+.tile .v{font-family:var(--f-display); font-weight:800; font-size:clamp(1.5rem, 3vw, 2rem); line-height:1.1; font-variant-numeric:tabular-nums}
+.tile .k{font-weight:700; font-size:.92rem}
+.tile .d{font-size:.8rem; color:var(--ink3)}
+.footnote{font-size:.8rem; color:var(--ink3)}
+
+/* Charts */
+.chart-card{padding:18px 18px 12px; display:grid; gap:10px; min-width:0}
+.chart-title{display:flex; flex-wrap:wrap; justify-content:space-between; gap:6px 16px; align-items:baseline}
+.chart-title h3{font-size:1.1rem}
+.legend{display:flex; flex-wrap:wrap; gap:6px 16px; font-size:.85rem; color:var(--ink2)}
+.legend i{display:inline-block; width:12px; height:12px; border-radius:3px; margin-right:6px; vertical-align:-1px}
+.legend .zone-key{background:var(--zone); border:1px dashed var(--ink3)}
+.chart-wrap{position:relative; min-width:0}
+.chart-wrap svg{display:block; width:100%; height:auto; overflow:visible; touch-action:pan-y}
+.ax line{stroke:var(--rule); stroke-width:1}
+.ax .base{stroke:var(--ink3)}
+.ax text{fill:var(--ink3); font-size:11px; font-family:var(--f-body)}
+.lbl-strong{fill:var(--ink); font-size:12px; font-weight:700; font-family:var(--f-body)}
+.lbl-soft{fill:var(--ink2); font-size:11px; font-family:var(--f-body)}
+.lbl-hand{fill:var(--red); font-family:var(--f-hand); font-size:17px; font-weight:700}
+.bar{fill:var(--blue-tint)}
+.bar.is-target{fill:var(--blue)}
+.bar.is-hover{fill:var(--blue); opacity:.75}
+.bar.is-target.is-hover{opacity:1}
+.zone{fill:var(--zone)}
+.zone-edge{stroke:var(--ink3); stroke-dasharray:3 3; stroke-width:1}
+.line-e{fill:none; stroke:var(--amber); stroke-width:2.25; stroke-linejoin:round; stroke-linecap:round}
+.line-w{fill:none; stroke:var(--blue); stroke-width:2.25; stroke-linejoin:round; stroke-linecap:round}
+.dot-e{fill:var(--amber); stroke:var(--card); stroke-width:2}
+.dot-w{fill:var(--blue); stroke:var(--card); stroke-width:2}
+.dot-be{fill:var(--card); stroke:var(--red); stroke-width:2.5}
+.cross{stroke:var(--ink3); stroke-width:1; stroke-dasharray:2 3}
+.band-work{fill:var(--zone)}
+.tip{
+  position:absolute; pointer-events:none; z-index:5; background:var(--card); color:var(--ink); border:1px solid var(--rule);
+  border-radius:8px; padding:9px 11px; font-size:.82rem; line-height:1.4; box-shadow:var(--shadow); min-width:170px; max-width:240px;
+  font-variant-numeric:tabular-nums;
+}
+.tip b{font-family:var(--f-display)}
+.tip .r{display:flex; justify-content:space-between; gap:12px}
+.tip .r span:first-child{color:var(--ink3)}
+.tip .sw{display:inline-block; width:9px; height:9px; border-radius:2px; margin-right:5px}
+.chart-note{display:flex; flex-wrap:wrap; gap:6px 18px; align-items:baseline; justify-content:space-between}
+.chart-note .redpen{font-size:1.35rem}
+
+/* Compare */
+.cmp-controls{display:grid; grid-template-columns:1fr 1fr; gap:16px 28px; padding:18px}
+@media (max-width:640px){ .cmp-controls{grid-template-columns:1fr} }
+.cmp-controls .slider-top output.e{color:var(--amber)}
+.cmp-controls input.e{accent-color:var(--amber)}
+.cmp-grid{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.15fr); gap:12px}
+@media (max-width:980px){ .cmp-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)} .cmp-verdict{grid-column:1 / -1} }
+@media (max-width:560px){ .cmp-grid{grid-template-columns:minmax(0,1fr)} }
+.cmp-card{padding:16px; display:grid; gap:10px; align-content:start; border-top-width:4px}
+.cmp-card.e{border-top-color:var(--amber)}
+.cmp-card.w{border-top-color:var(--blue)}
+.cmp-card h3{font-size:1.05rem; display:flex; justify-content:space-between; gap:8px; align-items:baseline}
+.cmp-card h3 small{font-family:var(--f-body); font-weight:400; font-size:.82rem; color:var(--ink3)}
+.cmp-card .big{font-family:var(--f-display); font-weight:800; font-size:1.9rem; line-height:1; font-variant-numeric:tabular-nums}
+.cmp-card .big small{font-size:.9rem; font-weight:500; color:var(--ink3)}
+.kv{display:grid; gap:5px; font-size:.88rem}
+.kv div{display:flex; justify-content:space-between; gap:12px; border-bottom:1px dotted var(--rule); padding-bottom:4px}
+.kv span:first-child{color:var(--ink3)}
+.kv span:last-child{font-variant-numeric:tabular-nums; font-weight:700; text-align:right}
+.cmp-verdict{padding:16px; display:grid; gap:12px; align-content:start}
+.cmp-verdict h3{font-size:1.2rem}
+.cmp-verdict p{color:var(--ink2); font-size:.94rem}
+.hl{background:linear-gradient(transparent 55%, var(--hl-mark) 55%); color:inherit; padding:0 2px; font-weight:700}
+.odds{display:grid; gap:8px}
+.odd{display:grid; grid-template-columns:minmax(0,1fr) 44px; gap:4px 10px; align-items:center; font-size:.84rem}
+.odd .bar-bg{grid-column:1 / -1; height:8px; border-radius:4px; background:var(--paper); border:1px solid var(--rule); overflow:hidden}
+.odd .bar-fg{height:100%; background:var(--blue); border-radius:4px}
+.odd b{text-align:right; font-variant-numeric:tabular-nums}
+
+/* Table */
+.table-card{padding:6px 0 0; min-width:0}
+.table-scroll{overflow-x:auto}
+table{border-collapse:collapse; width:100%; font-size:.88rem; font-variant-numeric:tabular-nums; min-width:760px}
+th, td{padding:9px 12px; text-align:right; border-bottom:1px solid var(--rule); white-space:nowrap}
+th{font-size:.72rem; text-transform:uppercase; letter-spacing:.08em; color:var(--ink3); font-weight:700; position:sticky; top:0; background:var(--card)}
+th:first-child, td:first-child, th:last-child, td:last-child{text-align:left}
+td:last-child{color:var(--ink2); white-space:normal; min-width:200px}
+tr.is-target td{background:color-mix(in srgb, var(--hl-mark) 45%, transparent)}
+.chip{display:inline-block; font-size:.68rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:1px 6px; border-radius:20px; margin-left:6px; vertical-align:1px}
+.chip.t{background:var(--blue); color:#fff}
+.chip.e{background:var(--amber); color:#fff}
+.chip.w{background:var(--ink); color:var(--card)}
+.chip.m{border:1px solid var(--ink3); color:var(--ink2)}
+
+/* Fine print */
+.fine{display:grid; grid-template-columns:minmax(0,1.3fr) minmax(0,1fr); gap:24px; padding:22px}
+@media (max-width:860px){ .fine{grid-template-columns:minmax(0,1fr)} }
+.fine h3{font-size:1.05rem; margin-bottom:8px}
+.fine ul{margin:0; padding-left:18px; display:grid; gap:7px; color:var(--ink2); font-size:.9rem}
+.fine p{color:var(--ink2); font-size:.9rem}
+.fine .stack{display:grid; gap:14px; align-content:start}
+.empty{padding:28px; text-align:center; color:var(--ink2)}
+
+@media (prefers-reduced-motion: no-preference){
+  .grade-mark.stamp{animation:stamp .35s ease-out}
+  @keyframes stamp{0%{transform:rotate(-6deg) scale(1.35); opacity:.3} 100%{transform:rotate(-6deg) scale(1); opacity:1}}
+}
+</style>
+</head>
+<body>
+
+<div class="page">
+  <header class="masthead">
+    <div class="eyebrow">Massachusetts teacher retirement · MTRS math, extra sarcasm</div>
+    <h1><span class="bell">The Last Bell</span></h1>
+    <p class="lede">How many years until you hand in your keys, what your pension looks like at every age, and whether hanging on a few more years is worth it. Built on the real MTRS formulas. The jokes are unofficial.</p>
+  </header>
+
+  <section class="top" aria-label="Calculator">
+    <form class="card intake" id="intake" autocomplete="off">
+      <div>
+        <h2>Your permanent record</h2>
+        <p class="sub">Example numbers are filled in. Swap in yours; everything updates as you type.</p>
+      </div>
+      <div class="row2">
+        <div class="field"><label for="age">Current age</label><input id="age" type="number" min="21" max="80" step="1" value="46" inputmode="numeric"></div>
+        <div class="field"><label for="svc">Years of service</label><input id="svc" type="number" min="0" max="50" step="0.5" value="20" inputmode="decimal"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label for="sal">Current salary</label><div class="money"><input id="sal" type="number" min="20000" max="300000" step="500" value="98000" inputmode="numeric"></div></div>
+        <div class="field"><label for="raise">Raises per year</label><input id="raise" type="number" min="0" max="8" step="0.25" value="2.5" inputmode="decimal"><small>% steps + contract bumps</small></div>
+      </div>
+      <div class="field">
+        <span class="lbl" id="tierLbl">When did you join MTRS?</span>
+        <div class="seg" role="radiogroup" aria-labelledby="tierLbl">
+          <input type="radio" name="tier" id="tier1" value="1" checked><label for="tier1">Before Apr 2, 2012<small>Tier 1</small></label>
+          <input type="radio" name="tier" id="tier2" value="2"><label for="tier2">Apr 2, 2012 or later<small>Tier 2</small></label>
+        </div>
+      </div>
+      <div class="slider">
+        <div class="slider-top"><label for="target" class="lbl" style="font-size:.8rem;font-weight:700;color:var(--ink2)">Age you'd like to retire</label><output id="targetOut" for="target">59</output></div>
+        <input id="target" type="range" min="46" max="75" step="1" value="59">
+      </div>
+      <hr class="divider">
+      <div class="checks">
+        <label class="check"><input type="checkbox" id="rplus" checked><span><b>I'm in RetirementPlus.</b> Required if you joined after July 1, 2001 (that 11% paycheck deduction).</span></label>
+        <label class="check"><input type="checkbox" id="cola" checked><span><b>Count on a COLA each year.</b> Up to $390, if the Legislature says yes.</span></label>
+        <label class="check"><input type="checkbox" id="vet"><span><b>I'm a veteran.</b> Adds $15 per year of service, up to $300.</span></label>
+      </div>
+      <div class="row2">
+        <div class="field"><label for="opt">Payout option</label>
+          <select id="opt">
+            <option value="A">A: full amount</option>
+            <option value="B">B: about 1% less</option>
+            <option value="C">C: about 10% less, survivor gets ⅔</option>
+          </select>
+        </div>
+        <div class="field"><label for="horizon">Collect until age</label><input id="horizon" type="number" min="60" max="105" step="1" value="88" inputmode="numeric"><small>For lifetime totals</small></div>
+      </div>
+      <button type="button" class="btn" id="reset">Reset to example numbers</button>
+    </form>
+
+    <div class="results">
+      <article class="pass" aria-live="polite">
+        <div class="pass-head"><span class="tag">HALL PASS</span><span class="dest">Destination: <b>Retirement</b> · Return: <b>never</b></span></div>
+        <div class="pass-body">
+          <div class="count"><span class="count-num" id="countNum">13</span><span class="count-unit" id="countUnit">years to go</span></div>
+          <div class="pass-text">
+            <h2 id="vHead">Pack a lunch.</h2>
+            <p id="vSub">Calculating…</p>
+          </div>
+          <div class="grade"><span class="grade-label">Pension grade</span><span class="grade-mark" id="grade">A</span></div>
+        </div>
+        <div class="pass-fields">
+          <div><span>Retiring class of</span><b id="pfYear">2039</b></div>
+          <div><span>Years served</span><b id="pfSvc">33</b></div>
+          <div><span>Pension</span><b id="pfPen">$0/mo</b></div>
+          <div><span>Signed</span><b class="sig">Future You</b></div>
+        </div>
+        <p class="redpen" id="redpen">See me after class.</p>
+      </article>
+
+      <div class="kpis">
+        <div class="card kpi"><span class="k">Earliest exit</span><span class="v" id="kE">Age 46</span><span class="d" id="kEd"></span></div>
+        <div class="card kpi"><span class="k">At your target</span><span class="v" id="kT">$0</span><span class="d" id="kTd"></span></div>
+        <div class="card kpi"><span class="k">80% max reached</span><span class="v" id="kM">Age 59</span><span class="d" id="kMd"></span></div>
+        <div class="card kpi"><span class="k">Lifetime haul</span><span class="v" id="kL">$0</span><span class="d" id="kLd"></span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" aria-labelledby="cdHead">
+    <div class="sec-head">
+      <span class="eyebrow">The countdown</span>
+      <h2 id="cdHead">What stands between you and age 59</h2>
+      <p id="cdSub">Estimates. Highly scientific. Peer reviewed by the faculty room.</p>
+    </div>
+    <div class="tiles" id="tiles"></div>
+  </section>
+
+  <section class="sec" aria-labelledby="byAgeHead">
+    <div class="sec-head">
+      <span class="eyebrow">Pension by retirement age</span>
+      <h2 id="byAgeHead">Every extra year, priced out</h2>
+      <p>Each bar is your yearly pension if you leave at that age. The shaded zone is where you've hit the 80% cap; after that, extra years only add whatever your raises add.</p>
+    </div>
+    <div class="card chart-card">
+      <div class="chart-title">
+        <h3>Yearly pension (first year, before taxes)</h3>
+        <div class="legend"><span><i style="background:var(--blue)"></i>Your target age</span><span><i style="background:var(--blue-tint)"></i>Other ages</span><span><i class="zone-key"></i>80% max zone</span></div>
+      </div>
+      <div class="chart-wrap" id="barWrap"></div>
+      <div class="chart-note"><span class="footnote">Hover or tap a bar for details. Future dollars, not adjusted for inflation.</span><span class="redpen" id="barNote"></span></div>
+    </div>
+  </section>
+
+  <section class="sec" aria-labelledby="cmpHead">
+    <div class="sec-head">
+      <span class="eyebrow">Retire early or wait it out?</span>
+      <h2 id="cmpHead">The great faculty-room debate</h2>
+      <p>Pick an early exit and a later one. Leaving early starts the checks sooner; waiting makes each check bigger. The breakeven age is when the bigger checks finally catch up.</p>
+    </div>
+    <div class="card cmp-controls" id="cmpControls">
+      <div class="slider">
+        <div class="slider-top"><label for="cmpE" class="lbl" style="font-size:.85rem;font-weight:700">Leave early at</label><output id="cmpEOut" class="e" for="cmpE">55</output></div>
+        <input id="cmpE" class="e" type="range" min="46" max="75" step="1" value="55">
+      </div>
+      <div class="slider">
+        <div class="slider-top"><label for="cmpW" class="lbl" style="font-size:.85rem;font-weight:700">Or wait until</label><output id="cmpWOut" for="cmpW">59</output></div>
+        <input id="cmpW" type="range" min="46" max="75" step="1" value="59">
+      </div>
+    </div>
+    <div class="cmp-grid" id="cmpGrid">
+      <div class="card cmp-card e" id="cmpCardE"></div>
+      <div class="card cmp-card w" id="cmpCardW"></div>
+      <div class="card cmp-verdict" id="cmpVerdict"></div>
+    </div>
+    <div class="card chart-card">
+      <div class="chart-title">
+        <h3>Total pension collected, by your age</h3>
+        <div class="legend" id="lineLegend"></div>
+      </div>
+      <div class="chart-wrap" id="lineWrap"></div>
+      <div class="chart-note"><span class="footnote">Pension dollars only. Waiting also means more paychecks, shown in the cards above.</span><span class="redpen" id="lineNote"></span></div>
+    </div>
+  </section>
+
+  <section class="sec" aria-labelledby="tblHead">
+    <div class="sec-head">
+      <span class="eyebrow">The gradebook</span>
+      <h2 id="tblHead">Every age you could leave</h2>
+    </div>
+    <div class="card table-card"><div class="table-scroll"><table id="tbl"></table></div></div>
+  </section>
+
+  <section class="card fine" aria-labelledby="fineHead">
+    <div class="stack">
+      <div>
+        <h3 id="fineHead">How the math works</h3>
+        <ul>
+          <li><b>Pension = age factor × years of service × salary average</b>, plus any RetirementPlus bonus, capped at 80% of that average.</li>
+          <li><b>Tier 1</b> (joined before April 2, 2012): eligible with 20 years at any age, or at 55 with 10 years. Age factor is 2.5% at 65+, dropping 0.1 point per year younger (2.0% at 60, 1.5% at 55). Uses a 3-year salary average.</li>
+          <li><b>Tier 2</b> (April 2, 2012 or later): eligible at 60 with 10 years. Age factor runs from 1.45% at 60 to 2.5% at 67 (1.625% to 2.5% with 30+ years). Uses a 5-year salary average.</li>
+          <li><b>RetirementPlus</b>: with 30+ years (20 of them teaching), add 2% for each full year over 24 (Tier 1) or 23 (Tier 2). That's +12% or +14% at 30 years. Still capped at 80%.</li>
+          <li><b>COLA</b>: voted by the Legislature each year. Recent years: 3% of the first $13,000, so $390 max. The calculator adds it starting in your second year of retirement.</li>
+          <li><b>Options</b>: B is about 1% less than A; C is roughly 9–11% less depending on ages. We use 1% and 10%.</li>
+          <li>No, Massachusetts doesn't have a "Rule of 90." The age-factor table is the whole show.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="stack">
+      <div>
+        <h3>Assumptions &amp; fun facts</h3>
+        <ul>
+          <li>You keep teaching full time every year until you retire, with steady raises. No buybacks, leaves, or part-time years.</li>
+          <li>Dollars are future dollars, not adjusted for inflation.</li>
+          <li>MTRS pensions aren't taxed by Massachusetts, but the IRS still wants its cut.</li>
+          <li>Teaching pay here doesn't earn Social Security. Since the Social Security Fairness Act (January 2025) repealed WEP and GPO, Social Security you earned elsewhere, or as a spouse, is no longer cut because of your pension.</li>
+          <li>The "odds" use a rough average-American survival curve. Teachers tend to beat it.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>The not-funny part</h3>
+        <p>This is an unofficial estimate for fun and planning, not advice, and not from MTRS. Get real numbers from your MTRS member account or a pre-retirement counselor. Sources: <a href="https://mtrs.state.ma.us/members/retirement-overview/" target="_blank" rel="noopener">MTRS retirement overview</a>, <a href="https://mtrs.state.ma.us/wp-content/uploads/2022/05/Comparison_Membership-Tier-1-vs-2.pdf" target="_blank" rel="noopener">Tier 1 vs. Tier 2</a>, <a href="https://mtrs.state.ma.us/service/your-benefit-payment/" target="_blank" rel="noopener">MTRS COLA history</a>, <a href="https://www.ssa.gov/benefits/retirement/social-security-fairness-act.html" target="_blank" rel="noopener">SSA on WEP/GPO repeal</a>.</p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  const $ = id => document.getElementById(id);
+  const NOW_YEAR = new Date().getFullYear();
+  const DEFAULTS = {age:46, svc:20, sal:98000, raise:2.5, tier:1, rplus:true, cola:true, vet:false, opt:"A", horizon:88, target:59};
+  const OPT = {A:1, B:0.99, C:0.90};
+  const STORE = "lastbell.v1";
+
+  /* ---------- MTRS rules ---------- */
+  const T2_UNDER = {60:.0145, 61:.016, 62:.0175, 63:.019, 64:.0205, 65:.022, 66:.0235, 67:.025};
+  const T2_OVER  = {60:.01625,61:.0175,62:.01875,63:.02, 64:.02125,65:.0225,66:.02375,67:.025};
+  function ageFactor(tier, age, svc){
+    if (tier === 1){
+      if (age >= 65) return 0.025;
+      return Math.max(0.001, Math.round((0.025 - 0.001*(65-age))*10000)/10000);
+    }
+    if (age < 60) return 0;
+    const a = Math.min(67, Math.floor(age));
+    return svc >= 30 ? T2_OVER[a] : T2_UNDER[a];
+  }
+  function eligible(tier, age, svc){
+    return tier === 1 ? (svc >= 20 || (age >= 55 && svc >= 10)) : (age >= 60 && svc >= 10);
+  }
+  function rplusBonus(tier, svc, on){
+    if (!on) return 0;
+    const y = Math.floor(svc + 1e-9);
+    if (y < 30) return 0;
+    return 2 * (y - (tier === 1 ? 24 : 23));
+  }
+  /* rough Gompertz survival curve, close to US period life tables for ages 40-100 */
+  const GA = 5.2e-5, GB = 0.085;
+  const cumHaz = x => (GA/GB)*Math.exp(GB*x);
+  function surv(from, to){ return to <= from ? 1 : Math.exp(-(cumHaz(to) - cumHaz(from))); }
+
+  function buildModel(p){
+    const g = p.raise/100, N = p.tier === 1 ? 3 : 5;
+    const sal = k => p.sal * Math.pow(1+g, k);
+    const maxAge = Math.max(75, p.age + 3);
+    const rows = [];
+    for (let R = p.age; R <= maxAge; R++){
+      const k = R - p.age;
+      const svc = p.svc + k;
+      const elig = eligible(p.tier, R, svc);
+      const fac = ageFactor(p.tier, R, svc);
+      const svcM = Math.floor(svc*12 + 1e-9)/12;
+      const reg = fac * svcM * 100;
+      const bonus = rplusBonus(p.tier, svc, p.rplus);
+      const raw = reg + bonus;
+      const pct = Math.min(80, raw);
+      let avg = 0; for (let j = k - N; j <= k - 1; j++) avg += sal(j); avg /= N;
+      const vet = p.vet ? Math.min(300, 15*Math.floor(svc)) : 0;
+      const base = elig ? (pct/100)*avg*OPT[p.opt] + vet : 0;
+      const colaStep = p.cola ? 0.03*Math.min(base, 13000) : 0;
+      let life = 0, exp = 0;
+      for (let a = R; a < p.horizon; a++){ const amt = base + colaStep*(a - R); life += amt; exp += amt*surv(p.age, a + 0.5); }
+      rows.push({R, k, year: NOW_YEAR + k, svc, elig, fac, reg, bonus, raw, pct, capped: elig && raw >= 80, avg, base, colaStep, life, exp, lastSal: sal(k-1)});
+    }
+    return rows;
+  }
+  function paymentAt(row, a){ return a < row.R ? 0 : row.base + row.colaStep*(a - row.R); }
+  function cumAt(row, a){ let s = 0; for (let x = row.R; x < a; x++) s += paymentAt(row, x); return s; }
+  function breakeven(e, w){
+    if (w.base <= e.base) return null;
+    let ce = 0, cw = 0;
+    for (let a = e.R; a < 115; a++){
+      const pe = paymentAt(e, a), pw = paymentAt(w, a);
+      const ne = ce + pe, nw = cw + pw;
+      if (a >= w.R && nw >= ne){
+        const gap0 = ce - cw, closing = pw - pe;
+        const f = closing > 0 ? Math.min(1, Math.max(0, gap0/closing)) : 0;
+        return {age: a + f, value: ce + pe*f};
+      }
+      ce = ne; cw = nw;
+    }
+    return null;
+  }
+  function contribRate(p, svc){
+    if (p.rplus) return (p.tier === 2 && svc >= 30) ? 0.08 : 0.11;
+    return null; // 9% + 2% over $30k
+  }
+  function netPay(p, k){
+    const s = p.sal*Math.pow(1 + p.raise/100, k), svc = p.svc + k, r = contribRate(p, svc);
+    return r == null ? s - 0.09*s - 0.02*Math.max(0, s - 30000) : s*(1 - r);
+  }
+
+  /* ---------- formatting ---------- */
+  const usd = n => "$" + Math.round(n).toLocaleString("en-US");
+  const usdK = n => { const a = Math.abs(n); if (a >= 1e6) return "$" + (n/1e6).toFixed(a >= 1e7 ? 1 : 2) + "M"; if (a >= 1e4) return "$" + Math.round(n/1000) + "K"; if (a >= 1000) return "$" + (n/1000).toFixed(1) + "K"; return "$" + Math.round(n); };
+  const pctS = n => (Math.round(n*10)/10).toFixed(1).replace(/\.0$/, "") + "%";
+  const intS = n => Math.round(n).toLocaleString("en-US");
+  const plural = (n, w, ws) => n === 1 ? w : (ws || w + "s");
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+  /* ---------- inputs ---------- */
+  function numVal(id, def, lo, hi){ const v = parseFloat($(id).value); return isFinite(v) ? Math.min(hi, Math.max(lo, v)) : def; }
+  function readInputs(){
+    const age = Math.round(numVal("age", DEFAULTS.age, 21, 80));
+    return {
+      age, svc: numVal("svc", DEFAULTS.svc, 0, 50), sal: numVal("sal", DEFAULTS.sal, 1000, 1e6),
+      raise: numVal("raise", DEFAULTS.raise, 0, 15), tier: $("tier2").checked ? 2 : 1,
+      rplus: $("rplus").checked, cola: $("cola").checked, vet: $("vet").checked, opt: $("opt").value,
+      horizon: Math.round(numVal("horizon", DEFAULTS.horizon, 50, 110)), target: parseInt($("target").value, 10)
+    };
+  }
+  function writeInputs(s){
+    $("age").value = s.age; $("svc").value = s.svc; $("sal").value = s.sal; $("raise").value = s.raise;
+    $("tier1").checked = s.tier !== 2; $("tier2").checked = s.tier === 2;
+    $("rplus").checked = !!s.rplus; $("cola").checked = !!s.cola; $("vet").checked = !!s.vet;
+    $("opt").value = OPT[s.opt] ? s.opt : "A"; $("horizon").value = s.horizon;
+    $("target").min = s.age; $("target").max = Math.max(75, s.age + 3); $("target").value = s.target;
+  }
+  let cmpTouched = false;
+  function save(p){ try { localStorage.setItem(STORE, JSON.stringify(Object.assign({}, p, {cmpTouched, cmpE:+$("cmpE").value, cmpW:+$("cmpW").value}))); } catch(e){} }
+  function load(){ try { const s = JSON.parse(localStorage.getItem(STORE) || "null"); return s && typeof s === "object" ? s : null; } catch(e){ return null; } }
+
+  /* ---------- copy ---------- */
+  function gradeFor(pct){ if (pct >= 80) return "A+"; if (pct >= 72) return "A"; if (pct >= 64) return "B+"; if (pct >= 56) return "B"; if (pct >= 48) return "C+"; if (pct >= 40) return "C"; if (pct >= 30) return "D"; if (pct > 0) return "F"; return "Inc"; }
+  function pctQuip(pct){
+    if (pct >= 80) return "That's the 80% max. The Legislature salutes you, possibly with $390.";
+    if (pct >= 70) return "Beach, golf, and weekday naps are now financially plausible.";
+    if (pct >= 55) return "Respectable. Your future self says thanks, mostly.";
+    if (pct >= 40) return "Solid, but you may be bagging groceries for fun money.";
+    if (pct >= 25) return "Enough for coffee. Not the fancy kind.";
+    return "That's less a pension and more a strongly worded coupon.";
+  }
+
+  /* ---------- render: hall pass + KPIs ---------- */
+  function renderTop(p, rows, ctx){
+    const {tRow, earliest, capRow} = ctx;
+    const yrs = Math.max(0, p.target - p.age);
+    const gradeEl = $("grade");
+    let head, sub, note, grade;
+    if (!earliest){
+      head = "MTRS can't find you an exit.";
+      sub = "Not eligible at any age through " + rows[rows.length-1].R + " with these numbers. Double-check your years of service.";
+      note = "Recheck your math. Then mine."; grade = "Inc";
+    } else if (!tRow.elig){
+      head = "Not so fast.";
+      sub = "At " + p.target + " you're not eligible yet. Earliest exit is age " + earliest.R + " (" + earliest.year + "), with " + (Math.round(earliest.svc*10)/10) + " years in.";
+      note = "See me after class."; grade = "Inc";
+    } else {
+      const mo = tRow.base/12;
+      const lunches = intS(yrs*180);
+      const opener = {
+        0: ["School's out. Forever.", "You're eligible right now. You could leave at lunch, but please finish attendance first."],
+        1: ["Senioritis, faculty edition.", "One more lap around the calendar. Start giving away your stapler collection."],
+        2: ["Senioritis, faculty edition.", "Two more Septembers. Start eyeing who inherits your good scissors."],
+      }[yrs] || (yrs <= 5 ? ["You can see the finish line.", "It might just be the projector bulb, but it's definitely a light."]
+                : yrs <= 10 ? ["The long middle.", "Like February, but measured in years. Pace yourself."]
+                : yrs <= 20 ? ["Pack a lunch. Pack " + lunches + " of them.", "That's how many school days are left before age " + p.target + "."]
+                : ["Welcome to the profession!", "Retirement is so far off it may involve hoverboards."]);
+      head = opener[0];
+      sub = opener[1] + " At " + p.target + " you'd get about " + usd(tRow.base) + " a year (" + usd(mo) + "/month), " + pctS(tRow.pct) + " of your salary average. " + pctQuip(tRow.pct);
+      grade = gradeFor(tRow.pct);
+      note = capRow && p.target > capRow.R ? "You maxed out at " + capRow.R + ". Past that, you're mostly volunteering with a parking spot."
+           : capRow && p.target === capRow.R ? "Perfect timing. Gold star."
+           : yrs === 0 ? "Don't forget to return your keys."
+           : yrs <= 5 ? "Almost there. Stop buying dry-erase markers."
+           : yrs <= 10 ? "Hydrate. Grade. Repeat."
+           : "Stay strong. Hide the good coffee.";
+    }
+    $("countNum").textContent = yrs === 0 ? "0" : yrs;
+    $("countUnit").textContent = yrs === 0 ? "years. Go!" : plural(yrs, "year") + " to go";
+    $("vHead").textContent = head; $("vSub").textContent = sub; $("redpen").textContent = note;
+    if (gradeEl.textContent !== grade){ gradeEl.textContent = grade; gradeEl.classList.remove("stamp"); void gradeEl.offsetWidth; gradeEl.classList.add("stamp"); }
+    $("pfYear").textContent = tRow.year;
+    $("pfSvc").textContent = (Math.round(tRow.svc*10)/10) + " yrs";
+    $("pfPen").textContent = tRow.elig ? usd(tRow.base/12) + "/mo" : "Not yet";
+
+    if (earliest){
+      $("kE").textContent = "Age " + earliest.R;
+      $("kEd").textContent = earliest.k === 0 ? "That's now. " + usd(earliest.base) + "/yr (" + pctS(earliest.pct) + ")." : earliest.year + ", in " + earliest.k + " " + plural(earliest.k, "year") + ". " + usd(earliest.base) + "/yr (" + pctS(earliest.pct) + ").";
+    } else { $("kE").textContent = "None"; $("kEd").textContent = "Not before " + rows[rows.length-1].R + "."; }
+    if (tRow.elig){
+      $("kT").textContent = usd(tRow.base);
+      $("kTd").textContent = "per year at " + p.target + ". " + pctS(tRow.pct) + " of avg; " + Math.round(100*tRow.base/tRow.lastSal) + "% of your last paycheck.";
+    } else { $("kT").textContent = "Not eligible"; $("kTd").textContent = "at age " + p.target + "."; }
+    if (capRow){
+      $("kM").textContent = "Age " + capRow.R;
+      $("kMd").textContent = capRow.k === 0 ? "Already there. Every extra year now just adds raises." : capRow.year + ", with " + Math.floor(capRow.svc) + " years in. After this, the formula stops rewarding you.";
+    } else { $("kM").textContent = "Not by " + rows[rows.length-1].R; $("kMd").textContent = "The cap stays out of reach with these numbers."; }
+    if (tRow.elig){
+      const n = Math.max(0, p.horizon - p.target);
+      $("kL").textContent = usdK(tRow.life);
+      $("kLd").textContent = "collected from " + p.target + " to " + p.horizon + " (" + n + " " + plural(n, "year") + ")" + (p.cola ? ", COLAs included." : ".");
+    } else { $("kL").textContent = "$0"; $("kLd").textContent = "Pick an eligible target age."; }
+  }
+
+  /* ---------- render: countdown tiles ---------- */
+  function renderTiles(p){
+    const y = Math.max(0, p.target - p.age);
+    $("cdHead").textContent = y === 0 ? "Nothing stands between you and the door" : "What stands between you and age " + p.target;
+    const d = y*180;
+    const tiles = [
+      [intS(y), plural(y, "September") + " left", y === 0 ? "Next fall, you'll be at the beach on a Tuesday." : "Each one starting with the same dream about forgetting your pants."],
+      [intS(d), "school days", "At 180 a year. Snow days not refunded."],
+      [intS(y*36), "Monday mornings", "Roughly 36 a year. Coffee strongly advised."],
+      [intS(y*18), "faculty meetings", "About 18 a year. Some could have been an email."],
+      [intS(y*4), "report card deadlines", "Comment banks will be reused. We won't tell."],
+      [intS(d*12), "bathroom pass requests", "About 12 a day. Always during the important part."],
+      [intS(d*3), "“Is this graded?”", "Asked about 3 times a day. Answer: yes."],
+      [intS(d*2), "cups of faculty-room coffee", "Two a day, minimum. Quality not guaranteed."]
+    ];
+    $("tiles").innerHTML = tiles.map(t => '<div class="card tile"><span class="v">' + t[0] + '</span><span class="k">' + esc(t[1]) + '</span><span class="d">' + esc(t[2]) + '</span></div>').join("");
+  }
+
+  /* ---------- chart helpers ---------- */
+  function niceTicks(max, count){
+    if (max <= 0) return [0, 1];
+    const raw = max/count, mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    const step = [1, 2, 2.5, 5, 10].map(s => s*mag).find(s => s >= raw);
+    const t = []; for (let v = 0; v < max + step*0.999; v += step) t.push(v);
+    if (t[t.length-1] < max) t.push(t[t.length-1] + step);
+    return t;
+  }
+  function placeTip(wrap, tip, x, y){
+    const ww = wrap.clientWidth, tw = tip.offsetWidth, th = tip.offsetHeight;
+    let left = x + 14; if (left + tw > ww) left = x - tw - 14; if (left < 0) left = Math.max(0, Math.min(ww - tw, x - tw/2));
+    let top = y - th - 10; if (top < 0) top = y + 14;
+    tip.style.left = left + "px"; tip.style.top = top + "px";
+  }
+  function barPath(x, y, w, y0, r){
+    r = Math.max(0, Math.min(r, w/2, (y0 - y)));
+    return "M" + x + "," + y0 + "V" + (y + r) + "Q" + x + "," + y + " " + (x + r) + "," + y + "H" + (x + w - r) + "Q" + (x + w) + "," + y + " " + (x + w) + "," + (y + r) + "V" + y0 + "Z";
+  }
+
+  /* ---------- render: bar chart ---------- */
+  function renderBars(p, rows, ctx){
+    const wrap = $("barWrap");
+    const {earliest, capRow} = ctx;
+    if (!earliest){ wrap.innerHTML = '<div class="empty">No eligible retirement ages in range with these numbers.</div>'; $("barNote").textContent = ""; return; }
+    const start = earliest.R;
+    const end = Math.min(rows[rows.length-1].R, Math.max(start + 12, capRow ? capRow.R + 4 : 0, 67, p.target + 2));
+    const data = rows.filter(r => r.R >= start && r.R <= end);
+    const W = Math.max(300, wrap.clientWidth || 640), H = Math.round(Math.max(240, Math.min(340, W*0.42)));
+    const m = {t:30, r:8, b:34, l:52};
+    const iw = W - m.l - m.r, ih = H - m.t - m.b;
+    const ticks = niceTicks(Math.max(...data.map(d => d.base)), 4), ymax = ticks[ticks.length-1];
+    const y = v => m.t + ih - (v/ymax)*ih;
+    const slot = iw/data.length, gap = Math.max(2, Math.min(6, slot*0.18)), bw = Math.max(3, slot - gap);
+    const xAt = i => m.l + i*slot + gap/2;
+    const every = slot >= 26 ? 1 : slot >= 15 ? 2 : 5;
+    let s = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Yearly pension by retirement age, from age ' + start + ' to ' + end + '">';
+    s += '<g class="ax">';
+    ticks.forEach(t => { s += '<line x1="' + m.l + '" x2="' + (W - m.r) + '" y1="' + y(t) + '" y2="' + y(t) + '"' + (t === 0 ? ' class="base"' : '') + '/><text x="' + (m.l - 8) + '" y="' + (y(t) + 4) + '" text-anchor="end">' + usdK(t) + '</text>'; });
+    s += '</g>';
+    const capIdx = capRow ? data.findIndex(d => d.R === capRow.R) : -1;
+    if (capIdx >= 0){
+      const zx = xAt(capIdx) - gap/2;
+      s += '<rect class="zone" x="' + zx + '" y="' + m.t + '" width="' + (W - m.r - zx) + '" height="' + ih + '"/>';
+      s += '<line class="zone-edge" x1="' + zx + '" x2="' + zx + '" y1="' + (m.t - 6) + '" y2="' + (m.t + ih) + '"/>';
+      s += '<text class="lbl-soft" x="' + (zx + 6) + '" y="' + (m.t - 10) + '">80% max from ' + capRow.R + '</text>';
+    }
+    data.forEach((d, i) => {
+      const x = xAt(i), top = y(d.base), cls = "bar" + (d.R === p.target ? " is-target" : "");
+      s += '<path class="' + cls + '" data-i="' + i + '" d="' + barPath(x, top, bw, y(0), 4) + '"/>';
+    });
+    s += '<g class="ax">';
+    data.forEach((d, i) => { if ((d.R - start) % every === 0 || d.R === p.target) s += '<text x="' + (xAt(i) + bw/2) + '" y="' + (H - m.b + 16) + '" text-anchor="middle"' + (d.R === p.target ? ' class="lbl-strong"' : '') + '>' + d.R + '</text>'; });
+    s += '<text x="' + (m.l + iw/2) + '" y="' + (H - 2) + '" text-anchor="middle">Retirement age</text></g>';
+    const ti = data.findIndex(d => d.R === p.target);
+    if (ti >= 0){
+      const tx = xAt(ti) + bw/2, ty = y(data[ti].base) - 8;
+      const anchor = ti > data.length*0.75 ? "end" : ti < data.length*0.2 ? "start" : "middle";
+      s += '<text class="lbl-strong" x="' + tx + '" y="' + ty + '" text-anchor="' + anchor + '">' + usdK(data[ti].base) + '</text>';
+    }
+    s += '<rect x="' + m.l + '" y="' + m.t + '" width="' + iw + '" height="' + ih + '" fill="transparent" id="barHit"/>';
+    s += '</svg><div class="tip" id="barTip" hidden></div>';
+    wrap.innerHTML = s;
+
+    const svg = wrap.querySelector("svg"), tip = $("barTip"), bars = wrap.querySelectorAll(".bar");
+    function show(evt){
+      const r = svg.getBoundingClientRect(), sx = (evt.clientX - r.left)*(W/r.width);
+      const i = Math.max(0, Math.min(data.length - 1, Math.floor((sx - m.l)/slot)));
+      const d = data[i], prev = rows.find(z => z.R === d.R - 1);
+      bars.forEach(b => b.classList.toggle("is-hover", +b.dataset.i === i));
+      const delta = prev && prev.elig ? d.base - prev.base : null;
+      tip.innerHTML = '<b>Retire at ' + d.R + '</b> <span style="color:var(--ink3)">(' + d.year + ')</span>' +
+        '<div class="r"><span>Service</span><span>' + (Math.round(d.svc*10)/10) + ' yrs</span></div>' +
+        '<div class="r"><span>Benefit %</span><span>' + pctS(d.pct) + (d.raw > 80 ? ' (capped)' : '') + '</span></div>' +
+        '<div class="r"><span>Per year</span><span>' + usd(d.base) + '</span></div>' +
+        '<div class="r"><span>Per month</span><span>' + usd(d.base/12) + '</span></div>' +
+        (delta != null ? '<div class="r"><span>vs. a year earlier</span><span>+' + usd(delta) + '</span></div>' : '');
+      tip.hidden = false;
+      placeTip(wrap, tip, (xAt(i) + bw/2)*(r.width/W), y(d.base)*(r.height/H));
+    }
+    svg.addEventListener("pointermove", show);
+    svg.addEventListener("pointerdown", show);
+    svg.addEventListener("pointerleave", () => { tip.hidden = true; bars.forEach(b => b.classList.remove("is-hover")); });
+
+    const tRow = ctx.tRow;
+    $("barNote").textContent = capRow && p.target > capRow.R ? "Bars past " + capRow.R + " barely grow. Just saying."
+      : tRow.elig && earliest.R < p.target ? "Leaving at " + earliest.R + " instead: " + usd(earliest.base) + "/yr. Yikes."
+      : "";
+  }
+
+  /* ---------- render: comparison ---------- */
+  function renderCompare(p, rows, ctx){
+    const {earliest, capRow} = ctx;
+    const ctl = $("cmpControls"), grid = $("cmpGrid"), lineWrap = $("lineWrap");
+    const eS = $("cmpE"), wS = $("cmpW");
+    if (!earliest){
+      grid.hidden = true; ctl.hidden = true;
+      lineWrap.innerHTML = '<div class="empty">Once you have an eligible age, the showdown starts here.</div>';
+      $("lineLegend").innerHTML = ""; $("lineNote").textContent = ""; return;
+    }
+    grid.hidden = false; ctl.hidden = false;
+    const lo = earliest.R, hi = rows[rows.length-1].R;
+    [eS, wS].forEach(s => { s.min = lo; s.max = hi; });
+    if (!cmpTouched){
+      const classic = p.tier === 1 ? 55 : 60;
+      let e = Math.max(lo, Math.min(hi, classic));
+      if (e === lo && rows.find(r => r.R === e).pct < 20){ const r30 = rows.find(r => r.elig && r.svc >= 30); if (r30) e = Math.max(lo, Math.min(r30.R, 55)); }
+      let w = capRow && capRow.R > e ? capRow.R : Math.min(hi, e + 5);
+      if (w <= e) w = Math.min(hi, e + 3);
+      eS.value = e; wS.value = w;
+    }
+    let E = Math.max(lo, Math.min(hi, +eS.value)), Wa = Math.max(lo, Math.min(hi, +wS.value));
+    eS.value = E; wS.value = Wa;
+    $("cmpEOut").textContent = E; $("cmpWOut").textContent = Wa;
+    if (E > Wa){ const t = E; E = Wa; Wa = t; }
+    const e = rows.find(r => r.R === E), w = rows.find(r => r.R === Wa);
+
+    function card(r, label, other){
+      const extraYears = Math.max(0, r.R - other.R);
+      let pay = 0; for (let k = other.k; k < r.k; k++) pay += netPay(p, k);
+      return '<h3>' + label + ' <small>age ' + r.R + ' · ' + r.year + '</small></h3>' +
+        '<div class="big">' + usd(r.base/12) + '<small>/month</small></div>' +
+        '<div class="kv">' +
+        '<div><span>Per year</span><span>' + usd(r.base) + '</span></div>' +
+        '<div><span>Service</span><span>' + (Math.round(r.svc*10)/10) + ' yrs</span></div>' +
+        '<div><span>Benefit %</span><span>' + pctS(r.pct) + '</span></div>' +
+        '<div><span>Collected by ' + p.horizon + '</span><span>' + usdK(r.life) + '</span></div>' +
+        '<div><span>Odds-weighted total</span><span>' + usdK(r.exp) + '</span></div>' +
+        (extraYears > 0 ? '<div><span>Extra paychecks*</span><span>' + usdK(pay) + '</span></div>' : '<div><span>Extra school days</span><span>0. Freedom.</span></div>') +
+        '</div>';
+    }
+    $("cmpCardE").innerHTML = card(e, "Leave early", w);
+    $("cmpCardW").innerHTML = card(w, "Wait it out", e) + '<span class="footnote">*Salary for ' + (w.R - e.R) + ' more ' + plural(w.R - e.R, "year") + ', after your pension deduction, before taxes.</span>';
+
+    const V = $("cmpVerdict");
+    let be = null;
+    if (E === Wa){
+      V.innerHTML = '<h3>Same age, same answer.</h3><p>Slide one of the ages so there’s something to argue about.</p>';
+    } else if (!e.elig){
+      V.innerHTML = '<h3>The early option isn’t real.</h3><p>You’re not eligible at ' + E + '.</p>';
+    } else {
+      be = breakeven(e, w);
+      const raise = w.base - e.base, yrs = w.R - e.R;
+      const sDays = intS(yrs*180);
+      let h, body, odds = "";
+      if (!be || be.age > 105){
+        h = "Leave early. The math agrees.";
+        body = 'Waiting ' + yrs + ' more ' + plural(yrs, "year") + ' adds ' + usd(raise) + '/yr, but the bigger checks never catch up in pension dollars. Your knees will thank you.';
+      } else {
+        const chance = surv(p.age, be.age);
+        const B = Math.round(be.age*10)/10;
+        h = B < 78 ? "The math says wait." : B < 86 ? "It’s a coin flip." : "Leave early. Life is short.";
+        body = 'Waiting ' + yrs + ' more ' + plural(yrs, "year") + ' (' + sDays + ' school days) raises your pension by <span class="hl">' + usd(raise) + '/yr</span>. ' +
+               'Waiting pulls ahead in total pension if you’re still collecting past <span class="hl">age ' + B.toFixed(1).replace(/\.0$/, "") + '</span>. ' +
+               (B < 78 ? "Your lower back may disagree." : B < 86 ? "Decide based on how you feel about lunch duty." : "The copier line is long; your retirement doesn’t have to be.");
+        odds = '<div class="odds"><div class="odd"><span>Odds you’re around at the breakeven (age ' + Math.round(be.age) + ')</span><b>' + Math.round(chance*100) + '%</b><div class="bar-bg"><div class="bar-fg" style="width:' + (chance*100).toFixed(1) + '%"></div></div></div>';
+        [75, 85, 95].forEach(a => { if (a > p.age){ const c = surv(p.age, a); odds += '<div class="odd"><span>Odds you’re still cashing checks at ' + a + '</span><b>' + Math.round(c*100) + '%</b><div class="bar-bg"><div class="bar-fg" style="width:' + (c*100).toFixed(1) + '%"></div></div></div>'; } });
+        odds += '</div>';
+      }
+      const winner = w.exp > e.exp ? "waiting" : "leaving early";
+      V.innerHTML = '<h3>' + h + '</h3><p>' + body + '</p>' + odds +
+        '<p>Weighting each year by those odds, <b>' + winner + '</b> collects more: ' + usdK(Math.max(e.exp, w.exp)) + ' vs. ' + usdK(Math.min(e.exp, w.exp)) + '.</p>';
+    }
+    renderLines(p, e, w, be);
+  }
+
+  function renderLines(p, e, w, be){
+    const wrap = $("lineWrap");
+    $("lineLegend").innerHTML = '<span><i style="background:var(--amber)"></i>Leave at ' + e.R + '</span><span><i style="background:var(--blue)"></i>Wait until ' + w.R + '</span>' + (w.R > e.R ? '<span><i class="zone-key"></i>Still working</span>' : '');
+    const a0 = e.R, a1 = Math.max(p.horizon, be ? Math.ceil(be.age) + 2 : 0, w.R + 5);
+    const ages = []; for (let a = a0; a <= a1; a++) ages.push(a);
+    const ce = ages.map(a => cumAt(e, a)), cw = ages.map(a => cumAt(w, a));
+    const W = Math.max(300, wrap.clientWidth || 640), H = Math.round(Math.max(240, Math.min(340, W*0.42)));
+    const m = {t:18, r:Math.min(96, W*0.2), b:34, l:56};
+    const iw = W - m.l - m.r, ih = H - m.t - m.b;
+    const ticks = niceTicks(Math.max(ce[ce.length-1], cw[cw.length-1], 1), 4), ymax = ticks[ticks.length-1];
+    const x = a => m.l + ((a - a0)/(a1 - a0))*iw, y = v => m.t + ih - (v/ymax)*ih;
+    const stepA = (a1 - a0) > 40 ? 10 : 5;
+    let s = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Cumulative pension collected by age, leaving at ' + e.R + ' versus waiting until ' + w.R + '">';
+    if (w.R > e.R) s += '<rect class="band-work" x="' + x(e.R) + '" y="' + m.t + '" width="' + (x(w.R) - x(e.R)) + '" height="' + ih + '"/>';
+    s += '<g class="ax">';
+    ticks.forEach(t => { s += '<line x1="' + m.l + '" x2="' + (m.l + iw) + '" y1="' + y(t) + '" y2="' + y(t) + '"' + (t === 0 ? ' class="base"' : '') + '/><text x="' + (m.l - 8) + '" y="' + (y(t) + 4) + '" text-anchor="end">' + usdK(t) + '</text>'; });
+    for (let a = Math.ceil(a0/stepA)*stepA; a <= a1; a += stepA) s += '<text x="' + x(a) + '" y="' + (H - m.b + 16) + '" text-anchor="middle">' + a + '</text>';
+    s += '<text x="' + (m.l + iw/2) + '" y="' + (H - 2) + '" text-anchor="middle">Your age</text></g>';
+    const path = arr => arr.map((v, i) => (i ? "L" : "M") + x(ages[i]).toFixed(1) + "," + y(v).toFixed(1)).join("");
+    s += '<path class="line-w" d="' + path(cw) + '"/><path class="line-e" d="' + path(ce) + '"/>';
+    const lastE = ce[ce.length-1], lastW = cw[cw.length-1];
+    let yE = y(lastE), yW = y(lastW);
+    if (Math.abs(yE - yW) < 16){ const mid = (yE + yW)/2; if (lastE >= lastW){ yE = mid - 8; yW = mid + 8; } else { yE = mid + 8; yW = mid - 8; } }
+    s += '<text class="lbl-soft" x="' + (m.l + iw + 8) + '" y="' + (yE + 4) + '">Leave ' + e.R + ' · ' + usdK(lastE) + '</text>';
+    s += '<text class="lbl-soft" x="' + (m.l + iw + 8) + '" y="' + (yW + 4) + '">Wait ' + w.R + ' · ' + usdK(lastW) + '</text>';
+    if (be && be.age <= a1){
+      const bx = x(be.age), by = y(be.value);
+      s += '<line class="cross" x1="' + bx + '" x2="' + bx + '" y1="' + by + '" y2="' + (m.t + ih) + '"/>';
+      s += '<circle class="dot-be" cx="' + bx + '" cy="' + by + '" r="6"/>';
+      const right = bx > m.l + iw*0.7;
+      s += '<text class="lbl-hand" x="' + (bx + (right ? -10 : 10)) + '" y="' + (right ? by - 12 : Math.min(m.t + ih - 6, by + 24)) + '" text-anchor="' + (right ? "end" : "start") + '">breakeven ≈ ' + Math.round(be.age) + '</text>';
+    }
+    s += '<line class="cross" id="lnCross" x1="0" x2="0" y1="' + m.t + '" y2="' + (m.t + ih) + '" visibility="hidden"/>';
+    s += '<circle class="dot-e" id="lnDotE" r="5" visibility="hidden"/><circle class="dot-w" id="lnDotW" r="5" visibility="hidden"/>';
+    s += '<rect x="' + m.l + '" y="' + m.t + '" width="' + iw + '" height="' + ih + '" fill="transparent"/>';
+    s += '</svg><div class="tip" id="lineTip" hidden></div>';
+    wrap.innerHTML = s;
+
+    const svg = wrap.querySelector("svg"), tip = $("lineTip"), cr = $("lnCross"), de = $("lnDotE"), dw = $("lnDotW");
+    function show(evt){
+      const r = svg.getBoundingClientRect(), sx = (evt.clientX - r.left)*(W/r.width);
+      const i = Math.max(0, Math.min(ages.length - 1, Math.round(((sx - m.l)/iw)*(a1 - a0))));
+      const a = ages[i], xx = x(a);
+      cr.setAttribute("x1", xx); cr.setAttribute("x2", xx); cr.setAttribute("visibility", "visible");
+      de.setAttribute("cx", xx); de.setAttribute("cy", y(ce[i])); de.setAttribute("visibility", "visible");
+      dw.setAttribute("cx", xx); dw.setAttribute("cy", y(cw[i])); dw.setAttribute("visibility", "visible");
+      const diff = cw[i] - ce[i];
+      tip.innerHTML = '<b>By age ' + a + '</b>' +
+        '<div class="r"><span><i class="sw" style="background:var(--amber)"></i>Leave ' + e.R + '</span><span>' + usd(ce[i]) + '</span></div>' +
+        '<div class="r"><span><i class="sw" style="background:var(--blue)"></i>Wait ' + w.R + '</span><span>' + usd(cw[i]) + '</span></div>' +
+        '<div class="r"><span>' + (diff >= 0 ? "Waiting ahead by" : "Early ahead by") + '</span><span>' + usd(Math.abs(diff)) + '</span></div>' +
+        (a < w.R ? '<div style="color:var(--ink3);margin-top:4px">Waiter is still teaching.</div>' : '');
+      tip.hidden = false;
+      placeTip(wrap, tip, xx*(r.width/W), Math.min(y(ce[i]), y(cw[i]))*(r.height/H));
+    }
+    svg.addEventListener("pointermove", show);
+    svg.addEventListener("pointerdown", show);
+    svg.addEventListener("pointerleave", () => { tip.hidden = true; [cr, de, dw].forEach(n => n.setAttribute("visibility", "hidden")); });
+
+    $("lineNote").textContent = !be ? "Early bird gets the pension." : be.age > p.horizon ? "Breakeven comes after age " + p.horizon + ". Hmm." : "Eat your vegetables.";
+  }
+
+  /* ---------- render: table ---------- */
+  function vibe(r, p, ctx){
+    if (!r.elig) return "Not eligible. Keep grading.";
+    if (ctx.capRow && r.R > ctx.capRow.R + 3) return "Here for the dental plan.";
+    if (ctx.capRow && r.R > ctx.capRow.R) return "Maxed out. Bonus years for raises only.";
+    if (ctx.capRow && r.R === ctx.capRow.R) return "Hit the 80% ceiling. Peak efficiency.";
+    if (r.pct < 25) return "Coupon territory.";
+    if (r.bonus > 0 && r.pct < 60) return "RetirementPlus kicked in. Nice.";
+    if (r.pct < 45) return "Possible, if you love ramen.";
+    if (r.pct < 60) return "Getting comfy.";
+    return "Now we're talking.";
+  }
+  function renderTable(p, rows, ctx){
+    const {earliest} = ctx;
+    const tbl = $("tbl");
+    if (!earliest){ tbl.innerHTML = '<tr><td class="empty">No eligible ages in range.</td></tr>'; return; }
+    const eA = +$("cmpE").value, wA = +$("cmpW").value;
+    let h = '<thead><tr><th>Age</th><th>Year</th><th>Service</th><th>Benefit %</th><th>Salary avg</th><th>Per year</th><th>Per month</th><th>By age ' + p.horizon + '</th><th>Vibe check</th></tr></thead><tbody>';
+    rows.filter(r => r.R >= earliest.R).forEach(r => {
+      const chips = (r.R === p.target ? '<span class="chip t">Target</span>' : '') + (r.R === Math.min(eA, wA) ? '<span class="chip e">Early</span>' : '') + (r.R === Math.max(eA, wA) && eA !== wA ? '<span class="chip w">Wait</span>' : '') + (ctx.capRow && r.R === ctx.capRow.R ? '<span class="chip m">80%</span>' : '');
+      h += '<tr' + (r.R === p.target ? ' class="is-target"' : '') + '><td><b>' + r.R + '</b>' + chips + '</td><td>' + r.year + '</td><td>' + (Math.round(r.svc*10)/10) + '</td><td>' + (r.elig ? pctS(r.pct) : "–") + '</td><td>' + usd(r.avg) + '</td><td>' + (r.elig ? usd(r.base) : "–") + '</td><td>' + (r.elig ? usd(r.base/12) : "–") + '</td><td>' + (r.elig ? usdK(r.life) : "–") + '</td><td>' + esc(vibe(r, p, ctx)) + '</td></tr>';
+    });
+    tbl.innerHTML = h + '</tbody>';
+  }
+
+  /* ---------- main ---------- */
+  let last = null;
+  function update(){
+    const tS = $("target");
+    const age = Math.round(numVal("age", DEFAULTS.age, 21, 80));
+    tS.min = age; tS.max = Math.max(75, age + 3);
+    if (+tS.value < age) tS.value = age;
+    const p = readInputs();
+    $("targetOut").textContent = p.target;
+    const rows = buildModel(p);
+    const earliest = rows.find(r => r.elig) || null;
+    const capRow = rows.find(r => r.capped) || null;
+    const tRow = rows.find(r => r.R === p.target) || rows[0];
+    const ctx = {earliest, capRow, tRow};
+    last = {p, rows, ctx};
+    renderTop(p, rows, ctx);
+    renderTiles(p);
+    renderBars(p, rows, ctx);
+    renderCompare(p, rows, ctx);
+    renderTable(p, rows, ctx);
+    save(p);
+  }
+
+  const saved = load();
+  if (saved){
+    writeInputs(Object.assign({}, DEFAULTS, saved));
+    if (saved.cmpTouched){ cmpTouched = true; $("cmpE").value = saved.cmpE; $("cmpW").value = saved.cmpW; }
+  }
+  $("intake").addEventListener("input", update);
+  $("intake").addEventListener("change", update);
+  $("intake").addEventListener("submit", e => e.preventDefault());
+  ["cmpE", "cmpW"].forEach(id => $(id).addEventListener("input", () => { cmpTouched = true; update(); }));
+  $("reset").addEventListener("click", () => { cmpTouched = false; writeInputs(DEFAULTS); update(); });
+  let rz; window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { if (last){ renderBars(last.p, last.rows, last.ctx); renderCompare(last.p, last.rows, last.ctx); } }, 120); });
+  update();
+
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Glider Lab Sim</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap">
+<style>
+/* Layout: one column. Title, then the air-track stage full width, then a deck of three panels
+   (controls | LabQuest readout | balance), then the run log. Navy + amber from the ACP handouts. */
+:root{
+  --bg:#f3f5f8; --panel:#ffffff; --ink:#141a24; --muted:#4b5567; --line:#cdd3de;
+  --accent:#1b2f4e; --on-accent:#ffffff; --amber:#a8731a; --amber-soft:#fbf3e2;
+  --track:#e2e7ef; --metal:#8b97aa; --glider:#d3dcea; --table:#dde2ea;
+  --screen:#eaf2e6; --screen-ink:#12200e; --led-off:#5b6578; --led-on:#e0452f;
+  --font-sans:"IBM Plex Sans","Segoe UI",system-ui,sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e141d; --panel:#161f2c; --ink:#e7ebf2; --muted:#a4aec0; --line:#2c384c;
+    --accent:#a9c1ec; --on-accent:#0e141d; --amber:#e3ac4d; --amber-soft:#2a2214;
+    --track:#223047; --metal:#7f8ca3; --glider:#34496b; --table:#202b3c;
+    --screen:#1b2a1a; --screen-ink:#d7f2c9; --led-off:#4b5568; --led-on:#ff6a50;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0e141d; --panel:#161f2c; --ink:#e7ebf2; --muted:#a4aec0; --line:#2c384c;
+  --accent:#a9c1ec; --on-accent:#0e141d; --amber:#e3ac4d; --amber-soft:#2a2214;
+  --track:#223047; --metal:#7f8ca3; --glider:#34496b; --table:#202b3c;
+  --screen:#1b2a1a; --screen-ink:#d7f2c9; --led-off:#4b5568; --led-on:#ff6a50;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-sans);font-size:15px;line-height:1.45;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:22px 48px}
+.wrap{max-width:1060px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+header{display:flex;flex-direction:column;gap:4px}
+.eyebrow{font-size:11.5px;font-weight:600;letter-spacing:.18em;color:var(--accent);text-transform:uppercase}
+h1{margin:0;font-size:30px;line-height:1.15;font-weight:700;color:var(--accent);text-wrap:balance}
+.intro{margin:2px 0 0;color:var(--muted);max-width:68ch}
+.rule{height:3px;background:var(--amber);border-radius:2px;margin-top:6px}
+
+.stage{margin:0;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 10px 4px}
+.stage .scroll{overflow-x:auto}
+.stage svg{display:block;width:100%;min-width:600px;height:auto}
+.stage .cap{display:flex;flex-wrap:wrap;gap:4px 18px;font-size:12.5px;color:var(--muted);padding:2px 6px 6px}
+
+.deck{display:grid;grid-template-columns:1.15fr 1fr 0.9fr;gap:14px}
+@media (max-width:860px){.deck{grid-template-columns:1fr 1fr}.deck .controls{grid-column:1 / -1}}
+@media (max-width:560px){.deck{grid-template-columns:1fr}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;min-width:0;display:flex;flex-direction:column;gap:12px}
+.panel h2{margin:0;font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+.field{display:flex;flex-direction:column;gap:6px}
+.field>.lab{font-weight:600;font-size:14px}
+.stepper{display:flex;align-items:center;gap:10px}
+.stepper button{width:40px;height:40px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-size:22px;font-weight:600;line-height:1;cursor:pointer}
+.stepper output{font-family:var(--font-mono);font-size:26px;font-weight:600;min-width:2.2ch;text-align:center;font-variant-numeric:tabular-nums}
+.stepper .unit{color:var(--muted);font-size:13.5px}
+.seg{position:relative;display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;width:max-content;max-width:100%}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg label{padding:8px 14px;font-size:14px;cursor:pointer;border-left:1px solid var(--line);background:var(--bg)}
+.seg label:first-of-type{border-left:none}
+.seg input:checked+label{background:var(--accent);color:var(--on-accent);font-weight:600}
+.seg input:focus-visible+label{outline:2px solid var(--amber);outline-offset:-2px}
+.range{display:flex;align-items:center;gap:10px}
+.range input{flex:1;min-width:0;accent-color:var(--accent)}
+.range output{font-family:var(--font-mono);font-weight:600;min-width:5.5ch;text-align:right;font-variant-numeric:tabular-nums}
+.go{appearance:none;border:none;border-radius:10px;background:var(--accent);color:var(--on-accent);font:inherit;font-size:17px;font-weight:700;padding:12px 18px;cursor:pointer}
+.go:disabled{opacity:.55;cursor:default}
+.hint{margin:0;font-size:12.5px;color:var(--muted)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+
+.device{background:var(--accent);border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:8px}
+.device .brand{color:var(--on-accent);font-size:11.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;display:flex;justify-content:space-between}
+.screen{background:var(--screen);color:var(--screen-ink);border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;font-family:var(--font-mono)}
+.screen .ch{font-family:var(--font-sans);font-size:12.5px;font-weight:600;opacity:.85}
+.screen .big{font-size:38px;font-weight:600;line-height:1;font-variant-numeric:tabular-nums}
+.screen .big small{font-size:15px;font-weight:500;margin-left:6px}
+.screen .row{display:flex;justify-content:space-between;align-items:baseline;gap:8px;border-top:1px dashed currentColor;padding-top:7px;opacity:.95}
+.screen .row span:last-child{font-size:17px;font-weight:600;font-variant-numeric:tabular-nums}
+.status{font-family:var(--font-sans);font-size:13px;font-weight:500;min-height:2.6em}
+
+.scale{display:flex;flex-direction:column;gap:10px}
+.lcd{background:var(--screen);color:var(--screen-ink);font-family:var(--font-mono);font-size:30px;font-weight:600;border-radius:8px;padding:8px 12px;text-align:right;font-variant-numeric:tabular-nums}
+.lcd small{font-size:15px;margin-left:6px}
+.onpan{font-size:13px;color:var(--muted);min-height:1.4em}
+.pan-btns{display:flex;flex-direction:column;gap:8px}
+.pan-btns button{text-align:left;padding:9px 12px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit;font-size:14px;cursor:pointer}
+.pan-btns button[aria-pressed="true"]{border-color:var(--amber);background:var(--amber-soft);font-weight:600}
+
+.log{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.log-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.log-head h2{margin:0;font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+.clear{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:8px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer}
+.clear.arm{border-color:var(--led-on);color:var(--led-on);font-weight:600}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:520px;font-size:14px}
+th{font-size:12px;text-align:right;color:var(--muted);font-weight:600;padding:6px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{text-align:right;padding:6px 10px;border-bottom:1px solid var(--line);font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+th:first-child,td:first-child{text-align:left}
+tbody tr:first-child td{background:var(--amber-soft)}
+.empty{color:var(--muted);font-size:14px;margin:4px 0}
+
+/* SVG theming */
+.s-ink{fill:var(--ink)} .s-ink-stroke{stroke:var(--ink)}
+.s-table{fill:var(--table);stroke:var(--ink)}
+.s-track{fill:var(--track);stroke:var(--accent)}
+.s-foot{fill:var(--accent)}
+.s-glider{fill:var(--glider);stroke:var(--accent)}
+.s-metal{fill:var(--metal)}
+.s-gate{fill:var(--accent)}
+.s-led{fill:var(--led-off)} .s-led.on{fill:var(--led-on)}
+.s-beam{stroke:var(--amber)}
+.s-pulley{fill:var(--panel);stroke:var(--ink)}
+.s-mass{fill:var(--amber);stroke:var(--ink)}
+.s-label{fill:var(--ink);font-family:var(--font-sans);font-size:13px;font-weight:600}
+.s-note{fill:var(--muted);font-family:var(--font-sans);font-size:12px}
+.s-clip{fill:none;stroke:var(--ink)}
+@media (prefers-reduced-motion: reduce){*{scroll-behavior:auto}}
+</style>
+<style>body{margin:0}[hidden]{display:none!important}</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Physics 1 ACP · Unit 2: Forces</div>
+    <h1>Glider Lab Sim</h1>
+    <p class="intro">A virtual air track for the Glider and Hanging Weights investigation. Choose the paperclips and glider masses, press <b>Release</b>, and read the acceleration from the photogate. Each release is one trial.</p>
+    <div class="rule"></div>
+  </header>
+
+  <figure class="stage" aria-label="Air track, glider, photogate, pulley and hanging paperclips">
+    <div class="scroll"><svg id="scene" viewBox="0 0 900 432" role="img" aria-labelledby="sceneTitle">
+      <title id="sceneTitle">Side view: a glider on an air track is pulled by a string over a pulley to hanging paperclips. A photogate sits over the track.</title>
+      <!-- photogate stand (behind the track) -->
+      <rect id="gateRod" class="s-metal" x="0" y="40" width="5" height="100"/>
+      <!-- table -->
+      <rect class="s-table" x="10" y="140" width="782" height="10" stroke-width="1.2"/>
+      <rect class="s-table" x="26" y="150" width="11" height="272" stroke-width="1.2"/>
+      <rect class="s-table" x="764" y="150" width="11" height="272" stroke-width="1.2"/>
+      <line class="s-ink-stroke" x1="0" y1="422" x2="900" y2="422" stroke-width="2"/>
+      <text class="s-note" x="60" y="414">floor</text>
+      <!-- track -->
+      <rect class="s-foot" x="80" y="124" width="10" height="16"/>
+      <rect class="s-foot" x="720" y="124" width="10" height="16"/>
+      <rect class="s-track" x="34" y="110" width="760" height="14" rx="2" stroke-width="1.6"/>
+      <g id="holes"></g>
+      <text class="s-label" x="420" y="168" text-anchor="middle" style="fill:var(--muted)">air track</text>
+      <!-- string -->
+      <line id="stringH" class="s-ink-stroke" x1="160" y1="95" x2="796" y2="95" stroke-width="1.4"/>
+      <line id="stringV" class="s-ink-stroke" x1="808" y1="107" x2="808" y2="130" stroke-width="1.4"/>
+      <!-- pulley -->
+      <line class="s-ink-stroke" x1="786" y1="122" x2="796" y2="108" stroke-width="3"/>
+      <circle class="s-pulley" cx="796" cy="107" r="12" stroke-width="1.6"/>
+      <circle class="s-ink" cx="796" cy="107" r="2.2"/>
+      <text class="s-label" x="822" y="96">pulley</text>
+      <!-- glider -->
+      <g id="glider">
+        <rect class="s-glider" x="100" y="86" width="60" height="22" rx="3" stroke-width="1.6"/>
+        <rect class="s-ink" x="123" y="80" width="23" height="6"/>
+        <rect class="s-ink" x="123" y="56" width="5" height="26"/>
+        <rect class="s-ink" x="141" y="56" width="5" height="26"/>
+        <g id="massDots"></g>
+      </g>
+      <!-- clips -->
+      <g id="clips"></g>
+      <!-- photogate arm -->
+      <g id="gate">
+        <rect class="s-gate" x="-13" y="30" width="26" height="50" rx="4"/>
+        <circle id="led" class="s-led" cx="0" cy="41" r="4"/>
+        <line class="s-beam" x1="-7" y1="70" x2="7" y2="70" stroke-width="2.4" stroke-linecap="round"/>
+        <text class="s-label" x="0" y="20" text-anchor="middle">photogate</text>
+      </g>
+      <text id="clipLabel" class="s-label" x="826" y="146">2 clips</text>
+      <text id="massLabel" class="s-note" x="130" y="182" text-anchor="middle"></text>
+    </svg></div>
+    <figcaption class="cap"><span>The gate's light turns on while a tab blocks the beam.</span><span>The glider is caught after 70 cm.</span></figcaption>
+  </figure>
+
+  <section class="deck">
+    <div class="panel controls">
+      <h2>Set up the run</h2>
+      <div class="field">
+        <span class="lab" id="clipsLab">Hanging paperclips</span>
+        <div class="stepper" role="group" aria-labelledby="clipsLab">
+          <button type="button" id="clipMinus" aria-label="Remove a paperclip">−</button>
+          <output id="clipOut" aria-live="polite">2</output>
+          <button type="button" id="clipPlus" aria-label="Add a paperclip">+</button>
+          <span class="unit">clips (0 to 12)</span>
+        </div>
+      </div>
+      <div class="field">
+        <span class="lab" id="massLab">Cylinder masses on the glider</span>
+        <div class="seg" role="radiogroup" aria-labelledby="massLab">
+          <input type="radio" name="pairs" id="m0" value="0" checked><label for="m0">None</label>
+          <input type="radio" name="pairs" id="m2" value="1"><label for="m2">2</label>
+          <input type="radio" name="pairs" id="m4" value="2"><label for="m4">4</label>
+          <input type="radio" name="pairs" id="m6" value="3"><label for="m6">6</label>
+        </div>
+        <p class="hint">Masses go on in pairs, one on each side.</p>
+      </div>
+      <div class="field">
+        <label class="lab" for="gatePos">Gate distance from the start</label>
+        <div class="range"><input type="range" id="gatePos" min="25" max="55" step="5" value="40"><output id="gateOut" for="gatePos">40 cm</output></div>
+      </div>
+      <button type="button" class="go" id="release">Release glider</button>
+    </div>
+
+    <div class="panel">
+      <h2>Photogate readout</h2>
+      <div class="device">
+        <div class="brand"><span>LabQuest 2</span><span>Go Direct Photogate</span></div>
+        <div class="screen" aria-live="polite">
+          <span class="ch">Acceleration</span>
+          <span class="big"><span id="aOut">–.–––</span><small>m/s²</small></span>
+          <div class="row"><span class="ch">Speed at gate (1st tab)</span><span><span id="vOut">–.––</span> <small style="font-size:12px">m/s</small></span></div>
+          <span class="status" id="status">Ready. Set the clips, then press Release.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel scale">
+      <h2>Balance</h2>
+      <div class="lcd" aria-live="polite"><span id="balOut">0.0</span><small>g</small></div>
+      <div class="onpan" id="onPan">Pan is empty.</div>
+      <div class="pan-btns" role="group" aria-label="Put something on the balance">
+        <button type="button" data-item="clips" aria-pressed="false">10 paperclips</button>
+        <button type="button" data-item="glider" aria-pressed="false">Glider + double flag</button>
+        <button type="button" data-item="pair" aria-pressed="false">Pair of cylinder masses</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="log" aria-label="Run log">
+    <div class="log-head"><h2>Run log</h2><button type="button" class="clear" id="clearLog">Clear log</button></div>
+    <p class="empty" id="emptyLog">No runs yet. Each time you press Release, the result shows up here, newest on top. Copy your numbers onto the worksheet.</p>
+    <div class="tbl" id="logWrap" hidden>
+      <table>
+        <thead><tr><th>Run</th><th>Clips</th><th>Masses on glider</th><th>Gate (cm)</th><th>a (m/s²)</th><th>Speed at gate (m/s)</th></tr></thead>
+        <tbody id="logBody"></tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+  // ---------- physics (SI units) ----------
+  const G = 9.8;
+  const M_GLIDER = 0.2046;   // glider + double flag, kg (balance shows 204.6 g)
+  const M_CLIP = 0.00103;    // one paperclip, kg (10 clips = 10.3 g)
+  const M_PAIR = 0.1004;     // pair of cylinder masses, kg
+  const F_LOSS = 0.0010;     // pulley + air friction, N
+  const M_PULLEY = 0.004;    // the pulley wheel must be spun up too (equivalent mass), kg
+  const TRAVEL = 0.70;       // glider is caught after 70 cm
+  const TAB_GAP = 0.06;      // spacing between the two flag tabs, m
+
+  function trueAccel(n, pairs){
+    const pull = n * M_CLIP * G - F_LOSS;
+    if (pull <= 0) return 0;
+    return pull / (M_GLIDER + pairs * M_PAIR + n * M_CLIP + M_PULLEY);
+  }
+  function gauss(){ let u = 0, v = 0; while(!u) u = Math.random(); while(!v) v = Math.random();
+    return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+
+  // ---------- drawing ----------
+  const S = 300;                 // px per metre
+  const X0 = 130;                // glider centre at the start (px)
+  const FRONT_TAB = 13.5;        // front tab centre, px ahead of glider centre
+  const REAR_TAB = FRONT_TAB - TAB_GAP * S;
+  const CLIP_X = 808, CLIP_Y0 = 130;
+  const $ = id => document.getElementById(id);
+  const svgNS = "http://www.w3.org/2000/svg";
+  const el = (tag, attrs) => { const e = document.createElementNS(svgNS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); return e; };
+
+  const holes = $("holes");
+  for (let x = 48; x < 790; x += 16) holes.appendChild(el("circle", {cx:x, cy:113.5, r:1.1, class:"s-ink", opacity:".45"}));
+
+  let state = { clips: 2, pairs: 0, gateCm: 40, running: false };
+  let raf = null;
+
+  function gateX(){ return X0 + FRONT_TAB + state.gateCm / 100 * S; }
+
+  function drawGate(){
+    const gx = gateX();
+    $("gate").setAttribute("transform", `translate(${gx},0)`);
+    $("gateRod").setAttribute("x", gx + 9);
+  }
+  function drawMasses(){
+    const g = $("massDots"); g.innerHTML = "";
+    const xs = [112, 130, 148];
+    for (let i = 0; i < state.pairs; i++) g.appendChild(el("circle", {cx:xs[i], cy:97, r:6.5, class:"s-mass", "stroke-width":"1.2"}));
+    $("massLabel").textContent = state.pairs ? `+${state.pairs * 2} masses` : "";
+  }
+  function drawClips(drop){
+    const g = $("clips"); g.innerHTML = "";
+    const y = CLIP_Y0 + drop;
+    $("stringV").setAttribute("y2", y + 2);
+    if (state.clips === 0){ $("clipLabel").textContent = "no clips"; $("clipLabel").setAttribute("y", y + 14); return; }
+    const clip = (cx, cy, h) => {
+      g.appendChild(el("rect", {x:cx - 4.5, y:cy, width:9, height:h, rx:4.5, class:"s-clip", "stroke-width":"1.4"}));
+      g.appendChild(el("rect", {x:cx - 2.2, y:cy + 4, width:4.4, height:h - 8, rx:2.2, class:"s-clip", "stroke-width":"1.1"}));
+    };
+    clip(CLIP_X, y, 20);                                  // hanger clip
+    const extra = state.clips - 1;
+    for (let i = 0; i < extra; i++){
+      const r = Math.floor(i / 4), c = i % 4, inRow = Math.min(4, extra - r * 4);
+      clip(CLIP_X + (c - (inRow - 1) / 2) * 11, y + 15 + r * 15, 17);
+    }
+    $("clipLabel").textContent = state.clips === 1 ? "1 clip" : `${state.clips} clips`;
+    $("clipLabel").setAttribute("y", y + 14);
+  }
+  function drawGlider(disp){
+    const dx = disp * S;
+    $("glider").setAttribute("transform", `translate(${dx},0)`);
+    $("stringH").setAttribute("x1", 160 + dx);
+    $("massLabel").setAttribute("x", X0 + dx);
+    drawClips(dx);
+    const gx = gateX(), f = X0 + FRONT_TAB + dx, r = X0 + REAR_TAB + dx;
+    const blocked = Math.abs(f - gx) < 3.2 || Math.abs(r - gx) < 3.2;
+    $("led").classList.toggle("on", blocked);
+  }
+  function drawAll(disp){ drawGate(); drawMasses(); drawGlider(disp || 0); }
+
+  // ---------- UI ----------
+  const releaseBtn = $("release");
+  function lockControls(lock){
+    state.running = lock;
+    releaseBtn.disabled = lock;
+    ["clipMinus","clipPlus","gatePos"].forEach(id => $(id).disabled = lock);
+    document.querySelectorAll('input[name="pairs"]').forEach(r => r.disabled = lock);
+    if (!lock){ $("clipMinus").disabled = state.clips === 0; $("clipPlus").disabled = state.clips === 12; }
+  }
+  function setClips(n){
+    state.clips = Math.max(0, Math.min(12, n));
+    $("clipOut").textContent = state.clips;
+    $("clipMinus").disabled = state.clips === 0; $("clipPlus").disabled = state.clips === 12;
+    drawAll(0); clearReadout("Ready. Press Release.");
+  }
+  function clearReadout(msg){ $("aOut").textContent = "–.–––"; $("vOut").textContent = "–.––"; $("status").textContent = msg; }
+
+  $("clipMinus").addEventListener("click", () => setClips(state.clips - 1));
+  $("clipPlus").addEventListener("click", () => setClips(state.clips + 1));
+  document.querySelectorAll('input[name="pairs"]').forEach(r => r.addEventListener("change", e => {
+    state.pairs = +e.target.value; drawAll(0); clearReadout("Ready. Press Release.");
+  }));
+  $("gatePos").addEventListener("input", e => {
+    state.gateCm = +e.target.value; $("gateOut").textContent = `${state.gateCm} cm`; drawAll(0); clearReadout("Ready. Press Release.");
+  });
+
+  // ---------- run ----------
+  let runs = [];
+  try { runs = JSON.parse(localStorage.getItem("gliderSimRuns") || "[]"); if (!Array.isArray(runs)) runs = []; } catch(e){ runs = []; }
+  function saveRuns(){ try { localStorage.setItem("gliderSimRuns", JSON.stringify(runs)); } catch(e){} }
+
+  function renderLog(){
+    const body = $("logBody"); body.innerHTML = "";
+    $("emptyLog").hidden = runs.length > 0; $("logWrap").hidden = runs.length === 0;
+    for (let i = runs.length - 1; i >= 0; i--){
+      const r = runs[i], tr = document.createElement("tr");
+      [i + 1, r.clips, r.pairs ? r.pairs * 2 : "none", r.gate, r.a.toFixed(3), r.v === null ? "–" : r.v.toFixed(2)]
+        .forEach(v => { const td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+      body.appendChild(tr);
+    }
+  }
+
+  function finish(a, v){
+    $("aOut").textContent = a.toFixed(3);
+    $("vOut").textContent = v === null ? "–.––" : v.toFixed(2);
+    runs.push({clips: state.clips, pairs: state.pairs, gate: state.gateCm, a, v});
+    saveRuns(); renderLog();
+  }
+
+  releaseBtn.addEventListener("click", () => {
+    if (state.running) return;
+    const aTrue = trueAccel(state.clips, state.pairs);
+    drawAll(0);
+    if (aTrue === 0){
+      clearReadout(state.clips === 0
+        ? "The glider didn't move: nothing is pulling it. That's your (0, 0) point."
+        : "The glider didn't move.");
+      finish(0, null);
+      return;
+    }
+    // what the photogate reports: true value plus small measurement scatter
+    const aMeas = Math.max(0, aTrue * (1 + 0.012 * gauss()) + 0.0015 * gauss());
+    const dGate = state.gateCm / 100;
+    const vMeas = Math.sqrt(2 * aTrue * dGate) * (1 + 0.006 * gauss());
+    const tRear = Math.sqrt(2 * (dGate + TAB_GAP) / aTrue);   // rear tab clears the gate
+    const tEnd = Math.sqrt(2 * TRAVEL / aTrue);
+    clearReadout("Collecting… waiting for both tabs to pass the gate.");
+    lockControls(true);
+
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce){ drawGlider(TRAVEL); finish(aMeas, vMeas); $("status").textContent = "Done. Record the acceleration."; lockControls(false); return; }
+
+    let t0 = null, shown = false;
+    const step = ts => {
+      if (t0 === null) t0 = ts;
+      const t = (ts - t0) / 1000;
+      const disp = Math.min(TRAVEL, 0.5 * aTrue * t * t);
+      drawGlider(disp);
+      if (!shown && t >= tRear){ shown = true; finish(aMeas, vMeas); $("status").textContent = "Both tabs passed. Record the acceleration."; }
+      if (t < tEnd){ raf = requestAnimationFrame(step); }
+      else { drawGlider(TRAVEL); $("status").textContent = "Done. Glider caught. Record the acceleration."; lockControls(false); }
+    };
+    raf = requestAnimationFrame(step);
+  });
+
+  // ---------- balance ----------
+  const ITEMS = { clips: ["10 paperclips", 10.3], glider: ["glider + double flag (no added masses)", 204.6], pair: ["a pair of cylinder masses", 100.4] };
+  document.querySelectorAll(".pan-btns button").forEach(b => b.addEventListener("click", () => {
+    const on = b.getAttribute("aria-pressed") === "true";
+    document.querySelectorAll(".pan-btns button").forEach(x => x.setAttribute("aria-pressed", "false"));
+    if (on){ $("balOut").textContent = "0.0"; $("onPan").textContent = "Pan is empty."; return; }
+    b.setAttribute("aria-pressed", "true");
+    const [name, g] = ITEMS[b.dataset.item];
+    $("balOut").textContent = g.toFixed(1); $("onPan").textContent = `On the pan: ${name}.`;
+  }));
+
+  // ---------- clear log (two-step, no dialogs) ----------
+  const clearBtn = $("clearLog"); let armed = null;
+  clearBtn.addEventListener("click", () => {
+    if (!runs.length) return;
+    if (!armed){ clearBtn.classList.add("arm"); clearBtn.textContent = "Click again to clear"; armed = setTimeout(() => { clearBtn.classList.remove("arm"); clearBtn.textContent = "Clear log"; armed = null; }, 3000); return; }
+    clearTimeout(armed); armed = null; clearBtn.classList.remove("arm"); clearBtn.textContent = "Clear log";
+    runs = []; saveRuns(); renderLog();
+  });
+
+  setClips(2); renderLog();
+})();
+</script>
+</body>
+</html>

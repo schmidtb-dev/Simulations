@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Launch Pulse and Incline</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap">
+<style>
+/* Layout: a lab bench — the track scene runs full width; pulse graphs and meters sit under it; controls and challenges ride in a right rail that stacks below on phones. */
+:root {
+  --bg: #F3F5F9;
+  --panel: #FFFFFF;
+  --ink: #142033;
+  --muted: #4A5872;
+  --line: #D5DCE8;
+  --grid: #E7ECF4;
+  --accent: #1B3A6B;
+  --accent-soft: #E3EAF5;
+  --amber: #E3A21A;
+  --amber-ink: #8A5D00;
+  --amber-soft: rgba(227, 162, 26, 0.28);
+  --teal: #0E7C7B;
+  --crimson: #B3363D;
+  --slate: #5B6B82;
+  --ramp: #C9D3E3;
+  --ramp-edge: #7C8CA6;
+  --floor: #9AA8BE;
+  --block: #1B3A6B;
+  --block-ink: #FFFFFF;
+  --k: #2F6DB5;
+  --u: #2E8B57;
+  --e: #1B3A6B;
+  --w: #E3A21A;
+  --font-sans: "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-sans); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 1320px; margin: 0 auto; padding-block: 12px 16px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 8px 24px; margin-bottom: 16px; }
+.eyebrow { font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--amber-ink); }
+h1 { margin: 2px 0 0; font-size: 25px; line-height: 1.15; color: var(--accent); text-wrap: balance; }
+.lede { margin: 6px 0 0; max-width: 68ch; color: var(--muted); }
+.lede i, .ital { font-style: italic; }
+.layout { display: grid; grid-template-columns: minmax(0, 1fr) 290px; gap: 16px; align-items: start; }
+main, aside { display: grid; gap: 16px; min-width: 0; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; min-width: 0; }
+h2 { margin: 0 0 8px; font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+h2 .unit { text-transform: none; letter-spacing: 0; font-weight: 500; }
+canvas { display: block; width: 100%; }
+#scene { aspect-ratio: 3.38 / 1; border-radius: 6px; }
+.toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin-top: 10px; }
+button, select { font: inherit; font-size: 14px; }
+.btn { border: 1px solid var(--accent); background: var(--accent); color: var(--panel); border-radius: 6px; padding: 7px 16px; font-weight: 600; cursor: pointer; }
+.btn.secondary { background: transparent; color: var(--accent); }
+.btn:hover { filter: brightness(1.08); }
+.btn:focus-visible, select:focus-visible, input:focus-visible, summary:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+select { border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 6px; padding: 6px 8px; }
+.status { flex: 1 1 220px; min-width: 0; color: var(--muted); font-size: 14px; }
+.status b { color: var(--ink); font-weight: 600; }
+.moments { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; padding: 0; list-style: none; }
+.moments li { font-size: 13px; border: 1px solid var(--line); border-left: 3px solid var(--amber); border-radius: 4px; padding: 3px 8px; background: var(--bg); font-variant-numeric: tabular-nums; }
+.moments li.top { border-left-color: var(--u); }
+.row2 { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 16px; }
+.graph { aspect-ratio: 2.3 / 1; min-height: 150px; }
+.graph + h2 { margin-top: 12px; }
+.meter { aspect-ratio: 2.1 / 1; min-height: 140px; }
+.meter.short { aspect-ratio: 3.6 / 1; min-height: 92px; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12.5px; color: var(--muted); margin-top: 6px; }
+.legend span::before { content: ""; display: inline-block; width: 16px; height: 0; border-top: 2.5px solid var(--c); margin-right: 6px; vertical-align: middle; }
+.legend span.dash::before { border-top-style: dashed; }
+.legend span.fill::before { height: 10px; border: 0; background: var(--c); }
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+.readout td { padding: 3px 0; border-bottom: 1px solid var(--grid); font-size: 14px; }
+.readout td:last-child { text-align: right; font-family: var(--font-mono); font-size: 13.5px; }
+.readout tr:last-child td { border-bottom: 0; }
+.sym { font-style: italic; }
+.ctrl { display: grid; gap: 2px; margin-bottom: 12px; }
+.ctrl label { display: flex; justify-content: space-between; gap: 8px; font-size: 14px; }
+.ctrl output { font-family: var(--font-mono); font-size: 13.5px; color: var(--accent); font-weight: 600; }
+input[type="range"] { width: 100%; accent-color: var(--accent); margin: 2px 0; }
+.ticks { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--muted); font-family: var(--font-mono); }
+.toggles { display: grid; gap: 6px; margin-top: 4px; }
+.toggles label { display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; }
+.toggles input { accent-color: var(--accent); width: 16px; height: 16px; }
+.swatch { width: 12px; height: 12px; border-radius: 2px; background: var(--c); flex: none; }
+.sep { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
+.challenge { border-top: 1px solid var(--line); padding-top: 10px; margin-top: 10px; }
+.challenge:first-of-type { border-top: 0; padding-top: 0; margin-top: 0; }
+.challenge h3 { margin: 0 0 3px; font-size: 15px; color: var(--accent); }
+.challenge p { margin: 0 0 6px; font-size: 14px; }
+.challenge .loads { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+.chip { border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 999px; padding: 3px 10px; font-size: 13px; cursor: pointer; font-family: var(--font-mono); }
+.chip:hover { border-color: var(--accent); }
+.chip:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+details summary { cursor: pointer; font-size: 13.5px; color: var(--amber-ink); font-weight: 600; }
+details p { margin: 6px 0 0; font-size: 14px; color: var(--muted); }
+.logwrap { overflow-x: auto; }
+.log th, .log td { padding: 5px 8px; text-align: right; border-bottom: 1px solid var(--grid); white-space: nowrap; font-size: 13.5px; }
+.log th { font-size: 12.5px; color: var(--muted); font-weight: 600; border-bottom-color: var(--line); }
+.log th:first-child, .log td:first-child { text-align: left; }
+.log td { font-family: var(--font-mono); font-size: 13px; }
+.log .empty td { text-align: left; font-family: var(--font-sans); color: var(--muted); }
+.loghead { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.loghead .btn { padding: 3px 10px; font-size: 13px; }
+.note { font-size: 13px; color: var(--muted); margin: 8px 0 0; }
+@media (max-width: 860px) {
+  .layout { grid-template-columns: minmax(0, 1fr); }
+  aside { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+}
+@media (max-width: 760px) {
+  .row2 { grid-template-columns: minmax(0, 1fr); }
+  h1 { font-size: 24px; }
+}
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <div class="eyebrow">AP Physics C: Mechanics · Impulse, momentum &amp; energy</div>
+      <h1>Launch Pulse and Incline</h1>
+      <p class="lede">A launcher pushes a block with a triangular force pulse that peaks at <i>F</i><sub>0</sub> at time <i>t</i><sub>0</sub> and ends at 2<i>t</i><sub>0</sub>. The block then slides across a frictionless floor and up a frictionless incline. Change the pulse, the mass, and the angle, and watch where the impulse and the energy go.</p>
+    </div>
+  </header>
+
+  <div class="layout">
+    <main>
+      <section class="panel" aria-label="Simulation">
+        <canvas id="scene" role="img" aria-label="Launcher, block, floor, and incline"></canvas>
+        <div class="toolbar">
+          <button class="btn" id="go" type="button">Launch</button>
+          <button class="btn secondary" id="reset" type="button">Reset</button>
+          <label for="speed" class="status" style="flex:0 0 auto">Speed</label>
+          <select id="speed">
+            <option value="0.25">¼×</option>
+            <option value="0.5">½×</option>
+            <option value="1" selected>1×</option>
+            <option value="2">2×</option>
+            <option value="4">4×</option>
+          </select>
+          <div class="status" id="status" aria-live="polite"><b>Ready.</b> Press Launch.</div>
+        </div>
+        <ul class="moments" id="moments" aria-label="Key moments"></ul>
+      </section>
+
+      <div class="row2">
+        <section class="panel" aria-label="Pulse graphs">
+          <h2>Launcher force vs. time</h2>
+          <canvas id="gF" class="graph"></canvas>
+          <h2>Block velocity vs. time</h2>
+          <canvas id="gV" class="graph"></canvas>
+          <div class="legend">
+            <span class="fill" style="--c: var(--amber-soft)">impulse delivered so far (area)</span>
+            <span class="dash" style="--c: var(--slate)">previous run</span>
+          </div>
+        </section>
+        <section class="panel" aria-label="Energy and momentum">
+          <h2>Energy, block–Earth system <span class="unit">(J)</span></h2>
+          <canvas id="gE" class="meter"></canvas>
+          <h2 style="margin-top:12px">Momentum of the block <span class="unit">(kg·m/s)</span></h2>
+          <canvas id="gP" class="meter short"></canvas>
+          <table class="readout" aria-label="Live values" style="margin-top:10px">
+            <tbody id="readout"></tbody>
+          </table>
+        </section>
+      </div>
+
+      <section class="panel" aria-label="Run log">
+        <div class="loghead">
+          <h2 style="margin:0">Run log</h2>
+          <button class="btn secondary" id="clearlog" type="button">Clear log</button>
+        </div>
+        <div class="logwrap">
+          <table class="log">
+            <thead><tr><th>Run</th><th><i>m</i> (kg)</th><th><i>F</i><sub>0</sub> (N)</th><th><i>t</i><sub>0</sub> (s)</th><th><i>θ</i></th><th>Impulse <i>J</i> (N·s)</th><th><i>v</i><sub>1</sub> (m/s)</th><th><i>h</i> (m)</th><th>Distance along incline (m)</th></tr></thead>
+            <tbody id="log"></tbody>
+          </table>
+        </div>
+        <p class="note">A run is logged when the block reaches its highest point. Distance along the incline is <i>h</i>/sin <i>θ</i>. Floor and incline are frictionless; <i>g</i> = 9.8 m/s².</p>
+      </section>
+    </main>
+
+    <aside>
+      <section class="panel" aria-label="Controls">
+        <h2>Setup</h2>
+        <div class="ctrl">
+          <label for="m"><span>Block mass <i>m</i></span><output id="mOut"></output></label>
+          <input type="range" id="m" min="0.5" max="2" step="0.05" value="0.5">
+          <div class="ticks"><span>0.50 kg</span><span>2.00 kg</span></div>
+        </div>
+        <div class="ctrl">
+          <label for="F0"><span>Peak force <i>F</i><sub>0</sub></span><output id="F0Out"></output></label>
+          <input type="range" id="F0" min="10" max="50" step="1" value="40">
+          <div class="ticks"><span>10 N</span><span>50 N</span></div>
+        </div>
+        <div class="ctrl">
+          <label for="t0"><span>Time to peak <i>t</i><sub>0</sub></span><output id="t0Out"></output></label>
+          <input type="range" id="t0" min="0.02" max="0.06" step="0.002" value="0.05">
+          <div class="ticks"><span>0.020 s</span><span>0.060 s</span></div>
+        </div>
+        <div class="ctrl">
+          <label for="th"><span>Incline angle <i>θ</i></span><output id="thOut"></output></label>
+          <input type="range" id="th" min="20" max="60" step="1" value="30">
+          <div class="ticks"><span>20°</span><span>60°</span></div>
+        </div>
+        <hr class="sep">
+        <h2>Show</h2>
+        <div class="toggles">
+          <label><input type="checkbox" id="showV" checked><span class="swatch" style="--c: var(--accent)"></span>Velocity vector</label>
+          <label><input type="checkbox" id="showP"><span class="swatch" style="--c: var(--teal)"></span>Momentum vector</label>
+          <label><input type="checkbox" id="showF"><span class="swatch" style="--c: var(--crimson)"></span>Forces on the block</label>
+          <label><input type="checkbox" id="showH" checked>Height marker</label>
+          <label><input type="checkbox" id="showGhost" checked>Previous run</label>
+        </div>
+        <hr class="sep">
+        <h2>Timing</h2>
+        <div class="toggles">
+          <label><input type="checkbox" id="slowmo" checked>Show the pulse at 1/25 speed</label>
+          <label><input type="checkbox" id="keypause">Pause at key moments</label>
+          <label><input type="checkbox" id="predict">Prediction mode (hide numbers until the highest point)</label>
+        </div>
+      </section>
+
+      <section class="panel" aria-label="Challenges">
+        <h2>Predict, then test</h2>
+        <div class="challenge">
+          <h3>Double the mass</h3>
+          <p>Run with <i>m</i> = 0.50 kg. Predict whether a 1.00 kg block launched by the same pulse rises higher, lower, or to the same height, and by what factor.</p>
+          <div class="loads"><button class="chip" type="button" data-load='{"m":0.5,"F0":40,"t0":0.05,"th":30}'>m = 0.50 kg</button><button class="chip" type="button" data-load='{"m":1.0,"F0":40,"t0":0.05,"th":30}'>m = 1.00 kg</button></div>
+          <details><summary>Check your reasoning</summary><p>The force graph is the same, so the impulse and the block's momentum after the pulse are the same (compare the momentum arrows). With twice the mass, the block leaves at half the speed. Height depends only on launch speed, and it goes as speed squared, so the block reaches one quarter of the height.</p></details>
+        </div>
+        <div class="challenge">
+          <h3>Steeper incline</h3>
+          <p>Predict how the maximum height changes when the incline goes from 25° to 55°.</p>
+          <div class="loads"><button class="chip" type="button" data-load='{"th":25}'>θ = 25°</button><button class="chip" type="button" data-load='{"th":55}'>θ = 55°</button></div>
+          <details><summary>Check your reasoning</summary><p>The normal force is perpendicular to the block's velocity, so it does no work, and gravity is internal to the block–Earth system. The block's kinetic energy all becomes gravitational potential energy, so the height is the same. On the steeper incline the block slides a shorter distance and slows down faster.</p></details>
+        </div>
+        <div class="challenge">
+          <h3>Same area, different shape</h3>
+          <p>Compare a short, strong pulse with a long, weak one. Which launches the block faster?</p>
+          <div class="loads"><button class="chip" type="button" data-load='{"F0":40,"t0":0.03}'>40 N, 0.030 s</button><button class="chip" type="button" data-load='{"F0":20,"t0":0.06}'>20 N, 0.060 s</button></div>
+          <details><summary>Check your reasoning</summary><p>Both triangles have area <i>F</i><sub>0</sub><i>t</i><sub>0</sub> = 1.2 N·s, so they deliver the same impulse, the same launch speed, and the same height. The peak force does not matter by itself; the area under the force–time graph does.</p></details>
+        </div>
+        <div class="challenge">
+          <h3>Halfway through the pulse</h3>
+          <p>Turn on <b>Pause at key moments</b> and launch. At <i>t</i> = <i>t</i><sub>0</sub>, what fraction of its final speed does the block have? What fraction of its final kinetic energy?</p>
+          <div class="loads"><button class="chip" type="button" data-load='{"keypause":true}'>Turn on key-moment pauses</button></div>
+          <details><summary>Check your reasoning</summary><p>At <i>t</i><sub>0</sub> the block has received half the area, so it has half the impulse and half the final speed. Kinetic energy goes as speed squared, so it has only one quarter of the final kinetic energy. The launcher does less work early in the pulse because the block is moving slowly while the force is being applied (<i>P</i> = <i>Fv</i>).</p></details>
+        </div>
+      </section>
+    </aside>
+  </div>
+</div>
+
+<script>
+(() => {
+  "use strict";
+  const g = 9.8;
+  const B = 0.30;          // block side (m)
+  const XC = 3.0;          // corner of floor and incline (m)
+  const R = 0.35;          // radius of the smooth transition (m)
+  const S0 = 0.50;         // starting position of the block's contact point (m)
+  const WORLD = { x0: -0.2, x1: 9.0, y0: -0.34, y1: 2.38 };
+  const SLOW = 1 / 25;
+  const T_AX = 0.13, F_AX = 55, V_AX = 6.5;
+
+  const $ = (id) => document.getElementById(id);
+  const ui = {
+    m: $("m"), F0: $("F0"), t0: $("t0"), th: $("th"),
+    mOut: $("mOut"), F0Out: $("F0Out"), t0Out: $("t0Out"), thOut: $("thOut"),
+    showV: $("showV"), showP: $("showP"), showF: $("showF"), showH: $("showH"), showGhost: $("showGhost"),
+    slowmo: $("slowmo"), keypause: $("keypause"), predict: $("predict"),
+    go: $("go"), reset: $("reset"), speed: $("speed"), status: $("status"), moments: $("moments"),
+    readout: $("readout"), log: $("log"), clearlog: $("clearlog"),
+    scene: $("scene"), gF: $("gF"), gV: $("gV"), gE: $("gE"), gP: $("gP"),
+  };
+
+  // ---------- parameters and geometry ----------
+  let P = {};
+  let G = {};
+  function readParams() {
+    P = { m: +ui.m.value, F0: +ui.F0.value, t0: +ui.t0.value, thDeg: +ui.th.value };
+    P.th = P.thDeg * Math.PI / 180;
+    P.J = P.F0 * P.t0;
+    P.v1 = P.J / P.m;
+    P.E1 = 0.5 * P.m * P.v1 * P.v1;
+    ui.mOut.textContent = P.m.toFixed(2) + " kg";
+    ui.F0Out.textContent = P.F0.toFixed(0) + " N";
+    ui.t0Out.textContent = P.t0.toFixed(3) + " s";
+    ui.thOut.textContent = P.thDeg.toFixed(0) + "°";
+    buildGeom();
+  }
+  function buildGeom() {
+    const th = P.th;
+    const xa = XC - R * Math.tan(th / 2);
+    const sArcEnd = xa + R * th;
+    const xArcEnd = xa + R * Math.sin(th);
+    const yArcEnd = R * (1 - Math.cos(th));
+    const ytop = Math.min(2.1, (WORLD.x1 - 0.25 - XC) * Math.tan(th));
+    const sTop = sArcEnd + (ytop - yArcEnd) / Math.sin(th);
+    const xTop = xArcEnd + (ytop - yArcEnd) / Math.tan(th);
+    G = { th, xa, sArcEnd, xArcEnd, yArcEnd, ytop, sTop, xTop };
+  }
+  function path(s) {
+    if (s <= G.xa) return { x: s, y: 0, phi: 0, k: 0 };
+    if (s <= G.sArcEnd) { const a = (s - G.xa) / R; return { x: G.xa + R * Math.sin(a), y: R * (1 - Math.cos(a)), phi: a, k: 1 / R }; }
+    if (s <= G.sTop) { const d = s - G.sArcEnd; return { x: G.xArcEnd + d * Math.cos(G.th), y: G.yArcEnd + d * Math.sin(G.th), phi: G.th, k: 0 }; }
+    return { x: G.xTop + (s - G.sTop), y: G.ytop, phi: 0, k: 0 };
+  }
+  const force = (t) => (t <= 0 || t >= 2 * P.t0) ? 0 : (t <= P.t0 ? P.F0 * t / P.t0 : P.F0 * (2 * P.t0 - t) / P.t0);
+  const vPulse = (t, p = P) => { // analytic speed during the pulse (used for graph curves)
+    if (t <= 0) return 0;
+    if (t <= p.t0) return p.F0 * t * t / (2 * p.m * p.t0);
+    if (t <= 2 * p.t0) return p.F0 * p.t0 / (2 * p.m) + (p.F0 / (p.m * p.t0)) * (2 * p.t0 * t - t * t / 2 - 1.5 * p.t0 * p.t0);
+    return p.F0 * p.t0 / p.m;
+  };
+
+  // ---------- state ----------
+  let S;
+  let running = false;
+  let runs = [];
+  function resetState() {
+    S = { t: 0, s: S0, v: 0, W: 0, phase: "ready", pistonX: S0 - B / 2, top: null, events: [], trace: [{ t: 0, v: 0 }], doneTime: null, vmaxSeen: 0 };
+    running = false;
+    ui.go.textContent = "Launch";
+    setStatus("<b>Ready.</b> Press Launch.");
+    renderMoments();
+  }
+  function setStatus(html) { ui.status.innerHTML = html; }
+
+  // ---------- integration ----------
+  function deriv(t, s, v, pulse) {
+    const p = path(s);
+    let a = -g * Math.sin(p.phi);
+    let Fl = 0;
+    if (pulse) { Fl = force(t); a += Fl / P.m; }
+    return [v, a, Fl * v];
+  }
+  function rk4(h, pulse) {
+    const { t, s, v } = S;
+    const k1 = deriv(t, s, v, pulse);
+    const k2 = deriv(t + h / 2, s + h / 2 * k1[0], v + h / 2 * k1[1], pulse);
+    const k3 = deriv(t + h / 2, s + h / 2 * k2[0], v + h / 2 * k2[1], pulse);
+    const k4 = deriv(t + h, s + h * k3[0], v + h * k3[1], pulse);
+    S.s += h / 6 * (k1[0] + 2 * k2[0] + 2 * k3[0] + k4[0]);
+    S.v += h / 6 * (k1[1] + 2 * k2[1] + 2 * k3[1] + k4[1]);
+    S.W += h / 6 * (k1[2] + 2 * k2[2] + 2 * k3[2] + k4[2]);
+    S.t += h;
+  }
+  // advance by simulated time dt; returns true if a key-moment pause was hit
+  function advance(dt) {
+    let left = dt;
+    let guard = 0;
+    while (left > 1e-12 && guard++ < 20000) {
+      if (S.phase === "pulse") {
+        const marks = [P.t0, 2 * P.t0];
+        const next = marks.find((x) => x > S.t + 1e-12);
+        let h = Math.min(left, 0.0002, next - S.t);
+        rk4(h, true);
+        left -= h;
+        S.pistonX = S.s - B / 2;
+        if (S.trace.length === 0 || S.t - S.trace[S.trace.length - 1].t > 0.0008) S.trace.push({ t: S.t, v: S.v });
+        if (Math.abs(S.t - P.t0) < 1e-9) {
+          S.t = P.t0;
+          S.events.push({ kind: "peak", t: S.t, v: S.v });
+          renderMoments();
+          if (ui.keypause.checked) return true;
+        }
+        if (Math.abs(S.t - 2 * P.t0) < 1e-9) {
+          S.t = 2 * P.t0;
+          S.trace.push({ t: S.t, v: S.v });
+          S.phase = "free";
+          S.events.push({ kind: "leave", t: S.t, v: S.v, J: P.J });
+          setStatus("<b>The block has left the launcher.</b> No horizontal force acts on it now.");
+          renderMoments();
+          if (ui.keypause.checked) return true;
+        }
+      } else if (S.phase === "free") {
+        const h = Math.min(left, 0.002);
+        const vPrev = S.v, sPrev = S.s;
+        rk4(h, false);
+        left -= h;
+        if (!S.top && vPrev > 0 && S.v <= 0) {
+          const a = -g * Math.sin(path(sPrev).phi);
+          const sStar = a < 0 ? sPrev + vPrev * vPrev / (2 * -a) : S.s;
+          const pt = path(sStar);
+          S.top = { t: S.t, h: pt.y, x: pt.x };
+          S.events.push({ kind: "top", t: S.t, h: pt.y });
+          logRun();
+          setStatus("<b>Highest point.</b> All of the kinetic energy is now gravitational potential energy.");
+          renderMoments();
+          if (ui.keypause.checked) return true;
+        }
+        if (S.top && S.s < G.xa - 0.4) {
+          S.phase = "done";
+          running = false;
+          ui.go.textContent = "Launch again";
+          setStatus("<b>Run complete.</b> The block is sliding back toward the launcher.");
+          return false;
+        }
+        if (!S.top && S.t > 40) { // safety: extremely slow block
+          S.phase = "done"; running = false; ui.go.textContent = "Launch again";
+          setStatus("<b>Stopped.</b> This block is very slow. Try a larger pulse or a smaller mass.");
+          return false;
+        }
+      } else break;
+    }
+    return false;
+  }
+
+  // ---------- run log ----------
+  function logRun() {
+    runs.push({ n: runs.length + 1, m: P.m, F0: P.F0, t0: P.t0, thDeg: P.thDeg, J: P.J, v1: S.events.find((e) => e.kind === "leave").v, h: S.top.h, dist: S.top.h / Math.sin(G.th), p: { m: P.m, F0: P.F0, t0: P.t0 } });
+    renderLog();
+  }
+  function renderLog() {
+    if (!runs.length) { ui.log.innerHTML = '<tr class="empty"><td colspan="9">No runs yet. Launch the block to add one.</td></tr>'; return; }
+    ui.log.innerHTML = runs.map((r) => `<tr><td>${r.n}</td><td>${r.m.toFixed(2)}</td><td>${r.F0.toFixed(0)}</td><td>${r.t0.toFixed(3)}</td><td>${r.thDeg}°</td><td>${r.J.toFixed(2)}</td><td>${r.v1.toFixed(2)}</td><td>${fmtH(r.h)}</td><td>${fmtH(r.dist)}</td></tr>`).reverse().join("");
+  }
+  const fmtH = (h) => h >= 0.1 ? h.toFixed(3) : h.toFixed(4);
+  function ghost() {
+    if (!ui.showGhost.checked || !runs.length) return null;
+    // most recent logged run whose setup differs from the current one
+    for (let i = runs.length - 1; i >= 0; i--) {
+      const r = runs[i];
+      const same = r.m === P.m && r.F0 === P.F0 && r.t0 === P.t0 && r.thDeg === P.thDeg;
+      if (!same) return r;
+    }
+    return null;
+  }
+
+  // ---------- formatting ----------
+  const hidden = () => ui.predict.checked && !S.top;
+  const f = (x, d) => hidden() ? "—" : x.toFixed(d);
+  function renderMoments() {
+    const items = S.events.map((e) => {
+      if (e.kind === "peak") return `<li>Peak force · <i>t</i> = <i>t</i><sub>0</sub> = ${e.t.toFixed(3)} s · <i>v</i> = ${f(e.v, 2)} m/s</li>`;
+      if (e.kind === "leave") return `<li>Leaves launcher · <i>t</i> = 2<i>t</i><sub>0</sub> = ${e.t.toFixed(3)} s · <i>v</i><sub>1</sub> = ${f(e.v, 2)} m/s · <i>J</i> = ${f(e.J, 2)} N·s</li>`;
+      return `<li class="top">Highest point · <i>h</i> = ${fmtH(e.h)} m</li>`;
+    });
+    ui.moments.innerHTML = items.join("");
+  }
+  function renderReadout() {
+    const pt = path(S.s);
+    const K = 0.5 * P.m * S.v * S.v, U = P.m * g * pt.y;
+    const Jsofar = S.phase === "pulse" || S.phase === "ready" ? P.m * S.v : P.J;
+    const rows = [
+      ["Time <span class='sym'>t</span>", S.t.toFixed(3) + " s"],
+      ["Launcher force <span class='sym'>F</span>", (S.phase === "pulse" ? force(S.t) : 0).toFixed(1) + " N"],
+      ["Impulse from launcher <span class='sym'>J</span>", f(Jsofar, 3) + " N·s"],
+      ["Speed <span class='sym'>v</span>", f(Math.abs(S.v), 3) + " m/s"],
+      ["Momentum <span class='sym'>p</span> = <span class='sym'>mv</span>", f(P.m * Math.abs(S.v), 3) + " kg·m/s"],
+      ["Kinetic energy <span class='sym'>K</span>", f(K, 3) + " J"],
+      ["Gravitational energy <span class='sym'>U</span><sub>g</sub>", f(U, 3) + " J"],
+      ["Work by launcher <span class='sym'>W</span>", f(S.W, 3) + " J"],
+      ["Height above floor <span class='sym'>y</span>", f(pt.y, 4) + " m"],
+    ];
+    ui.readout.innerHTML = rows.map((r) => `<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join("");
+  }
+
+  // ---------- drawing helpers ----------
+  const C = {};
+  function readTokens() {
+    const cs = getComputedStyle(document.documentElement);
+    ["bg", "panel", "ink", "muted", "line", "grid", "accent", "accent-soft", "amber", "amber-ink", "amber-soft", "teal", "crimson", "slate", "ramp", "ramp-edge", "floor", "block", "block-ink", "k", "u", "e", "w"].forEach((n) => { C[n] = cs.getPropertyValue("--" + n).trim(); });
+  }
+  function prep(cv) {
+    const dpr = window.devicePixelRatio || 1;
+    const w = cv.clientWidth, h = cv.clientHeight;
+    if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+    const ctx = cv.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    return { ctx, w, h };
+  }
+  const FONT = (px, weight = 400, mono = false, italic = false) => `${italic ? "italic " : ""}${weight} ${px}px ${mono ? '"IBM Plex Mono", ui-monospace, monospace' : '"IBM Plex Sans", system-ui, sans-serif'}`;
+  function arrow(ctx, x1, y1, x2, y2, color, width = 2.5, dash = null) {
+    const L = Math.hypot(x2 - x1, y2 - y1);
+    if (L < 2) return;
+    const ux = (x2 - x1) / L, uy = (y2 - y1) / L;
+    const head = Math.min(10, 0.45 * L + 4);
+    ctx.save();
+    ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = width; ctx.lineCap = "round";
+    if (dash) ctx.setLineDash(dash);
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2 - ux * head * 0.8, y2 - uy * head * 0.8); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath(); ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - ux * head - uy * head * 0.45, y2 - uy * head + ux * head * 0.45);
+    ctx.lineTo(x2 - ux * head + uy * head * 0.45, y2 - uy * head - ux * head * 0.45);
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+  function label(ctx, text, x, y, color, opts = {}) {
+    ctx.save();
+    ctx.font = opts.font || FONT(12.5, 500);
+    ctx.fillStyle = color; ctx.textAlign = opts.align || "left"; ctx.textBaseline = opts.base || "middle";
+    if (opts.halo) { ctx.lineWidth = 4; ctx.strokeStyle = C.panel; ctx.lineJoin = "round"; ctx.strokeText(text, x, y); }
+    ctx.fillText(text, x, y);
+    ctx.restore();
+  }
+
+  // ---------- scene ----------
+  function drawScene() {
+    const { ctx, w, h } = prep(ui.scene);
+    const k = Math.min(w / (WORLD.x1 - WORLD.x0), h / (WORLD.y1 - WORLD.y0));
+    const ox = (w - k * (WORLD.x1 - WORLD.x0)) / 2 - k * WORLD.x0;
+    const oy = h - (h - k * (WORLD.y1 - WORLD.y0)) / 2 + k * WORLD.y0;
+    const X = (x) => ox + k * x, Y = (y) => oy - k * y;
+
+    ctx.fillStyle = C.panel; ctx.fillRect(0, 0, w, h);
+
+    // ground hatch
+    ctx.save();
+    ctx.beginPath(); ctx.rect(X(WORLD.x0), Y(0), X(WORLD.x1) - X(WORLD.x0), Y(-0.16) - Y(0)); ctx.clip();
+    ctx.strokeStyle = C.floor; ctx.lineWidth = 1;
+    for (let x = WORLD.x0 - 0.3; x < WORLD.x1 + 0.3; x += 0.1) { ctx.beginPath(); ctx.moveTo(X(x), Y(0)); ctx.lineTo(X(x - 0.12), Y(-0.16)); ctx.stroke(); }
+    ctx.restore();
+
+    // ramp body
+    ctx.beginPath();
+    ctx.moveTo(X(G.xa - 0.001), Y(0));
+    for (let i = 0; i <= 24; i++) { const a = G.th * i / 24; ctx.lineTo(X(G.xa + R * Math.sin(a)), Y(R * (1 - Math.cos(a)))); }
+    ctx.lineTo(X(G.xTop), Y(G.ytop));
+    ctx.lineTo(X(G.xTop + 0.25), Y(G.ytop));
+    ctx.lineTo(X(G.xTop + 0.25), Y(0));
+    ctx.closePath();
+    ctx.fillStyle = C.ramp; ctx.fill();
+    ctx.strokeStyle = C["ramp-edge"]; ctx.lineWidth = 1.5; ctx.stroke();
+
+    // floor line
+    ctx.strokeStyle = C.floor; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(X(WORLD.x0), Y(0)); ctx.lineTo(X(WORLD.x1), Y(0)); ctx.stroke();
+
+    // angle marker
+    ctx.save();
+    ctx.setLineDash([4, 4]); ctx.strokeStyle = C["ramp-edge"]; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(X(XC), Y(0)); ctx.lineTo(X(XC + 0.7 * Math.cos(G.th)), Y(0.7 * Math.sin(G.th))); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath(); ctx.arc(X(XC), Y(0), k * 0.55, -G.th, 0); ctx.strokeStyle = C.muted; ctx.stroke();
+    ctx.restore();
+    label(ctx, `θ = ${P.thDeg}°`, X(XC + 0.62 * Math.cos(G.th / 2)) + 4, Y(0.62 * Math.sin(G.th / 2)), C.muted, { font: FONT(12.5, 500, false, false), halo: true });
+
+    // launcher
+    const hx0 = -0.18, hx1 = 0.2;
+    ctx.fillStyle = C["accent-soft"]; ctx.strokeStyle = C.accent; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.rect(X(hx0), Y(0.44), X(hx1) - X(hx0), Y(0) - Y(0.44)); ctx.fill(); ctx.stroke();
+    // spring zigzag inside housing
+    ctx.beginPath();
+    const zz = 7; for (let i = 0; i <= zz; i++) { const xx = hx0 + 0.04 + (hx1 - hx0 - 0.08) * i / zz; const yy = 0.22 + (i % 2 ? 0.08 : -0.08) * (i === 0 || i === zz ? 0 : 1); i ? ctx.lineTo(X(xx), Y(yy)) : ctx.moveTo(X(xx), Y(yy)); }
+    ctx.strokeStyle = C.accent; ctx.lineWidth = 1.3; ctx.stroke();
+    // rod + plate
+    const px = S.pistonX;
+    ctx.fillStyle = C.accent;
+    ctx.fillRect(X(hx1), Y(0.235), X(px - 0.03) - X(hx1), Y(0.185) - Y(0.235));
+    ctx.fillRect(X(px - 0.035), Y(0.38), X(px) - X(px - 0.035), Y(0.04) - Y(0.38));
+    label(ctx, "Launcher", X(hx0), Y(0.44) - 10, C.muted, { align: "left", font: FONT(12, 600) });
+
+    // ghost height
+    const gh = ghost();
+    if (ui.showH.checked && gh && gh.thDeg !== undefined) {
+      ctx.save(); ctx.setLineDash([6, 5]); ctx.strokeStyle = C.slate; ctx.lineWidth = 1.3;
+      ctx.beginPath(); ctx.moveTo(X(XC - 0.6), Y(gh.h)); ctx.lineTo(X(WORLD.x1 - 0.05), Y(gh.h)); ctx.stroke(); ctx.restore();
+      label(ctx, `previous run: h = ${fmtH(gh.h)} m`, X(WORLD.x1 - 0.08), Y(gh.h) - 9, C.slate, { align: "right", font: FONT(11.5, 500), halo: true });
+    }
+
+    // block
+    const pt = path(S.s);
+    const cx = pt.x - Math.sin(pt.phi) * B / 2, cy = pt.y + Math.cos(pt.phi) * B / 2;
+    ctx.save();
+    ctx.translate(X(cx), Y(cy)); ctx.rotate(-pt.phi);
+    ctx.fillStyle = C.block; ctx.fillRect(-k * B / 2, -k * B / 2, k * B, k * B);
+    ctx.fillStyle = C["block-ink"]; ctx.font = FONT(Math.max(11, k * B * 0.42), 600, false, true); ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText("m", 0, 1);
+    ctx.restore();
+
+    // height marker (current max or live)
+    if (ui.showH.checked && S.phase !== "ready") {
+      const hy = S.top ? S.top.h : pt.y;
+      if (hy > 0.004 || S.top) {
+        const xMark = Math.min(WORLD.x1 - 0.3, Math.max(XC + 0.3, (S.top ? S.top.x : pt.x) + 0.5));
+        ctx.save(); ctx.setLineDash([3, 4]); ctx.strokeStyle = C.u; ctx.lineWidth = 1.3;
+        ctx.beginPath(); ctx.moveTo(X(XC - 0.6), Y(hy)); ctx.lineTo(X(xMark + 0.15), Y(hy)); ctx.stroke(); ctx.restore();
+        arrow(ctx, X(xMark), Y(0), X(xMark), Y(hy), C.u, 1.6);
+        if (hy > 0.06) arrow(ctx, X(xMark), Y(hy), X(xMark), Y(0), C.u, 1.6);
+        const txt = S.top ? (hidden() ? "h" : `h = ${fmtH(S.top.h)} m`) : (hidden() ? "y" : `y = ${pt.y.toFixed(3)} m`);
+        label(ctx, txt, X(xMark) + 7, Y(Math.max(hy / 2, 0.06)), C.u, { font: FONT(12.5, 600, false, false), halo: true });
+      }
+    }
+
+    // vectors from block center
+    const t = { x: Math.cos(pt.phi), y: Math.sin(pt.phi) };
+    const scaleV = 1.1 / 6;     // m of drawing per m/s
+    const scaleP = 1.1 / 3;     // per kg·m/s
+    const scaleF = 1.0 / 18;    // per N
+    if (ui.showF.checked) {
+      const Wt = P.m * g;
+      const Nmag = S.phase === "pulse" ? Wt : P.m * (g * Math.cos(pt.phi) + S.v * S.v * pt.k);
+      const n = { x: -Math.sin(pt.phi), y: Math.cos(pt.phi) };
+      const Fl = S.phase === "pulse" ? force(S.t) : 0;
+      arrow(ctx, X(cx), Y(cy), X(cx), Y(cy - Wt * scaleF), C.crimson, 2.2);
+      arrow(ctx, X(cx), Y(cy), X(cx + n.x * Nmag * scaleF), Y(cy + n.y * Nmag * scaleF), C.slate, 2.2);
+      if (Fl > 0.05) arrow(ctx, X(cx), Y(cy), X(cx + Fl * scaleF), Y(cy), C.amber, 2.6);
+      const net = { x: n.x * Nmag + Fl, y: n.y * Nmag - Wt };
+      if (Math.hypot(net.x, net.y) > 0.05) arrow(ctx, X(cx), Y(cy), X(cx + net.x * scaleF), Y(cy + net.y * scaleF), C.ink, 1.6, [4, 3]);
+      label(ctx, "mg", X(cx) + 6, Y(cy - Wt * scaleF) + 4, C.crimson, { font: FONT(12, 600, false, true), halo: true });
+      label(ctx, "N", X(cx + n.x * Nmag * scaleF) + 6, Y(cy + n.y * Nmag * scaleF) - 2, C.slate, { font: FONT(12, 600, false, true), halo: true });
+      if (Fl > 0.05) label(ctx, "F", X(cx + Fl * scaleF) + 4, Y(cy) - 10, C["amber-ink"], { font: FONT(12, 600, false, true), halo: true });
+    }
+    if (ui.showV.checked && Math.abs(S.v) > 1e-3) {
+      const v = S.v * scaleV;
+      arrow(ctx, X(cx), Y(cy + 0.02), X(cx + t.x * v), Y(cy + 0.02 + t.y * v), C.accent, 2.6);
+      label(ctx, "v", X(cx + t.x * v) + (S.v > 0 ? 6 : -12), Y(cy + 0.02 + t.y * v) - 10, C.accent, { font: FONT(12.5, 600, false, true), halo: true });
+    }
+    if (ui.showP.checked && Math.abs(S.v) > 1e-3) {
+      const p = P.m * S.v * scaleP;
+      arrow(ctx, X(cx), Y(cy - 0.05), X(cx + t.x * p), Y(cy - 0.05 + t.y * p), C.teal, 2.6);
+      label(ctx, "p", X(cx + t.x * p) + (S.v > 0 ? 6 : -12), Y(cy - 0.05 + t.y * p) + 10, C.teal, { font: FONT(12.5, 600, false, true), halo: true });
+    }
+
+    // banner during slow-motion pulse
+    if (S.phase === "pulse" && ui.slowmo.checked) label(ctx, "Pulse shown at 1/25 speed", X(WORLD.x0) + 6, 14, C["amber-ink"], { font: FONT(12, 600) });
+    // frictionless note
+    label(ctx, "All surfaces frictionless", X(WORLD.x0) + 6, h - 10, C.muted, { font: FONT(11.5, 500) });
+  }
+
+  // ---------- graphs ----------
+  function axes(ctx, w, h, xmax, ymax, yLabel, yTicks, xTicks) {
+    const L = 46, Rm = 12, T = 10, Bm = 30;
+    const pw = w - L - Rm, ph = h - T - Bm;
+    const X = (x) => L + pw * x / xmax, Y = (y) => T + ph * (1 - y / ymax);
+    ctx.fillStyle = C.panel; ctx.fillRect(0, 0, w, h);
+    ctx.strokeStyle = C.grid; ctx.lineWidth = 1;
+    ctx.font = FONT(11, 400, true); ctx.fillStyle = C.muted;
+    yTicks.forEach((v) => { ctx.beginPath(); ctx.moveTo(X(0), Y(v)); ctx.lineTo(X(xmax), Y(v)); ctx.stroke(); ctx.textAlign = "right"; ctx.textBaseline = "middle"; ctx.fillText(String(v), X(0) - 6, Y(v)); });
+    xTicks.forEach((v) => { ctx.beginPath(); ctx.moveTo(X(v), Y(0)); ctx.lineTo(X(v), Y(ymax)); ctx.stroke(); ctx.textAlign = "center"; ctx.textBaseline = "top"; ctx.fillText(v.toFixed(2), X(v), Y(0) + 5); });
+    ctx.strokeStyle = C.muted; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(X(0), Y(ymax)); ctx.lineTo(X(0), Y(0)); ctx.lineTo(X(xmax), Y(0)); ctx.stroke();
+    ctx.save(); ctx.translate(12, T + ph / 2); ctx.rotate(-Math.PI / 2); ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.font = FONT(11.5, 500); ctx.fillStyle = C.muted; ctx.fillText(yLabel, 0, 0); ctx.restore();
+    ctx.textAlign = "right"; ctx.textBaseline = "top"; ctx.font = FONT(11.5, 500); ctx.fillText("t (s)", X(xmax), Y(0) + 16);
+    return { X, Y, pw, ph };
+  }
+  const xTicks = [0, 0.02, 0.04, 0.06, 0.08, 0.10, 0.12];
+  function drawForceGraph() {
+    const { ctx, w, h } = prep(ui.gF);
+    const { X, Y } = axes(ctx, w, h, T_AX, F_AX, "F (N)", [0, 10, 20, 30, 40, 50], xTicks);
+    const gh = ghost();
+    if (gh) {
+      ctx.save(); ctx.setLineDash([5, 4]); ctx.strokeStyle = C.slate; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(X(0), Y(0)); ctx.lineTo(X(gh.t0), Y(gh.F0)); ctx.lineTo(X(2 * gh.t0), Y(0)); ctx.stroke(); ctx.restore();
+    }
+    // shaded impulse so far
+    const tNow = S.phase === "ready" ? 0 : Math.min(S.t, 2 * P.t0);
+    if (tNow > 0) {
+      ctx.beginPath(); ctx.moveTo(X(0), Y(0));
+      const n = 60; for (let i = 0; i <= n; i++) { const tt = tNow * i / n; ctx.lineTo(X(tt), Y(force(tt))); }
+      ctx.lineTo(X(tNow), Y(0)); ctx.closePath(); ctx.fillStyle = C["amber-soft"]; ctx.fill();
+    }
+    // the pulse
+    ctx.strokeStyle = C.accent; ctx.lineWidth = 2.6; ctx.lineJoin = "round";
+    ctx.beginPath(); ctx.moveTo(X(0), Y(0)); ctx.lineTo(X(P.t0), Y(P.F0)); ctx.lineTo(X(2 * P.t0), Y(0)); ctx.lineTo(X(T_AX), Y(0)); ctx.stroke();
+    // marker labels
+    ctx.font = FONT(12, 600, false, true); ctx.fillStyle = C.accent; ctx.textAlign = "left"; ctx.textBaseline = "bottom";
+    ctx.fillText("F", X(P.t0) + 6, Y(P.F0) + 2); ctx.font = FONT(9, 600, false, true); ctx.fillText("0", X(P.t0) + 13, Y(P.F0) + 5);
+    // cursor
+    if (S.phase === "pulse" || (S.phase !== "ready" && S.t <= T_AX)) {
+      ctx.strokeStyle = C["amber-ink"]; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(X(Math.min(S.t, T_AX)), Y(0)); ctx.lineTo(X(Math.min(S.t, T_AX)), Y(F_AX)); ctx.stroke();
+    }
+    if (tNow > 0) {
+      const J = S.phase === "pulse" ? P.m * S.v : P.J;
+      label(ctx, hidden() ? "area = impulse J" : `area = J = ${J.toFixed(3)} N·s`, X(T_AX) - 4, 18, C["amber-ink"], { align: "right", font: FONT(12, 600), halo: true });
+    }
+  }
+  function drawVelocityGraph() {
+    const { ctx, w, h } = prep(ui.gV);
+    const { X, Y } = axes(ctx, w, h, T_AX, V_AX, "v (m/s)", [0, 2, 4, 6], xTicks);
+    const gh = ghost();
+    if (gh) {
+      ctx.save(); ctx.setLineDash([5, 4]); ctx.strokeStyle = C.slate; ctx.lineWidth = 1.5; ctx.beginPath();
+      for (let i = 0; i <= 120; i++) { const tt = T_AX * i / 120; const vv = vPulse(tt, gh.p); i ? ctx.lineTo(X(tt), Y(Math.min(vv, V_AX))) : ctx.moveTo(X(tt), Y(vv)); }
+      ctx.stroke(); ctx.restore();
+    }
+    if (hidden()) { label(ctx, "Hidden in prediction mode", X(T_AX / 2), Y(V_AX / 2), C.muted, { align: "center", font: FONT(12.5, 500) }); return; }
+    if (S.phase === "ready") return;
+    ctx.strokeStyle = C.accent; ctx.lineWidth = 2.6; ctx.lineJoin = "round"; ctx.beginPath();
+    S.trace.forEach((q, i) => (i ? ctx.lineTo(X(q.t), Y(q.v)) : ctx.moveTo(X(q.t), Y(q.v))));
+    if (S.phase !== "pulse") { ctx.lineTo(X(Math.min(T_AX, Math.max(2 * P.t0, S.t))), Y(P.v1)); }
+    ctx.stroke();
+    if (S.phase !== "pulse") {
+      label(ctx, `v₁ = ${P.v1.toFixed(2)} m/s`, X(2 * P.t0) + 6, Y(P.v1) - 10, C.accent, { font: FONT(12, 600), halo: true });
+    }
+    const pk = S.events.find((e) => e.kind === "peak");
+    if (pk) {
+      ctx.fillStyle = C.amber; ctx.beginPath(); ctx.arc(X(pk.t), Y(pk.v), 4, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+  function drawEnergy() {
+    const { ctx, w, h } = prep(ui.gE);
+    ctx.fillStyle = C.panel; ctx.fillRect(0, 0, w, h);
+    const pt = path(S.s);
+    const K = 0.5 * P.m * S.v * S.v, U = P.m * g * pt.y;
+    const bars = [
+      { name: "W", sub: "launcher", v: S.W, c: C.w },
+      { name: "K", sub: "kinetic", v: K, c: C.k },
+      { name: "U", sub: "gravitational", v: U, c: C.u, gsub: "g" },
+      { name: "E", sub: "K + U", v: K + U, c: C.e },
+    ];
+    const top = 22, bottom = 38, left = 10, right = 10;
+    const ph = h - top - bottom, max = P.E1 * 1.12;
+    const slot = (w - left - right) / bars.length, bw = Math.min(46, slot * 0.55);
+    // reference line at final energy
+    const yRef = top + ph * (1 - P.E1 / max);
+    ctx.save(); ctx.setLineDash([4, 4]); ctx.strokeStyle = C.muted; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(left, yRef); ctx.lineTo(w - right, yRef); ctx.stroke(); ctx.restore();
+    ctx.strokeStyle = C.muted; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(left, top + ph); ctx.lineTo(w - right, top + ph); ctx.stroke();
+    bars.forEach((b, i) => {
+      const cx = left + slot * (i + 0.5);
+      const bh = ph * Math.max(0, b.v) / max;
+      ctx.fillStyle = b.c; ctx.fillRect(cx - bw / 2, top + ph - bh, bw, bh);
+      ctx.fillStyle = C.ink; ctx.font = FONT(13, 600, false, true); ctx.textAlign = "center"; ctx.textBaseline = "top";
+      ctx.fillText(b.name, cx - (b.gsub ? 3 : 0), top + ph + 4);
+      if (b.gsub) { ctx.font = FONT(9.5, 600, false, true); ctx.fillText(b.gsub, cx + 5, top + ph + 11); }
+      ctx.font = FONT(10.5, 400); ctx.fillStyle = C.muted; ctx.fillText(b.sub, cx, top + ph + 21);
+      if (!hidden()) { ctx.font = FONT(11, 500, true); ctx.fillStyle = C.ink; ctx.textBaseline = "bottom"; ctx.fillText(b.v.toFixed(2), cx, top + ph - bh - 3); }
+    });
+  }
+  function drawMomentum() {
+    const { ctx, w, h } = prep(ui.gP);
+    ctx.fillStyle = C.panel; ctx.fillRect(0, 0, w, h);
+    const pt = path(S.s);
+    const p = P.m * S.v;
+    const rows = [{ n: "x", v: p * Math.cos(pt.phi) }, { n: "y", v: p * Math.sin(pt.phi) }];
+    const left = 34, right = 54, mid = left + (w - left - right) / 2, half = (w - left - right) / 2;
+    const max = P.J * 1.1;
+    const rh = (h - 24) / 2;
+    ctx.strokeStyle = C.muted; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(mid, 6); ctx.lineTo(mid, h - 18); ctx.stroke();
+    // J reference ticks
+    ctx.save(); ctx.setLineDash([3, 3]); ctx.strokeStyle = C["amber-ink"]; ctx.lineWidth = 1;
+    [mid + half * P.J / max, mid - half * P.J / max].forEach((x) => { ctx.beginPath(); ctx.moveTo(x, 6); ctx.lineTo(x, h - 18); ctx.stroke(); });
+    ctx.restore();
+    ctx.font = FONT(10.5, 500); ctx.fillStyle = C["amber-ink"]; ctx.textAlign = "center"; ctx.textBaseline = "top";
+    ctx.fillText("+J", mid + half * P.J / max, h - 15); ctx.fillText("−J", mid - half * P.J / max, h - 15);
+    rows.forEach((r, i) => {
+      const y = 8 + i * rh;
+      const len = half * r.v / max;
+      ctx.fillStyle = C.teal; ctx.fillRect(Math.min(mid, mid + len), y + rh * 0.2, Math.abs(len), rh * 0.6);
+      ctx.font = FONT(13, 600, false, true); ctx.fillStyle = C.ink; ctx.textAlign = "left"; ctx.textBaseline = "middle";
+      ctx.fillText("p", 6, y + rh / 2); ctx.font = FONT(9.5, 600, false, true); ctx.fillText(r.n, 14, y + rh / 2 + 5);
+      if (!hidden()) { ctx.font = FONT(11, 500, true); ctx.fillStyle = C.ink; ctx.textAlign = "right"; ctx.fillText((Math.abs(r.v) < 0.005 ? 0 : r.v).toFixed(2), w - 4, y + rh / 2); }
+    });
+  }
+
+  function drawAll() { drawScene(); drawForceGraph(); drawVelocityGraph(); drawEnergy(); drawMomentum(); renderReadout(); }
+
+  // ---------- loop ----------
+  let last = null;
+  function frame(now) {
+    if (!running) { last = null; return; }
+    if (last === null) last = now;
+    const real = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    const speed = +ui.speed.value;
+    let dt = real * speed;
+    if (S.phase === "pulse" && ui.slowmo.checked) {
+      // keep slow motion only for the part of the step inside the pulse
+      dt = real * speed * SLOW;
+    }
+    const paused = advance(dt);
+    if (paused) { running = false; ui.go.textContent = "Resume"; }
+    drawAll();
+    if (running) requestAnimationFrame(frame);
+  }
+  function start() {
+    if (S.phase === "done") { resetState(); }
+    if (S.phase === "ready") { S.phase = "pulse"; setStatus("<b>Launching.</b> The launcher's force is the net force on the block."); }
+    running = true; ui.go.textContent = "Pause";
+    requestAnimationFrame(frame);
+  }
+  function pause() { running = false; ui.go.textContent = "Resume"; drawAll(); }
+
+  ui.go.addEventListener("click", () => (running ? pause() : start()));
+  ui.reset.addEventListener("click", () => { resetState(); drawAll(); });
+  ui.clearlog.addEventListener("click", () => { runs = []; renderLog(); drawAll(); });
+  ["m", "F0", "t0", "th"].forEach((id) => ui[id].addEventListener("input", () => { readParams(); resetState(); drawAll(); }));
+  ["showV", "showP", "showF", "showH", "showGhost", "predict"].forEach((id) => ui[id].addEventListener("change", () => { renderMoments(); drawAll(); }));
+  document.querySelectorAll("[data-load]").forEach((b) => b.addEventListener("click", () => {
+    const d = JSON.parse(b.dataset.load);
+    if (d.keypause) { ui.keypause.checked = true; }
+    if ("m" in d) ui.m.value = d.m;
+    if ("F0" in d) ui.F0.value = d.F0;
+    if ("t0" in d) ui.t0.value = d.t0;
+    if ("th" in d) ui.th.value = d.th;
+    readParams(); resetState(); drawAll();
+    setStatus("<b>Setup loaded.</b> Make your prediction, then press Launch.");
+  }));
+  document.addEventListener("keydown", (e) => {
+    if (e.code === "Space" && !(e.target instanceof HTMLInputElement) && !(e.target instanceof HTMLButtonElement) && !(e.target instanceof HTMLSelectElement)) { e.preventDefault(); running ? pause() : start(); }
+  });
+
+  readTokens();
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { readTokens(); drawAll(); });
+  new MutationObserver(() => { readTokens(); drawAll(); }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+  new ResizeObserver(() => drawAll()).observe(document.querySelector(".wrap"));
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => drawAll());
+
+  readParams(); resetState(); renderLog(); drawAll();
+
+})();
+</script>
+</body>
+</html>

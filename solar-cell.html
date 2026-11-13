@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Solar Cell Lab</title>
+<style>
+:root{--navy:#1F2A44;--amber:#E8A317;--amberd:#B07A0B;--blue:#2E86AB;--red:#C8553D;--green:#4C9A6A;--card:#EEF1F8;--line:#D3DAE6;--body:#3B4252;--gray:#5F6673;--bg:#FFFFFF}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--body);font-family:Calibri,Carlito,"Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;font-size:14px;line-height:1.3}
+header{display:flex;align-items:center;gap:12px;background:var(--navy);color:#fff;padding:8px 14px}
+header h1{font-size:20px;margin:0;font-weight:700;letter-spacing:.2px}
+header .sub{color:#CADCFC;font-size:13px}
+header .sp{flex:1}
+button{font:inherit;cursor:pointer}
+.hbtn{background:transparent;color:#fff;border:1px solid #8E9BB8;border-radius:6px;padding:4px 10px;font-size:13px}
+.hbtn:hover{background:#2C3A5C}
+.app{display:grid;grid-template-columns:262px minmax(0,1.05fr) minmax(0,1fr);grid-template-areas:"ctl tiles tiles" "ctl scene side" "ctl graph graph";gap:10px;padding:10px;max-width:1240px;margin:0 auto}
+.card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-width:0}
+.ctl{grid-area:ctl;background:var(--card);border:none;padding:10px 12px}
+.tiles{grid-area:tiles;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.scene{grid-area:scene}.side{grid-area:side}.graph{grid-area:graph}
+.tile{background:var(--card);border-radius:10px;padding:7px 10px}
+.tile .k{font-size:12px;color:var(--gray);font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+.tile .v{font-size:24px;font-weight:700;color:var(--navy);white-space:nowrap}
+.tile .v small{font-size:15px;font-weight:700;color:var(--gray);margin-left:2px}
+.tile .s{font-size:12px;color:var(--gray);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tile.hi .v{color:var(--blue)}
+h2{font-size:13px;margin:10px 0 6px;color:var(--amberd);text-transform:uppercase;letter-spacing:.6px}
+h2:first-child{margin-top:2px}
+h3{font-size:15px;margin:0 0 6px;color:var(--navy)}
+.row{margin:0 0 10px}
+.lab{display:flex;justify-content:space-between;align-items:baseline;gap:6px;font-weight:700;color:var(--navy);margin-bottom:3px}
+.lab .val{font-weight:700;color:var(--blue);white-space:nowrap}
+.note{font-size:12px;color:var(--gray);margin-top:2px}
+.seg{display:grid;grid-template-columns:1fr 1fr;background:#fff;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:none;background:#fff;padding:6px 4px;color:var(--navy);font-weight:700}
+.seg button.on{background:var(--navy);color:#fff}
+.seg3{grid-template-columns:1fr 1fr 1fr}
+.lrow{display:flex;align-items:center;gap:4px;margin:0 0 6px}
+.lrow select{flex:1;min-width:0;padding:4px 2px;font-size:13px}
+.ltag{width:50px;flex:none;font-weight:700;color:var(--navy);padding-left:5px;font-size:13px}
+.sl{display:flex;align-items:center;gap:4px}
+.sl input[type=range]{flex:1;min-width:0}
+.nb{width:26px;height:26px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--navy);font-weight:700;padding:0;line-height:1}
+.nb:hover{background:#E1E7F2}
+input[type=number]{width:64px;font:inherit;font-weight:700;color:var(--blue);border:1px solid var(--line);border-radius:6px;padding:2px 4px;text-align:right}
+select{width:100%;font:inherit;padding:5px 6px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--navy);font-weight:700}
+input[type=range]{accent-color:var(--navy);height:22px}
+#wl{-webkit-appearance:none;appearance:none;height:12px;border-radius:6px;outline:none;margin:6px 0}
+#wl::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:22px;border-radius:5px;background:#fff;border:2px solid var(--navy);cursor:pointer}
+#wl::-moz-range-thumb{width:13px;height:19px;border-radius:5px;background:#fff;border:2px solid var(--navy);cursor:pointer}
+.dim{opacity:.38;pointer-events:none}
+.chk{display:flex;align-items:center;gap:6px;font-weight:700;color:var(--navy);margin:4px 0}
+.btns{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.sbtn{border:1px solid var(--line);background:#fff;color:var(--navy);border-radius:6px;padding:4px 9px;font-weight:700;font-size:13px}
+.sbtn:hover{background:#E1E7F2}
+.ghead{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.ghead .opts{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+canvas{display:block;width:100%}
+#cv-scene{height:300px}#cv-side{height:196px}#cv-flow{height:86px}#cv-graph{height:250px}
+.foot{grid-column:1/-1;font-size:12px;color:var(--gray);padding:0 2px}
+.pause{float:right;margin-top:-2px}
+@media (max-width:1060px){.app{grid-template-columns:236px minmax(0,1fr) minmax(0,1fr)}.tile .v{font-size:21px}}
+@media (max-width:880px){.app{grid-template-columns:1fr;grid-template-areas:"tiles" "ctl" "scene" "side" "graph"}.tiles{grid-template-columns:repeat(3,minmax(0,1fr))}#cv-scene{height:280px}}
+@media (max-width:480px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}header .sub{display:none}}
+</style>
+</head>
+<body>
+<header><h1>Solar Cell Lab</h1><span class="sub">NST1030 · Photovoltaics</span><span class="sp"></span><button class="hbtn" id="reset" title="Back to the starting settings">Reset</button></header>
+<div class="app">
+  <aside class="card ctl" aria-label="Controls">
+    <h2>Light</h2>
+    <div class="row"><div class="seg" role="group" aria-label="Light source"><button id="m-mono" class="on">Single color</button><button id="m-sun">Sunlight</button></div></div>
+    <div class="row" id="wl-row">
+      <div class="lab"><span>Wavelength</span><span><input type="number" id="wl-n" min="300" max="2000" step="1" aria-label="Wavelength in nanometers"> nm</span></div>
+      <div class="sl"><button class="nb" id="wl-m" aria-label="Wavelength down 1 nm">&#9664;</button><input type="range" id="wl" min="300" max="2000" step="1" aria-label="Wavelength"><button class="nb" id="wl-p" aria-label="Wavelength up 1 nm">&#9654;</button></div>
+      <div class="note" id="wl-name"></div>
+    </div>
+    <div class="row">
+      <div class="lab"><span>Brightness</span><span class="val" id="lv-v"></span></div>
+      <div class="sl"><button class="nb" id="lv-m" aria-label="Brightness down 1%">&#9664;</button><input type="range" id="lv" min="0" max="100" step="1" aria-label="Brightness"><button class="nb" id="lv-p" aria-label="Brightness up 1%">&#9654;</button></div>
+      <div class="note" id="lv-n"></div>
+    </div>
+    <h2>Solar cell</h2>
+    <div class="row"><div class="seg seg3" role="group" aria-label="Number of layers"><button id="n1" class="on">1 layer</button><button id="n2">2 layers</button><button id="n3">3 layers</button></div></div>
+    <div id="one">
+      <div class="row"><select id="mat" aria-label="Material"></select></div>
+      <div class="row">
+        <div class="lab"><span>Band gap</span><span class="val" id="eg-v"></span></div>
+        <div class="sl"><button class="nb" id="eg-m" aria-label="Band gap down 0.01 eV">&#9664;</button><input type="range" id="eg" min="0.50" max="2.50" step="0.01" aria-label="Band gap"><button class="nb" id="eg-p" aria-label="Band gap up 0.01 eV">&#9654;</button></div>
+      </div>
+    </div>
+    <div id="many" class="row" hidden>
+      <div id="lrows"></div>
+      <div class="note">Light enters the top layer first. The layers are wired in series: the same current must flow through every one.</div>
+    </div>
+    <div class="row">
+      <div class="lab"><span>Temperature</span><span class="val" id="tc-v"></span></div>
+      <div class="sl"><button class="nb" id="tc-m" aria-label="Temperature down 1 degree">&#9664;</button><input type="range" id="tc" min="0" max="80" step="1" aria-label="Temperature"><button class="nb" id="tc-p" aria-label="Temperature up 1 degree">&#9654;</button></div>
+    </div>
+    <h2>Circuit</h2>
+    <div class="row">
+      <div class="lab"><span>Load resistance</span><span class="val" id="ld-v"></span></div>
+      <div class="sl"><button class="nb" id="ld-m" aria-label="Smaller load">&#9664;</button><input type="range" id="ld" min="0" step="1" aria-label="Load resistance"><button class="nb" id="ld-p" aria-label="Larger load">&#9654;</button></div>
+      <div class="btns"><button class="sbtn" id="ld-0">0 &#937; short</button><button class="sbtn" id="ld-inf">&#8734; open</button></div>
+    </div>
+  </aside>
+
+  <div class="tiles" aria-live="polite">
+    <div class="tile"><div class="k" id="t1k">Photon energy</div><div class="v" id="t1"></div><div class="s" id="t1s"></div></div>
+    <div class="tile hi"><div class="k">Current</div><div class="v" id="t2"></div><div class="s" id="t2s"></div></div>
+    <div class="tile hi"><div class="k">Voltage</div><div class="v" id="t3"></div><div class="s" id="t3s"></div></div>
+    <div class="tile"><div class="k">Power out</div><div class="v" id="t4"></div><div class="s" id="t4s"></div></div>
+    <div class="tile"><div class="k">Efficiency</div><div class="v" id="t5"></div><div class="s">power out ÷ light in</div></div>
+  </div>
+
+  <section class="card scene"><h3>Inside the cell <button class="sbtn pause" id="pause">Pause</button></h3><canvas id="cv-scene" aria-label="Animation of photons entering a solar cell"></canvas></section>
+  <section class="card side"><h3 id="side-t">Energy of one photon</h3><canvas id="cv-side"></canvas><canvas id="cv-flow" aria-label="Where the light's energy goes"></canvas></section>
+  <section class="card graph">
+    <div class="ghead"><h3>Current vs. voltage (I–V curve)</h3>
+      <div class="opts"><label class="chk"><input type="checkbox" id="showp"> Show power curve</label><button class="sbtn" id="pin">Pin this curve</button><button class="sbtn" id="unpin">Clear pins</button></div></div>
+    <canvas id="cv-graph" aria-label="Current versus voltage graph"></canvas>
+  </section>
+  <div class="foot">Ideal 1 cm² cell: every photon with at least the band-gap energy frees one electron. Full brightness = 1000 W/m² (100 mW on the cell). Sunlight uses a smoothed solar spectrum. Stacked layers are wired in series, like real multi-junction cells.</div>
+</div>
+<script>
+// NST1030 Lecture 10 — solar cell model shared by the sim (inlined), the answer key and the figures.
+// Ideal single-diode cell, 1 cm^2, every photon with E >= Eg frees one electron (QE = 1).
+// Units: power mW, current mA, voltage V, energy eV, resistance ohm. (mW / eV = mA, eV x mA = mW.)
+(function (root) {
+  const HC = 1240;            // eV*nm
+  const K = 8.617333e-5;      // eV/K
+  const TREF = 298.15;        // 25 C
+  const SUN_MW = 100;         // 1000 W/m^2 on a 1 cm^2 cell
+  // I0 = A0 (T/Tref)^3 exp(-Eg/kT), set so silicon (1.10 eV) has I0 = 1e-9 mA at 25 C (Voc about 0.63 V in sunlight)
+  const A0 = 1e-9 * Math.exp(1.10 / (K * TREF));
+
+  const MATERIALS = [
+    { id: "ge", name: "Germanium", sym: "Ge", eg: 0.67 },
+    { id: "si", name: "Silicon", sym: "Si", eg: 1.10 },
+    { id: "gaas", name: "Gallium arsenide", sym: "GaAs", eg: 1.42 },
+    { id: "cdte", name: "Cadmium telluride", sym: "CdTe", eg: 1.50 },
+    { id: "pvk", name: "Perovskite", sym: "perovskite", eg: 1.60 },
+    { id: "gainp", name: "Gallium indium phosphide", sym: "GaInP", eg: 1.90 },
+  ];
+
+  // Smoothed sunlight: 5778 K blackbody shape, 280-4000 nm, scaled to 100 mW total on the cell
+  const L0 = 280, L1 = 4000;
+  const S = new Float64Array(L1 - L0 + 1);
+  (function () {
+    let tot = 0;
+    for (let i = 0; i < S.length; i++) {
+      const l = L0 + i;
+      const v = 1 / (Math.pow(l, 5) * (Math.exp(1.4388e7 / (l * 5778)) - 1));
+      S[i] = v; tot += v;
+    }
+    for (let i = 0; i < S.length; i++) S[i] *= SUN_MW / tot;
+  })();
+  // cumulative sums for fast integrals up to a cutoff wavelength
+  const cumP = new Float64Array(S.length + 1), cumN = new Float64Array(S.length + 1);
+  for (let i = 0; i < S.length; i++) {
+    cumP[i + 1] = cumP[i] + S[i];
+    cumN[i + 1] = cumN[i] + S[i] * (L0 + i) / HC; // photon "current" in mA
+  }
+  function sunUpTo(lc) { // power (mW) and photon current (mA) for wavelengths <= lc at 100%
+    const n = Math.max(0, Math.min(S.length, Math.floor(lc) - L0 + 1));
+    return { P: cumP[n], N: cumN[n] };
+  }
+
+  function photonEnergy(lambda) { return HC / lambda; }
+  function cutoff(eg) { return HC / eg; }
+  function I0(eg, tC) {
+    const T = tC + 273.15;
+    return A0 * Math.pow(T / TREF, 3) * Math.exp(-eg / (K * T));
+  }
+  function vT(tC) { return K * (tC + 273.15); }
+
+  // light: { mode: "mono"|"sun", lambda, level (0-1) }  ->  photocurrent and energy budget before the load
+  function light(s) {
+    const pin = SUN_MW * s.level;
+    const lc = cutoff(s.eg);
+    if (s.mode === "mono") {
+      const E = photonEnergy(s.lambda);
+      const abs = E >= s.eg - 1e-12;
+      const IL = abs ? pin / E : 0;
+      return { pin, IL, through: abs ? 0 : pin, heat: abs ? pin - s.eg * IL : 0, gap: s.eg * IL, photons: pin / E, E };
+    }
+    const u = sunUpTo(lc);
+    const IL = u.N * s.level;
+    const absP = u.P * s.level;
+    return { pin, IL, through: pin - absP, heat: absP - s.eg * IL, gap: s.eg * IL, photons: cumN[S.length] * s.level, E: null };
+  }
+
+  function current(V, IL, i0, vt) { return IL - i0 * (Math.exp(V / vt) - 1); }
+
+  // ---------------- stacked (multi-junction) cell: s.gaps = [top, ..., bottom], layers wired in series like real tandem cells
+  // A photon is absorbed by the first layer (from the top) whose gap it can cross. The same current must pass through every layer,
+  // so the stack current can't exceed the smallest layer photocurrent ("current matching").
+  function lightStack(s) {
+    const pin = SUN_MW * s.level;
+    const layers = s.gaps.map(eg => ({ eg, IL: 0, P: 0 }));
+    let photons, E = null;
+    if (s.mode === "mono") {
+      E = photonEnergy(s.lambda);
+      photons = pin / E;
+      const k = s.gaps.findIndex(eg => E >= eg - 1e-12);
+      if (k >= 0) { layers[k].IL = pin / E; layers[k].P = pin; }
+    } else {
+      photons = cumN[S.length] * s.level;
+      let upper = 0; // longest cutoff of the layers above (nm)
+      layers.forEach(l => {
+        const lc = cutoff(l.eg);
+        if (lc > upper) { const a = sunUpTo(upper), b = sunUpTo(lc); l.IL = (b.N - a.N) * s.level; l.P = (b.P - a.P) * s.level; upper = lc; }
+      });
+    }
+    const absP = layers.reduce((a, l) => a + l.P, 0), gap = layers.reduce((a, l) => a + l.eg * l.IL, 0);
+    return { pin, layers, through: pin - absP, heat: absP - gap, gap, photons, E, IL: Math.min(...layers.map(l => l.IL)) };
+  }
+  function solveStack(s) {
+    const L = lightStack(s);
+    const vt = vT(s.tC);
+    L.layers.forEach(l => { l.i0 = I0(l.eg, s.tC); l.Voc = l.IL > 0 ? vt * Math.log(l.IL / l.i0 + 1) : 0; });
+    const Imin = L.IL;
+    const Vof = I => L.layers.reduce((a, l) => a + vt * Math.log(Math.max(1, (l.IL - I) / l.i0 + 1)), 0);
+    const Voc = Vof(0);
+    let V, I;
+    if (Imin <= 0) { I = 0; V = isFinite(s.R) ? 0 : Voc; }
+    else if (s.R === 0) { I = Imin; V = 0; }
+    else if (!isFinite(s.R)) { I = 0; V = Voc; }
+    else if (Vof(Imin) - Imin * s.R / 1000 >= 0) { I = Imin; V = Imin * s.R / 1000; }
+    else {
+      let lo = 0, hi = Imin;
+      for (let k = 0; k < 80; k++) { const m = (lo + hi) / 2; if (Vof(m) - m * s.R / 1000 > 0) lo = m; else hi = m; }
+      I = (lo + hi) / 2; V = I * s.R / 1000;
+    }
+    let mpp = { V: 0, I: 0, P: 0, R: NaN };
+    if (Imin > 0) {
+      let a = 0, b = Imin; const g = (Math.sqrt(5) - 1) / 2, p = i => i * Vof(i);
+      let c = b - g * (b - a), d = a + g * (b - a);
+      for (let k = 0; k < 90; k++) { if (p(c) > p(d)) b = d; else a = c; c = b - g * (b - a); d = a + g * (b - a); }
+      const Im = (a + b) / 2, Vm = Vof(Im);
+      mpp = { V: Vm, I: Im, P: Vm * Im, R: 1000 * Vm / Im };
+    }
+    const P = V * I;
+    L.layers.forEach(l => { l.collect = l.IL > 0 ? I / l.IL : 0; });
+    return {
+      stack: true, layers: L.layers, Vof, light: L, IL: Imin, Isc: Imin, Voc, V, I, P, vt,
+      eff: L.pin > 0 ? P / L.pin : 0, mpp, effMax: L.pin > 0 ? mpp.P / L.pin : 0,
+      budget: { pin: L.pin, out: P, cell: Math.max(0, L.gap - P), heat: L.heat, through: L.through },
+    };
+  }
+  function curveStack(s, n) {
+    const r = solveStack(Object.assign({}, s, { R: Infinity }));
+    n = n || 160;
+    if (r.IL <= 0) return { pts: [], Voc: r.Voc, Isc: 0 };
+    const pts = [[0, r.IL]];
+    for (let k = n; k >= 0; k--) { const t = k / n, I = r.IL * (1 - Math.pow(1 - t, 3)); pts.push([r.Vof(I), I]); }
+    return { pts, Voc: r.Voc, Isc: r.IL };
+  }
+
+  // full solution for state s = { mode, lambda, level, eg, tC, R }  (R in ohm; 0 = short, Infinity = open)
+  function solve(s) {
+    if (s.gaps && s.gaps.length > 1) return solveStack(s);
+    const L = light(s);
+    const i0 = I0(s.eg, s.tC), vt = vT(s.tC);
+    const IL = L.IL;
+    const Voc = IL > 0 ? vt * Math.log(IL / i0 + 1) : 0;
+    let V, I;
+    if (IL <= 0) { V = 0; I = 0; }
+    else if (s.R === 0) { V = 0; I = IL; }
+    else if (!isFinite(s.R)) { V = Voc; I = 0; }
+    else {
+      let lo = 0, hi = Voc;
+      for (let k = 0; k < 80; k++) {
+        const m = (lo + hi) / 2;
+        const f = current(m, IL, i0, vt) - 1000 * m / s.R;
+        if (f > 0) lo = m; else hi = m;
+      }
+      V = (lo + hi) / 2; I = 1000 * V / s.R;
+    }
+    const P = V * I;
+    const mpp = maxPower(IL, i0, vt, Voc);
+    return {
+      light: L, IL, Isc: IL, Voc, V, I, P, i0, vt,
+      eff: L.pin > 0 ? P / L.pin : 0,
+      mpp, effMax: L.pin > 0 ? mpp.P / L.pin : 0,
+      budget: { pin: L.pin, out: P, cell: Math.max(0, L.gap - P), heat: L.heat, through: L.through },
+    };
+  }
+
+  function maxPower(IL, i0, vt, Voc) {
+    if (IL <= 0) return { V: 0, I: 0, P: 0, R: NaN };
+    let a = 0, b = Voc;
+    const g = (Math.sqrt(5) - 1) / 2;
+    const p = v => v * current(v, IL, i0, vt);
+    let c = b - g * (b - a), d = a + g * (b - a);
+    for (let k = 0; k < 90; k++) {
+      if (p(c) > p(d)) b = d; else a = c;
+      c = b - g * (b - a); d = a + g * (b - a);
+    }
+    const V = (a + b) / 2, I = current(V, IL, i0, vt);
+    return { V, I, P: V * I, R: 1000 * V / I };
+  }
+
+  function curve(s, n) { // I-V points from 0 to Voc
+    if (s.gaps && s.gaps.length > 1) return curveStack(s, n);
+    const r = solve(Object.assign({}, s, { R: Infinity }));
+    const pts = [];
+    n = n || 160;
+    for (let k = 0; k <= n; k++) {
+      const V = r.Voc * k / n;
+      const I = Math.max(0, current(V, r.IL, r.i0, r.vt));
+      pts.push([V, I]);
+    }
+    return { pts, Voc: r.Voc, Isc: r.IL };
+  }
+
+  // loads on the sim's load slider (ohm); first = short circuit, last = open circuit
+  const LOADS = [0, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 22, 25, 30, 35, 40, 45, 50,
+    60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 170, 200, 250, 300, 400, 500, 700, 1000, 2000, 5000, 10000, Infinity];
+
+  const PV = { HC, K, SUN_MW, MATERIALS, LOADS, S, L0, L1, sunUpTo, photonEnergy, cutoff, I0, vT, light, solve, maxPower, curve };
+  root.PV = PV;
+  if (typeof module !== "undefined" && module.exports) module.exports = PV;
+})(typeof window !== "undefined" ? window : globalThis);
+
+(function () {
+  "use strict";
+  const C = { navy: "#1F2A44", amber: "#E8A317", amberd: "#B07A0B", blue: "#2E86AB", red: "#C8553D", green: "#4C9A6A", card: "#EEF1F8", line: "#D3DAE6", gray: "#5F6673", body: "#3B4252", purple: "#7D6BA8", through: "#B9C0CC" };
+  const $ = id => document.getElementById(id);
+  const DEF = { mode: "mono", lambda: 600, level: 1, mat: "si", eg: 1.10, tC: 25, ld: PV.LOADS.indexOf(10), showP: false, n: 1,
+    layers2: [{ mat: "gainp", eg: 1.90 }, { mat: "si", eg: 1.10 }], layers3: [{ mat: "gainp", eg: 1.90 }, { mat: "gaas", eg: 1.42 }, { mat: "ge", eg: 0.67 }] };
+  const copy = o => JSON.parse(JSON.stringify(o));
+  let S = copy(DEF), R = null, CV = null, ST = null, pins = [], paused = false;
+  const TAGS = { 2: ["Top", "Bottom"], 3: ["Top", "Middle", "Bottom"] };
+  const LCOL = { Top: ["#DCEAF5", "#5FA3CC", "#8FC3DE"], Middle: ["#F8E3D5", "#D9895A", "#EDB48F"], Bottom: ["#E8E2F2", "#8F79C2", "#B7A6DA"] };
+  function layers() { return S.n === 1 ? [{ mat: S.mat, eg: S.eg }] : S["layers" + S.n]; }
+  function gaps() { return layers().map(l => l.eg); }
+  function tagOf(k) { return S.n === 1 ? "" : TAGS[S.n][k]; }
+  function symOf(l) { const m = PV.MATERIALS.find(m => m.id === l.mat); return m ? (m.id === "pvk" ? "Perovskite" : m.sym) : l.eg.toFixed(2) + " eV"; }
+  const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // ---------- helpers
+  function wlColor(l) {
+    if (l < 380) return "#7E4FC9";
+    if (l > 750) return "#8B2F2F";
+    let r = 0, g = 0, b = 0;
+    if (l < 440) { r = (440 - l) / 60; b = 1; } else if (l < 490) { g = (l - 440) / 50; b = 1; }
+    else if (l < 510) { g = 1; b = (510 - l) / 20; } else if (l < 580) { r = (l - 510) / 70; g = 1; }
+    else if (l < 645) { r = 1; g = (645 - l) / 65; } else { r = 1; }
+    let f = 1; if (l < 420) f = 0.4 + 0.6 * (l - 380) / 40; else if (l > 700) f = 0.4 + 0.6 * (750 - l) / 50;
+    const c = v => Math.round(255 * Math.pow(v * f, 0.8));
+    return "rgb(" + c(r) + "," + c(g) + "," + c(b) + ")";
+  }
+  function wlName(l) {
+    if (l < 380) return "ultraviolet (invisible)"; if (l < 450) return "violet"; if (l < 495) return "blue"; if (l < 570) return "green";
+    if (l < 590) return "yellow"; if (l < 620) return "orange"; if (l <= 750) return "red"; return "infrared (invisible)";
+  }
+  function fmtR(r) { if (r === 0) return "0 Ω"; if (!isFinite(r)) return "∞"; if (r >= 1000) return (r / 1000) + " kΩ"; return r + " Ω"; }
+  function fit(cv) {
+    const b = cv.getBoundingClientRect(), d = Math.min(window.devicePixelRatio || 1, 2);
+    const w = Math.max(20, Math.round(b.width)), h = Math.max(20, Math.round(b.height));
+    if (cv.width !== Math.round(w * d) || cv.height !== Math.round(h * d)) { cv.width = Math.round(w * d); cv.height = Math.round(h * d); }
+    const x = cv.getContext("2d"); x.setTransform(d, 0, 0, d, 0, 0); return { x, w, h };
+  }
+  function nice(v) { if (v <= 0) return 1; const p = Math.pow(10, Math.floor(Math.log10(v))), m = v / p; return (m <= 1 ? 1 : m <= 2 ? 2 : m <= 2.5 ? 2.5 : m <= 5 ? 5 : 10) * p; }
+  function ticks(max) { const st = nice(max / 5); const out = []; for (let t = 0; t <= max + 1e-9; t += st) out.push(+t.toFixed(6)); return { st, out }; }
+  function font(x, px, bold) { x.font = (bold ? "700 " : "400 ") + px + "px Calibri, Carlito, 'Segoe UI', system-ui, sans-serif"; }
+  function matOf(eg) { const m = PV.MATERIALS.find(m => Math.abs(m.eg - eg) < 0.0005); return m ? m.id : "custom"; }
+
+  // ---------- controls
+  const mat = $("mat");
+  PV.MATERIALS.forEach(m => { const o = document.createElement("option"); o.value = m.id; o.textContent = (m.id === "gainp" ? m.sym : m.name) + " · " + m.eg.toFixed(2) + " eV"; mat.appendChild(o); });
+  { const o = document.createElement("option"); o.value = "custom"; o.textContent = "Custom band gap"; mat.appendChild(o); }
+  $("ld").max = PV.LOADS.length - 1;
+  // wavelength track: UV gray, visible rainbow, IR dark
+  (function () {
+    const st = []; const lo = 300, hi = 2000, pc = l => ((l - lo) / (hi - lo) * 100).toFixed(2) + "%";
+    st.push("#B9A6DE 0%", "#B9A6DE " + pc(380));
+    for (let l = 380; l <= 750; l += 10) st.push(wlColor(l) + " " + pc(l));
+    st.push("#8B2F2F " + pc(752), "#C9B5B5 100%");
+    $("wl").style.background = "linear-gradient(90deg," + st.join(",") + ")";
+  })();
+
+  function setMode(m) { S.mode = m; update(); }
+  [1, 2, 3].forEach(n => { $("n" + n).onclick = () => { S.n = n; update(); }; });
+  let builtN = 0;
+  function buildRows() {
+    const box = $("lrows"); box.innerHTML = ""; builtN = S.n;
+    if (S.n === 1) return;
+    TAGS[S.n].forEach((tag, k) => {
+      const row = document.createElement("div"); row.className = "lrow";
+      const t = document.createElement("span"); t.className = "ltag"; t.textContent = tag; t.style.borderLeft = "5px solid " + LCOL[tag][1]; row.appendChild(t);
+      const sel = document.createElement("select"); sel.id = "lm" + k; sel.setAttribute("aria-label", tag + " layer material");
+      PV.MATERIALS.forEach(m => { const o = document.createElement("option"); o.value = m.id; o.textContent = (m.id === "pvk" ? "Perovskite" : m.sym) + " " + m.eg.toFixed(2) + " eV"; sel.appendChild(o); });
+      const oc = document.createElement("option"); oc.value = "custom"; oc.textContent = "Custom"; sel.appendChild(oc);
+      sel.addEventListener("change", () => { const L = layers()[k], m = PV.MATERIALS.find(m => m.id === sel.value); L.mat = sel.value; if (m) L.eg = m.eg; update(); });
+      const mk = (d, sym, lab) => { const b = document.createElement("button"); b.className = "nb"; b.innerHTML = sym; b.setAttribute("aria-label", tag + " layer band gap " + lab + " 0.01 eV");
+        b.onclick = () => { const L = layers()[k]; L.eg = clamp(Math.round(L.eg * 100) + d, 50, 250) / 100; L.mat = matOf(L.eg); update(); }; return b; };
+      row.appendChild(sel); row.appendChild(mk(-1, "&#9664;", "down")); row.appendChild(mk(1, "&#9654;", "up"));
+      box.appendChild(row);
+    });
+  }
+  $("m-mono").onclick = () => setMode("mono");
+  $("m-sun").onclick = () => setMode("sun");
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  function bind(id, get, set) {
+    const el = $(id);
+    el.addEventListener("input", () => { set(+el.value); update(); });
+    return el;
+  }
+  bind("wl", null, v => S.lambda = v);
+  $("wl-n").addEventListener("change", () => { const v = Math.round(+$("wl-n").value); if (isFinite(v)) S.lambda = clamp(v, 300, 2000); update(); });
+  $("wl-m").onclick = () => { S.lambda = clamp(S.lambda - 1, 300, 2000); update(); };
+  $("wl-p").onclick = () => { S.lambda = clamp(S.lambda + 1, 300, 2000); update(); };
+  bind("lv", null, v => S.level = v / 100);
+  $("lv-m").onclick = () => { S.level = clamp(Math.round(S.level * 100) - 1, 0, 100) / 100; update(); };
+  $("lv-p").onclick = () => { S.level = clamp(Math.round(S.level * 100) + 1, 0, 100) / 100; update(); };
+  mat.addEventListener("change", () => { const m = PV.MATERIALS.find(m => m.id === mat.value); S.mat = mat.value; if (m) S.eg = m.eg; update(); });
+  bind("eg", null, v => { S.eg = Math.round(v * 100) / 100; S.mat = matOf(S.eg); });
+  $("eg-m").onclick = () => { S.eg = clamp(Math.round(S.eg * 100) - 1, 50, 250) / 100; S.mat = matOf(S.eg); update(); };
+  $("eg-p").onclick = () => { S.eg = clamp(Math.round(S.eg * 100) + 1, 50, 250) / 100; S.mat = matOf(S.eg); update(); };
+  bind("tc", null, v => S.tC = v);
+  $("tc-m").onclick = () => { S.tC = clamp(S.tC - 1, 0, 80); update(); };
+  $("tc-p").onclick = () => { S.tC = clamp(S.tC + 1, 0, 80); update(); };
+  bind("ld", null, v => S.ld = v);
+  $("ld-m").onclick = () => { S.ld = clamp(S.ld - 1, 0, PV.LOADS.length - 1); update(); };
+  $("ld-p").onclick = () => { S.ld = clamp(S.ld + 1, 0, PV.LOADS.length - 1); update(); };
+  $("ld-0").onclick = () => { S.ld = 0; update(); };
+  $("ld-inf").onclick = () => { S.ld = PV.LOADS.length - 1; update(); };
+  $("showp").addEventListener("change", () => { S.showP = $("showp").checked; drawGraph(); });
+  $("pin").onclick = () => {
+    if (!R || R.IL <= 0) return;
+    if (pins.length >= 4) pins.shift();
+    pins.push({ pts: CV.pts.slice(), label: describe(), n: (pins.length ? pins[pins.length - 1].n : 0) + 1 });
+    drawGraph();
+  };
+  $("unpin").onclick = () => { pins = []; drawGraph(); };
+  $("reset").onclick = () => { S = copy(DEF); pins = []; $("showp").checked = false; update(); };
+  $("pause").onclick = () => { paused = !paused; $("pause").textContent = paused ? "Play" : "Pause"; };
+  function describe() {
+    return (S.mode === "sun" ? "sunlight" : S.lambda + " nm") + " · " + Math.round(S.level * 100) + "% · " + layers().map(symOf).join(" on ") + " · " + S.tC + " °C";
+  }
+
+  // ---------- model update
+  function update() {
+    const st = { mode: S.mode, lambda: S.lambda, level: S.level, eg: S.eg, tC: S.tC, R: PV.LOADS[S.ld] };
+    if (S.n > 1) st.gaps = gaps();
+    ST = st;
+    R = PV.solve(st);
+    CV = PV.curve(st, 160);
+    // controls
+    $("m-mono").classList.toggle("on", S.mode === "mono"); $("m-sun").classList.toggle("on", S.mode === "sun");
+    $("wl-row").classList.toggle("dim", S.mode === "sun");
+    $("wl").value = S.lambda; if (document.activeElement !== $("wl-n")) $("wl-n").value = S.lambda;
+    $("wl-name").innerHTML = S.mode === "sun" ? "Sunlight contains every wavelength." : '<span style="display:inline-block;width:10px;height:10px;border-radius:2px;vertical-align:-1px;background:' + wlColor(S.lambda) + '"></span> ' + wlName(S.lambda);
+    $("lv").value = Math.round(S.level * 100); $("lv-v").textContent = Math.round(S.level * 100) + "%";
+    $("lv-n").textContent = "Light power on the cell: " + (100 * S.level).toFixed(0) + " mW (" + Math.round(1000 * S.level) + " W/m²)";
+    mat.value = S.mat; $("eg").value = S.eg.toFixed(2); $("eg-v").textContent = S.eg.toFixed(2) + " eV";
+    [1, 2, 3].forEach(n => $("n" + n).classList.toggle("on", S.n === n));
+    $("one").hidden = S.n > 1; $("many").hidden = S.n === 1;
+    if (builtN !== S.n) buildRows();
+    if (S.n > 1) layers().forEach((L, k) => { const sel = $("lm" + k); sel.options[sel.options.length - 1].textContent = "Custom " + L.eg.toFixed(2) + " eV"; sel.value = L.mat; });
+    $("tc").value = S.tC; $("tc-v").textContent = S.tC + " °C (" + Math.round(S.tC * 9 / 5 + 32) + " °F)";
+    $("ld").value = S.ld; const Rl = PV.LOADS[S.ld];
+    $("ld-v").textContent = Rl === 0 ? "0 Ω (short)" : !isFinite(Rl) ? "∞ (open)" : fmtR(Rl);
+    // tiles
+    if (S.mode === "mono") {
+      $("t1k").textContent = "Photon energy"; $("t1").innerHTML = PV.photonEnergy(S.lambda).toFixed(3) + "<small>eV</small>";
+      $("t1s").textContent = S.lambda + " nm " + wlName(S.lambda).split(" ")[0];
+    } else { $("t1k").textContent = "Light"; $("t1").innerHTML = "Sunlight"; $("t1s").textContent = "all colors mixed"; }
+    $("t2").innerHTML = R.I.toFixed(1) + "<small>mA</small>"; $("t2s").textContent = "through the load";
+    $("t3").innerHTML = R.V.toFixed(2) + "<small>V</small>"; $("t3s").textContent = "across the load";
+    $("t4").innerHTML = R.P.toFixed(1) + "<small>mW</small>"; $("t4s").textContent = "light in: " + R.light.pin.toFixed(0) + " mW";
+    $("t5").innerHTML = (R.light.pin > 0 ? (100 * R.eff).toFixed(1) : "0.0") + "<small>%</small>";
+    $("side-t").textContent = S.mode === "mono" ? "Energy of one photon" : S.n > 1 ? "Sunlight: which layer uses which colors?" : "Sunlight: which energy can the cell use?";
+    drawSide(); drawFlow(); drawGraph();
+  }
+
+  // ---------- band diagram / spectrum
+  function drawSide() {
+    const { x, w, h } = fit($("cv-side"));
+    x.clearRect(0, 0, w, h);
+    if (S.mode === "mono") bandDiagram(x, w, h); else spectrum(x, w, h);
+  }
+  function wavy(x, x0, y0, x1, y1, col, lw, amp, waves) {
+    const dx = x1 - x0, dy = y1 - y0, L = Math.hypot(dx, dy), ux = dx / L, uy = dy / L, nx = -uy, ny = ux;
+    x.beginPath();
+    for (let i = 0; i <= 60; i++) { const t = i / 60, a = Math.sin(t * waves * 2 * Math.PI) * amp * Math.min(1, (1 - t) * 4); const px = x0 + dx * t + nx * a, py = y0 + dy * t + ny * a; i ? x.lineTo(px, py) : x.moveTo(px, py); }
+    x.strokeStyle = col; x.lineWidth = lw; x.stroke();
+  }
+  function arrowHead(x, x1, y1, ang, col, s) {
+    x.beginPath(); x.moveTo(x1, y1); x.lineTo(x1 - s * Math.cos(ang - 0.45), y1 - s * Math.sin(ang - 0.45)); x.lineTo(x1 - s * Math.cos(ang + 0.45), y1 - s * Math.sin(ang + 0.45)); x.closePath(); x.fillStyle = col; x.fill();
+  }
+  function bandDiagram(x, w, h) {
+    const E = PV.photonEnergy(S.lambda), G = gaps(), kAbs = G.findIndex(g => E >= g - 1e-12);
+    const eg = kAbs >= 0 ? G[kAbs] : Math.min(...G);
+    const top = 10, bot = h - 14, vbH = 26;
+    const vTop = bot - vbH;                       // top of valence band
+    const sc = (vTop - top - 8) / 4.4;            // px per eV (fits 300 nm = 4.13 eV)
+    const cBot = vTop - eg * sc;                  // bottom of conduction band
+    const bx0 = 8, bx1 = Math.min(w * 0.6, w - 150);
+    x.fillStyle = "#DCEBF5"; x.fillRect(bx0, top, bx1 - bx0, cBot - top);
+    x.fillStyle = "#F4DAD3"; x.fillRect(bx0, vTop, bx1 - bx0, bot - vTop);
+    x.strokeStyle = C.navy; x.lineWidth = 1.5;
+    x.beginPath(); x.moveTo(bx0, cBot); x.lineTo(bx1, cBot); x.moveTo(bx0, vTop); x.lineTo(bx1, vTop); x.stroke();
+    font(x, 12, true); x.fillStyle = C.blue; x.textAlign = "left"; x.textBaseline = "top"; x.fillText("conduction band", bx0 + 4, top + 3);
+    x.fillStyle = C.red; x.textBaseline = "bottom"; x.fillText("valence band", bx0 + 4, bot - 3);
+    // gap bracket
+    const gx = bx0 + 12;
+    x.strokeStyle = C.gray; x.lineWidth = 1; x.beginPath(); x.moveTo(gx, cBot + 2); x.lineTo(gx, vTop - 2); x.stroke();
+    arrowHead(x, gx, cBot + 2, -Math.PI / 2, C.gray, 5); arrowHead(x, gx, vTop - 2, Math.PI / 2, C.gray, 5);
+    font(x, 12, true); x.fillStyle = C.navy; x.textBaseline = "middle"; x.fillText("gap " + eg.toFixed(2) + " eV", gx + 6, (cBot + vTop) / 2);
+    // photon jump
+    const jx = bx0 + (bx1 - bx0) * 0.72, col = wlColor(S.lambda);
+    const abs = E >= eg - 1e-12;
+    const yE = vTop - E * sc;
+    wavy(x, jx - 70, vTop - 30, jx - 8, vTop - 6, col, 2.2, 3.5, 3.2);
+    arrowHead(x, jx - 6, vTop - 5, Math.atan2(24, 62), col, 7);
+    x.setLineDash(abs ? [] : [4, 3]); x.strokeStyle = col; x.lineWidth = 3;
+    x.beginPath(); x.moveTo(jx, vTop); x.lineTo(jx, Math.max(yE, top + 4) + 7); x.stroke(); x.setLineDash([]);
+    arrowHead(x, jx, Math.max(yE, top + 4), -Math.PI / 2, col, 8);
+    // hole and electron
+    x.beginPath(); x.arc(jx, vTop + 7, 5, 0, 7); x.fillStyle = "#fff"; x.fill(); x.strokeStyle = C.red; x.lineWidth = 2; x.stroke();
+    const tx = bx1 + 12; font(x, 13, true); x.textAlign = "left"; x.textBaseline = "middle";
+    if (abs) {
+      x.beginPath(); x.arc(jx, yE, 5.5, 0, 7); x.fillStyle = C.navy; x.fill();
+      if (E - eg > 0.06) {
+        // fall to band edge, giving off heat
+        x.strokeStyle = C.amberd; x.lineWidth = 1.6; x.setLineDash([3, 3]);
+        const fx = jx + 16; x.beginPath(); x.moveTo(fx, yE + 2); x.lineTo(fx, cBot - 6); x.stroke(); x.setLineDash([]);
+        arrowHead(x, fx, cBot - 2, Math.PI / 2, C.amberd, 6);
+        for (let k = 0; k < 3; k++) { const yy = yE + (cBot - yE) * (0.25 + 0.25 * k); wavy(x, fx + 4, yy, fx + 26, yy - 6, C.amber, 1.6, 2, 2); }
+      }
+      x.beginPath(); x.arc(jx + 16, cBot - 0.5 - 5, 5, 0, 7); x.fillStyle = C.blue; x.globalAlpha = 0.9; x.fill(); x.globalAlpha = 1;
+      x.fillStyle = col === "#8B2F2F" ? col : C.navy;
+      x.fillStyle = C.navy; x.fillText("Photon: " + E.toFixed(3) + " eV", tx, top + 14);
+      x.fillStyle = C.blue; x.fillText("Kept: " + eg.toFixed(2) + " eV", tx, top + 36);
+      x.fillStyle = C.amberd; x.fillText("Heat: " + Math.max(0, E - eg).toFixed(2) + " eV", tx, top + 58);
+      font(x, 12, false); x.fillStyle = C.gray;
+      wrap(x, S.n > 1 ? "Absorbed in the " + tagOf(kAbs).toLowerCase() + " layer (" + symOf(layers()[kAbs]) + "). Extra energy is lost as heat."
+        : "The electron is lifted across the gap. Any extra energy is lost as heat.", tx, top + 84, w - tx - 4, 15);
+    } else {
+      x.strokeStyle = C.red; x.lineWidth = 2.5; const cy = Math.max(yE, top + 4) - 2;
+      x.beginPath(); x.moveTo(jx - 7, cy - 7); x.lineTo(jx + 7, cy + 7); x.moveTo(jx + 7, cy - 7); x.lineTo(jx - 7, cy + 7); x.stroke();
+      x.fillStyle = C.navy; x.fillText("Photon: " + E.toFixed(3) + " eV", tx, top + 14);
+      x.fillStyle = C.red; x.fillText("Not enough energy", tx, top + 36);
+      font(x, 12, false); x.fillStyle = C.gray;
+      wrap(x, S.n > 1 ? "Too little energy for every layer, so it passes straight through the stack."
+        : "The photon can't lift an electron across the gap, so it passes straight through the cell.", tx, top + 62, w - tx - 4, 15);
+    }
+  }
+  function wrap(x, t, x0, y0, mw, lh) {
+    const words = t.split(" "); let line = "", y = y0;
+    for (const wd of words) { const tt = line ? line + " " + wd : wd; if (x.measureText(tt).width > mw && line) { x.fillText(line, x0, y); line = wd; y += lh; } else line = tt; }
+    if (line) x.fillText(line, x0, y);
+  }
+  let specCache = null;
+  function spectrum(x, w, h) {
+    const l0 = 300, l1 = 2000;
+    const ml = 8, mr = 8, mt = 8, mb = 30, pw = w - ml - mr, ph = h - mt - mb;
+    if (!specCache) { let m = 0; for (let l = l0; l <= l1; l++) m = Math.max(m, PV.S[l - PV.L0]); specCache = m * 1.08; }
+    const X = l => ml + (l - l0) / (l1 - l0) * pw, Y = v => mt + ph - v / specCache * ph;
+    const area = (fn, a, b, col) => {
+      x.beginPath(); x.moveTo(X(a), Y(0));
+      for (let l = a; l <= b; l += 4) x.lineTo(X(l), Y(fn(l)));
+      x.lineTo(X(b), Y(fn(b))); x.lineTo(X(b), Y(0)); x.closePath(); x.fillStyle = col; x.fill();
+    };
+    const s = l => PV.S[Math.round(l) - PV.L0];
+    const G = gaps(), cuts = [], keptCol = k => S.n === 1 ? "#8FC3DE" : LCOL[tagOf(k)][2];
+    let upper = l0;
+    G.forEach((eg, k) => {
+      const lc = PV.cutoff(eg);
+      if (lc > upper) {
+        const b = Math.min(lc, l1);
+        if (b > upper) { area(s, upper, b, "#F6CF7A"); area(l => s(l) * eg * l / PV.HC, upper, b, keptCol(k)); }
+        upper = lc; cuts.push(lc);
+      }
+    });
+    if (upper < l1) area(s, Math.max(l0, upper), l1, "#D6DAE2");
+    // outline
+    x.beginPath(); for (let l = l0; l <= l1; l += 4) { l === l0 ? x.moveTo(X(l), Y(s(l))) : x.lineTo(X(l), Y(s(l))); } x.strokeStyle = C.navy; x.lineWidth = 1.4; x.stroke();
+    // axis + visible strip
+    for (let l = 380; l < 750; l += 5) { x.fillStyle = wlColor(l + 2.5); x.fillRect(X(l), mt + ph + 1, X(l + 5) - X(l) + 0.6, 5); }
+    x.strokeStyle = C.gray; x.lineWidth = 1; x.beginPath(); x.moveTo(ml, mt + ph); x.lineTo(ml + pw, mt + ph); x.stroke();
+    font(x, 11, false); x.fillStyle = C.gray; x.textBaseline = "top";
+    [500, 1000, 1500].forEach(l => { x.textAlign = "center"; x.fillText(l, X(l), mt + ph + 8); });
+    x.textAlign = "right"; x.fillText("2000 nm", ml + pw, mt + ph + 8);
+    x.textAlign = "left"; x.fillText("UV", ml, mt + ph + 8);
+    cuts.forEach(lc => { if (lc >= l0 && lc <= l1) { x.setLineDash([4, 3]); x.strokeStyle = C.navy; x.beginPath(); x.moveTo(X(lc), mt); x.lineTo(X(lc), mt + ph); x.stroke(); x.setLineDash([]); } });
+    // legend
+    font(x, 12, true); x.textBaseline = "middle";
+    const lg = (S.n === 1 ? [["#8FC3DE", "kept (band-gap energy)"]] : layers().map((L, k) => [keptCol(k), tagOf(k).toLowerCase() + " layer keeps (" + symOf(L) + ")"]))
+      .concat([["#F6CF7A", "lost as heat"], ["#D6DAE2", "passes through"]]);
+    let ly = mt + 10; const lw = Math.max(...lg.map(([c, t]) => x.measureText(t).width)) + 24, lx = w - lw - 2;
+    lg.forEach(([c, t]) => { x.fillStyle = "rgba(255,255,255,.85)"; x.fillRect(lx - 3, ly - 8, lw + 3, 17); x.fillStyle = c; x.fillRect(lx, ly - 6, 12, 12); x.fillStyle = C.navy; x.fillText(t, lx + 17, ly); ly += 18; });
+  }
+
+  // ---------- energy budget bar
+  function drawFlow() {
+    const { x, w, h } = fit($("cv-flow"));
+    x.clearRect(0, 0, w, h);
+    font(x, 13, true); x.fillStyle = C.navy; x.textAlign = "left"; x.textBaseline = "top";
+    x.fillText("Where the light's energy goes", 0, 4);
+    const b = R.budget, pin = b.pin;
+    if (pin <= 0) { font(x, 12, false); x.fillStyle = C.gray; x.fillText("No light: turn up the brightness.", 0, 30); return; }
+    const segs = [["Electricity", b.out, C.blue], ["Lost in the cell", b.cell, C.purple], ["Heat", b.heat, C.amber], ["Passes through", b.through, C.through]];
+    const y = 24, bh = 20; let cx = 0;
+    segs.forEach(([t, v, c]) => { const ww = w * v / pin; x.fillStyle = c; x.fillRect(cx, y, ww, bh); cx += ww; });
+    x.strokeStyle = C.navy; x.lineWidth = 1; x.strokeRect(0.5, y + 0.5, w - 1, bh - 1);
+    x.textBaseline = "top";
+    if (w >= 420) {
+      const colW = w / 4;
+      segs.forEach(([t, v, c], i) => {
+        const lx = i * colW; x.fillStyle = c; x.fillRect(lx, y + bh + 8, 10, 10);
+        font(x, 12, true); x.fillStyle = C.navy; x.fillText(v.toFixed(1) + " mW", lx + 14, y + bh + 5);
+        font(x, 11.5, false); x.fillStyle = C.gray; x.fillText(t, lx + 14, y + bh + 21);
+      });
+    } else {
+      segs.forEach(([t, v, c], i) => {
+        const lx = (i % 2) * w / 2, ly = y + bh + 6 + Math.floor(i / 2) * 18;
+        x.fillStyle = c; x.fillRect(lx, ly + 2, 10, 10);
+        font(x, 12, true); x.fillStyle = C.navy; const s = v.toFixed(1) + " mW "; x.fillText(s, lx + 14, ly);
+        const sw = x.measureText(s).width; font(x, 11.5, false); x.fillStyle = C.gray; x.fillText(t.toLowerCase(), lx + 14 + sw, ly + 0.5);
+      });
+    }
+  }
+
+  // ---------- I-V graph
+  function drawGraph() {
+    if (!R) return;
+    const { x, w, h } = fit($("cv-graph"));
+    x.clearRect(0, 0, w, h);
+    const ml = 54, mr = S.showP ? 58 : 18, mt = 12, mb = 38, pw = w - ml - mr, ph = h - mt - mb;
+    // fixed scales: voltage from band gap, current from full-brightness photocurrent
+    const full = PV.solve(Object.assign({}, ST, { level: 1, tC: 0, R: Infinity }));
+    let vmax = Math.max(0.4, Math.ceil((full.Voc * 1.08 + 0.02) / 0.1) * 0.1);
+    const ilFull = full.stack ? Math.max(...full.layers.map(l => l.IL)) : full.IL;
+    let imax = ilFull > 0 ? ilFull * 1.12 : 10;
+    pins.forEach(p => p.pts.forEach(([v, i]) => { vmax = Math.max(vmax, v * 1.04); imax = Math.max(imax, i * 1.08); }));
+    const it = ticks(imax), vt = ticks(vmax);
+    imax = it.out[it.out.length - 1] < imax ? it.out[it.out.length - 1] + it.st : it.out[it.out.length - 1];
+    vmax = vt.out[vt.out.length - 1] < vmax ? vt.out[vt.out.length - 1] + vt.st : vt.out[vt.out.length - 1];
+    const X = v => ml + v / vmax * pw, Y = i => mt + ph - i / imax * ph;
+    // grid
+    x.strokeStyle = "#E6EAF1"; x.lineWidth = 1; font(x, 12, false); x.fillStyle = C.gray;
+    x.textAlign = "right"; x.textBaseline = "middle";
+    for (let t = 0; t <= imax + 1e-9; t += it.st) { x.beginPath(); x.moveTo(ml, Y(t)); x.lineTo(ml + pw, Y(t)); x.stroke(); x.fillText(+t.toFixed(3), ml - 6, Y(t)); }
+    x.textAlign = "center"; x.textBaseline = "top";
+    for (let t = 0; t <= vmax + 1e-9; t += vt.st) { x.beginPath(); x.moveTo(X(t), mt); x.lineTo(X(t), mt + ph); x.stroke(); x.fillText(+t.toFixed(3), X(t), mt + ph + 5); }
+    x.strokeStyle = C.navy; x.lineWidth = 1.3; x.beginPath(); x.moveTo(ml, mt); x.lineTo(ml, mt + ph); x.lineTo(ml + pw, mt + ph); x.stroke();
+    font(x, 12, true); x.fillStyle = C.navy; x.fillText("Voltage (V)", ml + pw / 2, mt + ph + 21);
+    x.save(); x.translate(13, mt + ph / 2); x.rotate(-Math.PI / 2); x.textBaseline = "middle"; x.fillText("Current (mA)", 0, 0); x.restore();
+    x.save(); x.beginPath(); x.rect(ml, mt - 2, pw + 2, ph + 4); x.clip();
+    // pins
+    pins.forEach((p, k) => {
+      x.strokeStyle = "#9AA3B2"; x.lineWidth = 2; x.setLineDash([]);
+      x.beginPath(); p.pts.forEach(([v, i], j) => j ? x.lineTo(X(v), Y(i)) : x.moveTo(X(v), Y(i))); x.stroke();
+      const q = p.pts[Math.round(p.pts.length * 0.55)];
+      font(x, 11, true); x.fillStyle = "#fff"; x.beginPath(); x.arc(X(q[0]), Y(q[1]), 8, 0, 7); x.fill(); x.strokeStyle = "#9AA3B2"; x.lineWidth = 1.5; x.stroke();
+      x.fillStyle = C.gray; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(p.n, X(q[0]), Y(q[1]) + 0.5);
+    });
+    // power curve
+    let pmax = 0, pt = null;
+    if (S.showP && R.IL > 0) {
+      const pm = R.mpp.P; pt = ticks(Math.max(pm * 1.15, 1e-6)); pmax = pt.out[pt.out.length - 1] < pm * 1.15 ? pt.out[pt.out.length - 1] + pt.st : pt.out[pt.out.length - 1];
+      const YP = p => mt + ph - p / pmax * ph;
+      x.strokeStyle = C.amber; x.lineWidth = 2.2; x.setLineDash([6, 4]);
+      x.beginPath(); CV.pts.forEach(([v, i], j) => j ? x.lineTo(X(v), YP(v * i)) : x.moveTo(X(v), YP(v * i))); x.stroke(); x.setLineDash([]);
+    }
+    // stack: how much current each layer could make on its own
+    const layLabs = [];
+    if (R.stack && R.light.pin > 0) {
+      R.layers.forEach((l, k) => {
+        if (l.IL <= 0) return;
+        const col = LCOL[tagOf(k)][1];
+        x.strokeStyle = col; x.lineWidth = 1.6; x.setLineDash([5, 4]); x.beginPath(); x.moveTo(ml, Y(l.IL)); x.lineTo(ml + pw, Y(l.IL)); x.stroke(); x.setLineDash([]);
+        layLabs.push({ y: Y(l.IL), t: tagOf(k).toLowerCase() + " layer could make " + l.IL.toFixed(1) + " mA", col });
+      });
+    }
+    // current curve
+    if (R.IL > 0) { x.strokeStyle = C.blue; x.lineWidth = 3; x.beginPath(); CV.pts.forEach(([v, i], j) => j ? x.lineTo(X(v), Y(i)) : x.moveTo(X(v), Y(i))); x.stroke(); }
+    x.restore();
+    // labels sit just below their line (the power curve's peak is usually above), or above it when the next line is too close
+    layLabs.sort((a, b) => a.y - b.y);
+    let usedTo = -99;
+    layLabs.forEach((L, i) => {
+      font(x, 12, true); x.textAlign = "right"; x.textBaseline = "top";
+      const next = layLabs[i + 1];
+      let y0 = L.y + 3;
+      if ((next && next.y < y0 + 18) || y0 + 15 > mt + ph) y0 = L.y - 18;
+      if (y0 < usedTo) y0 = L.y + 3;
+      const tw = x.measureText(L.t).width; x.fillStyle = "rgba(255,255,255,.85)"; x.fillRect(ml + pw - tw - 8, y0 - 1, tw + 6, 15);
+      x.fillStyle = L.col; x.fillText(L.t, ml + pw - 5, y0); usedTo = y0 + 15;
+    });
+    if (R.IL <= 0) {
+      font(x, 14, true); x.fillStyle = C.gray; x.textAlign = "center"; x.textBaseline = "middle";
+      let msg = [R.light.pin > 0 ? "No photons absorbed: no current" : "No light"];
+      if (R.stack && R.light.pin > 0 && R.layers.some(l => l.IL > 0)) msg = S.mode === "mono"
+        ? ["One color lights only one layer, and the dark layer blocks the current.", "Every layer in a series stack must make current: try Sunlight."]
+        : ["A lower layer gets no light, so no current can flow.", "Put the largest band gap on top."];
+      msg.forEach((t, i) => x.fillText(t, ml + pw / 2, mt + ph / 2 + (i - (msg.length - 1) / 2) * 20));
+    }
+    // power axis + max point
+    if (S.showP && R.IL > 0) {
+      const YP = p => mt + ph - p / pmax * ph;
+      font(x, 12, false); x.fillStyle = C.amberd; x.textAlign = "left"; x.textBaseline = "middle";
+      for (let t = 0; t <= pmax + 1e-9; t += pt.st) x.fillText(+t.toFixed(3), ml + pw + 6, YP(t));
+      x.save(); x.translate(w - 8, mt + ph / 2); x.rotate(Math.PI / 2); font(x, 12, true); x.textAlign = "center"; x.fillText("Power (mW)", 0, 0); x.restore();
+      const m = R.mpp, mx = X(m.V), my = YP(m.P);
+      x.beginPath(); x.moveTo(mx, my - 7); x.lineTo(mx + 7, my); x.lineTo(mx, my + 7); x.lineTo(mx - 7, my); x.closePath(); x.fillStyle = C.amber; x.fill(); x.strokeStyle = C.amberd; x.lineWidth = 1.2; x.stroke();
+      font(x, 12, true); x.fillStyle = C.amberd; x.textBaseline = "bottom"; x.textAlign = mx > ml + pw * 0.6 ? "right" : "left";
+      x.fillText("max " + m.P.toFixed(1) + " mW at " + m.V.toFixed(2) + " V (" + (m.R < 100 ? m.R.toFixed(1) : m.R.toFixed(0)) + " Ω)", mx + (x.textAlign === "right" ? -10 : 10), my - 6);
+    }
+    if (R.IL > 0) {
+      // intercept tags
+      font(x, 12, true); x.fillStyle = C.blue; x.textAlign = "left"; x.textBaseline = "bottom";
+      x.fillText("short-circuit current " + R.Isc.toFixed(1) + " mA", ml + 6, Y(R.Isc) - 4);
+      const vx = X(R.Voc), roomR = vx + 96 < ml + pw;
+      x.textAlign = roomR ? "left" : "right"; x.textBaseline = "bottom";
+      x.fillText("open-circuit", vx + (roomR ? 6 : -6), mt + ph - 19);
+      x.fillText("voltage " + R.Voc.toFixed(2) + " V", vx + (roomR ? 6 : -6), mt + ph - 4);
+      // operating point
+      const ox = X(R.V), oy = Y(R.I);
+      x.setLineDash([3, 3]); x.strokeStyle = C.navy; x.lineWidth = 1;
+      x.beginPath(); x.moveTo(ml, oy); x.lineTo(ox, oy); x.lineTo(ox, mt + ph); x.stroke(); x.setLineDash([]);
+      x.beginPath(); x.arc(ox, oy, 6.5, 0, 7); x.fillStyle = C.navy; x.fill(); x.strokeStyle = "#fff"; x.lineWidth = 2; x.stroke();
+      font(x, 12, true); x.fillStyle = C.navy;
+      const low = oy > mt + ph - 46, right = ox > ml + pw * 0.62;
+      x.textAlign = right || low ? "right" : "left"; x.textBaseline = low ? "bottom" : "top";
+      const tx = ox + (x.textAlign === "right" ? -10 : 10), ty = low ? oy - 30 : oy + 8;
+      const lab = "you are here: " + R.I.toFixed(1) + " mA, " + R.V.toFixed(2) + " V";
+      const tw = x.measureText(lab).width, bx0 = x.textAlign === "right" ? tx - tw : tx;
+      x.fillStyle = "rgba(255,255,255,.85)"; x.fillRect(bx0 - 3, low ? ty - 15 : ty - 1, tw + 6, 16);
+      x.fillStyle = C.navy; x.fillText(lab, tx, ty);
+    }
+    // pin legend
+    if (pins.length) {
+      font(x, 11.5, false); x.textAlign = "right"; x.textBaseline = "top";
+      let ly = mt + 4;
+      [["now: " + describe(), C.blue]].concat(pins.map(p => [p.n + ": " + p.label, C.gray])).forEach(([t, c]) => {
+        x.fillStyle = "rgba(255,255,255,.85)"; const tw = x.measureText(t).width; x.fillRect(ml + pw - tw - 8, ly - 1, tw + 6, 15);
+        x.fillStyle = c; x.fillText(t, ml + pw - 4, ly); ly += 15;
+      });
+    }
+  }
+
+  // ---------- animated scene
+  const ph = [], pairs = [], fl = [], wd = [];
+  let acc = 0, last = 0, sunCdf = null;
+  function sunSample() {
+    if (!sunCdf) { sunCdf = []; let s = 0; for (let l = 300; l <= 2000; l++) { s += PV.S[l - PV.L0] * l; sunCdf.push(s); } for (let i = 0; i < sunCdf.length; i++) sunCdf[i] /= s; }
+    const u = Math.random(); let lo = 0, hi = sunCdf.length - 1;
+    while (lo < hi) { const m = (lo + hi) >> 1; if (sunCdf[m] < u) lo = m + 1; else hi = m; }
+    return 300 + lo;
+  }
+  function geom(w, h) {
+    const cx0 = Math.max(96, w * 0.24), cx1 = w - 10, top = Math.round(h * 0.39), nH = Math.round(h * 0.11), dH = Math.round(h * 0.05);
+    const pBot = Math.round(h * 0.86), bH = 7;
+    const lx = Math.round(cx0 * 0.36), nMid = top + Math.round(nH * 0.34), botY = pBot + bH / 2;
+    const bulbY = (nMid + botY) / 2 + 4;
+    return { cx0, cx1, top, nH, dH, pBot, bH, lx, nMid, botY, bulbY, srcY: 30 };
+  }
+  function wirePath(g) { return [[g.cx0, g.nMid], [g.lx, g.nMid], [g.lx, g.botY], [g.cx0, g.botY]]; }
+  function chevron(x, px, py, ang) {
+    x.save(); x.translate(px, py); x.rotate(ang); x.beginPath(); x.moveTo(-4, -5); x.lineTo(3, 0); x.lineTo(-4, 5);
+    x.strokeStyle = C.amberd; x.lineWidth = 2.2; x.stroke(); x.restore();
+  }
+  function along(path, d) {
+    for (let i = 0; i < path.length - 1; i++) { const [a, b] = [path[i], path[i + 1]]; const L = Math.hypot(b[0] - a[0], b[1] - a[1]); if (d <= L) return [a[0] + (b[0] - a[0]) * d / L, a[1] + (b[1] - a[1]) * d / L]; d -= L; }
+    return null;
+  }
+  function stepScene(dt, g, h) {
+    const L = R.light;
+    const rate = Math.min(80, 0.55 * L.photons);
+    acc += rate * dt;
+    while (acc >= 1) {
+      acc -= 1;
+      const lam = S.mode === "mono" ? S.lambda : sunSample(), E = PV.HC / lam, G = gaps(), k = G.findIndex(gg => E >= gg - 1e-12), abs = k >= 0;
+      const thick = g.pBot - g.top;
+      let stop;
+      if (S.n === 1) { const frac = Math.min(0.92, 0.06 + 0.8 * Math.pow(Math.max(0, (lam - 300) / Math.max(1, PV.cutoff(S.eg) - 300)), 1.6) * (0.6 + 0.8 * Math.random())); stop = g.top + 6 + frac * (thick - 12); }
+      else { const bh = thick / S.n; stop = g.top + (k < 0 ? 0 : k) * bh + (0.2 + 0.6 * Math.random()) * bh; }
+      ph.push({ x: g.cx0 + 14 + Math.random() * (g.cx1 - g.cx0 - 28), y: g.srcY + Math.random() * 12, lam, E, abs, k, stop, col: wlColor(lam) });
+    }
+    const vy = 230;
+    for (let i = ph.length - 1; i >= 0; i--) {
+      const p = ph[i]; p.y += vy * dt;
+      if (p.abs && p.y >= p.stop) {
+        const col = R.stack ? (R.layers[p.k] ? R.layers[p.k].collect : 0) : (R.IL > 0 ? R.I / R.IL : 0);
+        const bh = (g.pBot - g.top) / S.n, bTop = g.top + p.k * bh;
+        pairs.push({ ex: p.x, ey: p.y, hx: p.x + 3, hy: p.y + 3, t: 0, c: Math.random() < col, ox: p.x, oy: p.y, k: p.k,
+          et: p.k === 0 ? g.nMid : bTop + 4, hb: S.n === 1 ? g.pBot : bTop + bh - 3 });
+        const heat = p.E - gaps()[p.k]; if (heat > 0.05) fl.push({ x: p.x, y: p.y, r: 5 + Math.min(14, 7 * heat), t: 0, life: 0.45, c: "232,163,23" });
+        ph.splice(i, 1);
+      } else if (p.y > h + 10) ph.splice(i, 1);
+    }
+    for (let i = pairs.length - 1; i >= 0; i--) {
+      const q = pairs[i]; q.t += dt;
+      if (q.c) {
+        // electron: up into the n layer, then left to the contact; hole: down to the back contact
+        if (q.ey > q.et + 1) q.ey -= 120 * dt; else if (q.k === 0) { q.ey = g.nMid + Math.sin(q.t * 9 + q.ox) * 2; q.ex -= 190 * dt; } else q.edone = true;
+        q.hy += 95 * dt;
+        if (q.hy > q.hb) q.hdone = true;
+        if (!q.edone && q.ex <= g.cx0) { q.edone = true; wd.push({ d: 0 }); }
+        if (q.edone && q.hdone) pairs.splice(i, 1);
+      } else {
+        if (q.t < 0.35) { q.ex += (Math.random() - 0.5) * 60 * dt; q.ey += (Math.random() - 0.6) * 60 * dt; q.hx += (Math.random() - 0.5) * 60 * dt; q.hy += (Math.random() - 0.4) * 60 * dt; }
+        else { const mx = (q.ex + q.hx) / 2, my = (q.ey + q.hy) / 2; q.ex += (mx - q.ex) * 10 * dt; q.ey += (my - q.ey) * 10 * dt; q.hx += (mx - q.hx) * 10 * dt; q.hy += (my - q.hy) * 10 * dt; }
+        if (q.t > 0.62) { fl.push({ x: (q.ex + q.hx) / 2, y: (q.ey + q.hy) / 2, r: 6, t: 0, life: 0.3, c: "125,107,168" }); pairs.splice(i, 1); }
+      }
+    }
+    for (let i = fl.length - 1; i >= 0; i--) { fl[i].t += dt; if (fl[i].t > fl[i].life) fl.splice(i, 1); }
+    const path = wirePath(g);
+    for (let i = wd.length - 1; i >= 0; i--) { wd[i].d += 120 * dt; if (!along(path, wd[i].d)) wd.splice(i, 1); }
+    if (ph.length > 400) ph.splice(0, ph.length - 400);
+    if (pairs.length > 300) pairs.splice(0, pairs.length - 300);
+  }
+  function drawScene(x, w, h, g) {
+    x.clearRect(0, 0, w, h);
+    // light source
+    font(x, 12, true); x.textAlign = "left"; x.textBaseline = "middle";
+    if (S.mode === "sun") {
+      const sx = g.cx0 + 18, sy = 16; x.fillStyle = "#F6C343"; x.beginPath(); x.arc(sx, sy, 9, 0, 7); x.fill();
+      x.strokeStyle = "#F0B323"; x.lineWidth = 2; for (let k = 0; k < 8; k++) { const a = k * Math.PI / 4; x.beginPath(); x.moveTo(sx + 12 * Math.cos(a), sy + 12 * Math.sin(a)); x.lineTo(sx + 16 * Math.cos(a), sy + 16 * Math.sin(a)); x.stroke(); }
+      x.fillStyle = C.navy; x.fillText("Sunlight · " + Math.round(S.level * 100) + "%", sx + 24, sy);
+    } else {
+      x.fillStyle = "#E8ECF3"; x.fillRect(g.cx0 + 6, 6, g.cx1 - g.cx0 - 12, 18);
+      x.fillStyle = wlColor(S.lambda); x.globalAlpha = 0.25 + 0.75 * S.level; x.fillRect(g.cx0 + 6, 21, g.cx1 - g.cx0 - 12, 3); x.globalAlpha = 1;
+      x.fillStyle = C.navy; x.fillText("Lamp: " + S.lambda + " nm " + wlName(S.lambda).split(" ")[0] + " · " + Math.round(S.level * 100) + "%", g.cx0 + 12, 15);
+    }
+    // cell layers
+    const { cx0, cx1, top, nH, dH, pBot, bH } = g;
+    if (S.n === 1) {
+      x.fillStyle = "#D7EBDD"; x.fillRect(cx0, top, cx1 - cx0, nH);
+      x.fillStyle = "#F2F4F7"; x.fillRect(cx0, top + nH, cx1 - cx0, dH);
+      x.fillStyle = "#F5DDD6"; x.fillRect(cx0, top + nH + dH, cx1 - cx0, pBot - top - nH - dH);
+    } else {
+      const bh = (pBot - top) / S.n;
+      layers().forEach((L, k) => {
+        const y0 = top + k * bh, tg = tagOf(k);
+        x.fillStyle = LCOL[tg][0]; x.fillRect(cx0, y0, cx1 - cx0, bh);
+        if (k) { x.strokeStyle = C.navy; x.lineWidth = 1; x.beginPath(); x.moveTo(cx0, y0); x.lineTo(cx1, y0); x.stroke(); }
+        font(x, 12, true); x.textBaseline = "middle"; x.textAlign = "left"; x.fillStyle = C.navy;
+        x.fillText(symOf(L) + " · " + L.eg.toFixed(2) + " eV", cx0 + 6, y0 + bh - 12);
+        font(x, 11, false); x.textAlign = "right"; x.fillStyle = C.gray; x.fillText(tg.toLowerCase() + " layer", cx1 - 6, y0 + bh - 12);
+      });
+    }
+    x.fillStyle = "#8C93A0"; x.fillRect(cx0, pBot, cx1 - cx0, bH);
+    for (let fx = cx0 + 20; fx < cx1 - 6; fx += 46) { x.fillStyle = "#8C93A0"; x.fillRect(fx, top - 3, 5, 4); }
+    x.strokeStyle = C.navy; x.lineWidth = 1.2; x.strokeRect(cx0 + 0.5, top + 0.5, cx1 - cx0 - 1, pBot + bH - top - 1);
+    if (S.n === 1) {
+      font(x, 12, true); x.textBaseline = "middle"; x.textAlign = "left";
+      x.fillStyle = "#2F6B47"; x.fillText("n-type", cx0 + 6, top + nH * 0.76);
+      x.fillStyle = "#9B3D2A"; x.fillText("p-type", cx0 + 6, top + nH + dH + 14);
+      x.fillStyle = C.gray; font(x, 11, false); x.textAlign = "right"; x.fillText("junction (built-in push)", cx1 - 6, top + nH + dH / 2);
+    }
+    // circuit
+    const Rl = PV.LOADS[S.ld], open = !isFinite(Rl), path = wirePath(g);
+    x.strokeStyle = C.navy; x.lineWidth = 2.2; x.beginPath(); path.forEach(([a, b], i) => i ? x.lineTo(a, b) : x.moveTo(a, b)); x.stroke();
+    const bx = g.lx, by = g.bulbY;
+    if (open) { x.fillStyle = "#fff"; x.fillRect(bx - 4, g.nMid + 12, 8, 22); x.strokeStyle = C.navy; x.lineWidth = 2.2; x.beginPath(); x.moveTo(bx, g.nMid + 34); x.lineTo(bx + 10, g.nMid + 14); x.stroke(); }
+    // bulb (load)
+    const glow = Math.min(1, R.P / 22);
+    if (glow > 0.02) { const gr = x.createRadialGradient(bx, by, 4, bx, by, 34); gr.addColorStop(0, "rgba(255,200,60," + (0.85 * glow) + ")"); gr.addColorStop(1, "rgba(255,200,60,0)"); x.fillStyle = gr; x.beginPath(); x.arc(bx, by, 34, 0, 7); x.fill(); }
+    x.fillStyle = glow > 0.02 ? "rgb(255," + Math.round(250 - 40 * glow) + "," + Math.round(235 - 150 * glow) + ")" : "#fff";
+    x.beginPath(); x.arc(bx, by, 12, 0, 7); x.fill(); x.strokeStyle = C.navy; x.lineWidth = 2; x.stroke();
+    x.beginPath(); x.moveTo(bx - 5, by + 4); x.lineTo(bx - 2, by - 4); x.lineTo(bx + 2, by + 4); x.lineTo(bx + 5, by - 4); x.lineWidth = 1.2; x.stroke();
+    font(x, 12, true); x.fillStyle = C.navy; x.textAlign = "left"; x.textBaseline = "middle";
+    x.fillText("load", bx + 17, by - 7); font(x, 12, false); x.fillStyle = C.gray;
+    x.fillText(Rl === 0 ? "0 Ω" : open ? "open" : fmtR(Rl), bx + 17, by + 8);
+    // electrons in the wire, with direction chevrons when current flows
+    wd.forEach(e => { const p = along(path, e.d); if (p) { x.beginPath(); x.arc(p[0], p[1], 3.2, 0, 7); x.fillStyle = C.blue; x.fill(); } });
+    if (R.I > 0.05) {
+      chevron(x, (g.cx0 + g.lx) / 2, g.nMid, Math.PI);
+      chevron(x, g.lx, (g.nMid + by) / 2 - 6, Math.PI / 2);
+      chevron(x, g.lx, (by + g.botY) / 2 + 8, Math.PI / 2);
+      chevron(x, (g.cx0 + g.lx) / 2, g.botY, 0);
+    }
+    // flashes
+    fl.forEach(f => { const a = 1 - f.t / f.life; const gr = x.createRadialGradient(f.x, f.y, 0, f.x, f.y, f.r); gr.addColorStop(0, "rgba(" + f.c + "," + (0.75 * a) + ")"); gr.addColorStop(1, "rgba(" + f.c + ",0)"); x.fillStyle = gr; x.beginPath(); x.arc(f.x, f.y, f.r, 0, 7); x.fill(); });
+    // pairs
+    pairs.forEach(q => {
+      if (!q.hdone) { x.beginPath(); x.arc(q.hx, q.hy, 3.6, 0, 7); x.fillStyle = "#fff"; x.fill(); x.strokeStyle = C.red; x.lineWidth = 1.6; x.stroke(); }
+      if (!q.edone) { x.beginPath(); x.arc(q.ex, q.ey, 3.6, 0, 7); x.fillStyle = C.blue; x.fill(); }
+    });
+    // photons
+    ph.forEach(p => {
+      const inCell = p.y > top && p.y < pBot + bH;
+      x.globalAlpha = p.abs ? 1 : (inCell ? 0.45 : (p.y > pBot ? Math.max(0, 1 - (p.y - pBot) / (h - pBot)) * 0.8 : 0.9));
+      x.strokeStyle = p.col; x.lineWidth = 2; x.beginPath();
+      for (let k = 0; k <= 10; k++) { const yy = p.y - 16 + k * 1.6, xx = p.x + Math.sin(k / 10 * Math.PI * 2 * 2 + p.y * 0.05) * 2.6; k ? x.lineTo(xx, yy) : x.moveTo(xx, yy); }
+      x.stroke(); x.globalAlpha = 1;
+    });
+    // legend
+    font(x, 11.5, false); x.textBaseline = "middle"; x.textAlign = "left";
+    const ly = h - 9; let lx = Math.max(4, Math.min(cx0, w - 262));
+    const lab = (t) => { x.fillStyle = C.gray; x.fillText(t, lx + 11, ly); lx += 11 + x.measureText(t).width + 12; };
+    x.beginPath(); x.arc(lx + 4, ly, 3.6, 0, 7); x.fillStyle = C.blue; x.fill(); lab("electron");
+    x.beginPath(); x.arc(lx + 4, ly, 3.6, 0, 7); x.fillStyle = "#fff"; x.fill(); x.strokeStyle = C.red; x.lineWidth = 1.6; x.stroke(); lab("hole");
+    const gr = x.createRadialGradient(lx + 5, ly, 0, lx + 5, ly, 7); gr.addColorStop(0, "rgba(232,163,23,.9)"); gr.addColorStop(1, "rgba(232,163,23,0)"); x.fillStyle = gr; x.beginPath(); x.arc(lx + 5, ly, 7, 0, 7); x.fill(); lab("heat");
+    const gr2 = x.createRadialGradient(lx + 5, ly, 0, lx + 5, ly, 7); gr2.addColorStop(0, "rgba(125,107,168,.9)"); gr2.addColorStop(1, "rgba(125,107,168,0)"); x.fillStyle = gr2; x.beginPath(); x.arc(lx + 5, ly, 7, 0, 7); x.fill(); lab("pair recombines");
+  }
+  function frame(t) {
+    const cv = $("cv-scene");
+    const vis = !document.hidden && cv.offsetParent !== null;
+    if (vis && R) {
+      const dt = Math.min(0.05, last ? (t - last) / 1000 : 0.016);
+      const { x, w, h } = fit(cv), g = geom(w, h);
+      if (!paused && !reduce) stepScene(dt, g, h);
+      drawScene(x, w, h, g);
+    }
+    last = t;
+    requestAnimationFrame(frame);
+  }
+  let rT = null;
+  window.addEventListener("resize", () => { clearTimeout(rT); rT = setTimeout(() => { drawSide(); drawFlow(); drawGraph(); }, 60); });
+  if (window.ResizeObserver) new ResizeObserver(() => { clearTimeout(rT); rT = setTimeout(() => { drawSide(); drawFlow(); drawGraph(); }, 60); }).observe(document.body);
+  update();
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
