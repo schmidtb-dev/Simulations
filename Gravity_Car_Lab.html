@@ -1,0 +1,630 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Gravity Car Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Space+Grotesk:wght@500;700&display=swap">
+<style>
+/* Layout: navy instrument bar; lab bench (animated car + four graphs) beside a control panel; results table below. Same look as Work & Energy Lab. */
+:root{
+  --navy:#1b2f4e; --navy-2:#2b4874; --navy-soft:#e7edf6;
+  --ink:#16202d; --muted:#4f5c6f; --line:#d3dce8; --panel:#ffffff; --bg:#edf2f7;
+  --amber:#e08a00; --amber-ink:#8a5300; --amber-soft:#fff3dc;
+  --ke:#1f9d55; --pe:#2a6fdb; --th:#e4572e; --tot:#5b3fa8;
+  --good:#17804a; --good-soft:#e5f6ec; --bad:#b93b0e; --bad-soft:#fdece5;
+  --rail:#d9e1ec; --post:#f6d9a0; --wood:#e3c48f; --cd:#c7ced8; --floor:#8a95a5; --sky:#f7f9fc;
+  --font-body:'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-display:'Space Grotesk', 'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono:'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{background:var(--bg); color:var(--ink); font-family:var(--font-body); font-size:15px; line-height:1.45}
+.bar{background:var(--navy); color:#fff; padding-block:12px; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px))}
+.bar-in{max-width:1400px; margin:0 auto; display:flex; align-items:center; gap:14px; flex-wrap:wrap}
+.bar h1{font-family:var(--font-display); font-size:22px; font-weight:700; margin:0; letter-spacing:.01em}
+.bar .sub{color:#c9d5e6; font-size:13px}
+.bar .chip{margin-left:auto; font-family:var(--font-mono); font-size:12.5px; background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.25); padding:3px 10px; border-radius:999px}
+.wrap{max-width:1400px; margin:0 auto; padding-block:16px 32px; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px))}
+.layout{display:grid; grid-template-columns:minmax(0,1fr) 380px; gap:16px; align-items:start}
+@media (max-width:1020px){ .layout{grid-template-columns:minmax(0,1fr)} }
+.card{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:14px 16px; min-width:0}
+.card h2{font-family:var(--font-display); font-size:16.5px; font-weight:700; color:var(--navy); margin:0 0 10px; display:flex; align-items:center; gap:8px}
+.card h2 .n{display:inline-grid; place-items:center; width:22px; height:22px; border-radius:50%; background:var(--navy); color:#fff; font-size:12.5px}
+.bench{display:flex; flex-direction:column; gap:16px; min-width:0}
+.panel{display:flex; flex-direction:column; gap:16px; min-width:0}
+/* scene */
+.scene-card{padding:0; overflow:hidden}
+.scene-wrap{position:relative; background:var(--sky)}
+#scene{display:block; width:100%; height:clamp(230px, 34vw, 400px)}
+.hud{position:absolute; left:12px; top:10px; display:flex; gap:6px; flex-wrap:wrap; pointer-events:none}
+.hud span{font-family:var(--font-mono); font-size:12.5px; background:rgba(255,255,255,.92); border:1px solid var(--line); border-radius:6px; padding:2px 8px; color:var(--ink); font-variant-numeric:tabular-nums}
+.hud .ph{font-family:var(--font-body); font-weight:600}
+.ph.pull{color:var(--pe)} .ph.coast{color:var(--ke)} .ph.stop{color:var(--muted)}
+.controls{display:flex; flex-wrap:wrap; gap:10px; align-items:center; padding:10px 12px; border-top:1px solid var(--line)}
+.seg{display:inline-flex; border:1px solid var(--navy); border-radius:8px; overflow:hidden}
+.seg button{border:0; background:#fff; color:var(--navy); padding:7px 12px; font:600 13.5px var(--font-body); cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--navy); color:#fff}
+.seg button:disabled{color:#9aa6b6; cursor:not-allowed}
+.btn{border:1px solid var(--navy); background:var(--navy); color:#fff; border-radius:8px; padding:7px 14px; font:600 13.5px var(--font-body); cursor:pointer; display:inline-flex; align-items:center; gap:6px}
+.btn.ghost{background:#fff; color:var(--navy)}
+.btn.amber{background:var(--amber); border-color:var(--amber); color:#fff}
+.btn:disabled{opacity:.45; cursor:not-allowed}
+.btn:focus-visible,.seg button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid var(--amber); outline-offset:2px}
+.controls label{font-size:13px; color:var(--muted); display:flex; align-items:center; gap:6px}
+select{font:500 13.5px var(--font-body); border:1px solid var(--line); border-radius:6px; padding:5px 8px; background:#fff; color:var(--ink)}
+.spacer{flex:1}
+/* graphs */
+.graphs{display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:16px}
+@media (max-width:700px){ .graphs{grid-template-columns:minmax(0,1fr)} }
+.graph h3{font-family:var(--font-display); font-size:14.5px; margin:0 0 4px; color:var(--navy)}
+.graph canvas{display:block; width:100%; height:220px}
+.legend{display:flex; flex-wrap:wrap; gap:4px 14px; font-size:12.5px; color:var(--muted); margin-top:4px}
+.legend i{display:inline-block; width:18px; height:0; border-top:3px solid; vertical-align:middle; margin-right:5px}
+.legend i.dash{border-top-style:dashed}
+.legend i.sq{width:11px; height:11px; border:0; border-radius:2px}
+.note{font-size:12.5px; color:var(--muted); margin:6px 0 0}
+/* panel inputs */
+.field{display:grid; grid-template-columns:minmax(0,1fr) 112px; gap:4px 10px; align-items:center; margin-bottom:10px}
+.field label{font-weight:600; font-size:14px}
+.field .hint{grid-column:1 / -1; font-size:12.5px; color:var(--muted); margin-top:-2px}
+.field input{width:100%; font:600 15px var(--font-mono); padding:6px 8px; border:1px solid #b9c5d6; border-radius:7px; text-align:right; background:#fff; color:var(--ink); font-variant-numeric:tabular-nums}
+.field input.bad{border-color:var(--bad); background:var(--bad-soft)}
+.unit{font-weight:500; color:var(--muted); font-size:12.5px}
+details{border-top:1px dashed var(--line); padding-top:8px; margin-top:4px}
+summary{cursor:pointer; font-weight:600; color:var(--navy); font-size:13.5px}
+details .field{margin-top:10px}
+.big{display:flex; align-items:baseline; gap:8px; margin:2px 0 8px}
+.big b{font-family:var(--font-display); font-size:34px; color:var(--navy); font-variant-numeric:tabular-nums}
+.big span{color:var(--muted); font-size:13.5px}
+.math{font-family:var(--font-mono); font-size:12.8px; background:var(--navy-soft); border-radius:8px; padding:8px 10px; line-height:1.65; overflow-x:auto; white-space:nowrap}
+.math .c{color:var(--muted); font-family:var(--font-body); font-size:12.5px; white-space:normal}
+.kv{display:grid; grid-template-columns:minmax(0,1fr) auto; gap:4px 10px; font-size:13.5px; margin-top:8px}
+.kv dt{color:var(--muted)} .kv dd{margin:0; font-family:var(--font-mono); font-weight:600; text-align:right; font-variant-numeric:tabular-nums}
+.row-btns{display:flex; flex-wrap:wrap; gap:8px; margin-top:10px}
+.msg{font-size:13px; border-radius:8px; padding:7px 10px; margin-top:8px}
+.msg.warn{background:var(--bad-soft); color:var(--bad); border:1px solid #f3c2ae}
+.msg.info{background:var(--amber-soft); color:var(--amber-ink); border:1px solid #f1d6a6}
+.effbar{height:12px; border-radius:6px; background:var(--navy-soft); overflow:hidden; margin:4px 0 2px}
+.effbar i{display:block; height:100%; background:var(--ke); width:0}
+/* table */
+.tbl-wrap{overflow-x:auto}
+table{border-collapse:collapse; width:100%; font-size:13.5px; min-width:760px}
+th{background:var(--navy); color:#fff; font-weight:600; text-align:right; padding:6px 8px; white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+td{border-bottom:1px solid var(--line); padding:6px 8px; text-align:right; font-family:var(--font-mono); font-variant-numeric:tabular-nums}
+td.del button{border:0; background:none; color:var(--bad); cursor:pointer; font:600 13px var(--font-body)}
+.empty td{color:var(--muted); font-family:var(--font-body); text-align:left}
+#copyArea{width:100%; height:90px; margin-top:8px; font-family:var(--font-mono); font-size:12px}
+@media (prefers-reduced-motion: reduce){ *{scroll-behavior:auto} }
+</style>
+<style>[hidden]{display:none!important} body{margin:0}</style>
+</head>
+<body>
+
+
+<header class="bar"><div class="bar-in">
+  <h1>Gravity Car Lab</h1>
+  <span class="sub">Physics 1 ACP · Unit 3: Work, Energy &amp; Efficiency</span>
+  <span class="chip">g = 10 m/s²</span>
+</div></header>
+
+<main class="wrap">
+<div class="layout">
+  <section class="bench" aria-label="Simulation and graphs">
+    <div class="card scene-card">
+      <div class="scene-wrap">
+        <canvas id="scene" aria-label="Side view of the gravity car rolling across the floor"></canvas>
+        <div class="hud" aria-live="off">
+          <span id="hudT">t = 0.00 s</span><span id="hudX">d = 0.00 m</span><span id="hudV">v = 0.00 m/s</span><span id="hudP" class="ph pull">Ready</span>
+        </div>
+      </div>
+      <div class="controls">
+        <div class="seg" role="group" aria-label="Which car to run">
+          <button id="modeIdeal" aria-pressed="true">Ideal car (no friction)</button>
+          <button id="modeYours" aria-pressed="false" disabled>My car</button>
+        </div>
+        <button class="btn" id="play">▶ Run</button>
+        <button class="btn ghost" id="reset">↺ Reset</button>
+        <span class="spacer"></span>
+        <label for="speed">Playback
+          <select id="speed"><option value="1">1×</option><option value="0.5">½×</option><option value="0.25">¼× slow motion</option></select>
+        </label>
+      </div>
+    </div>
+
+    <div class="graphs">
+      <div class="card graph">
+        <h3>Position vs. time</h3>
+        <canvas id="gX" aria-label="Position versus time graph"></canvas>
+        <div class="legend"><span><i class="dash" style="border-color:var(--navy)"></i>Ideal car</span><span id="lgX"><i style="border-color:var(--amber)"></i>My car</span></div>
+      </div>
+      <div class="card graph">
+        <h3>Velocity vs. time</h3>
+        <canvas id="gV" aria-label="Velocity versus time graph"></canvas>
+        <div class="legend"><span><i class="dash" style="border-color:var(--navy)"></i>Ideal car</span><span id="lgV"><i style="border-color:var(--amber)"></i>My car</span></div>
+      </div>
+      <div class="card graph">
+        <h3 id="eTitle">Energy vs. time · ideal car</h3>
+        <canvas id="gE" aria-label="Energy versus time graph"></canvas>
+        <div class="legend"><span><i style="border-color:var(--pe)"></i>PE of hanging mass</span><span><i style="border-color:var(--ke)"></i>KE</span><span><i style="border-color:var(--th)"></i>Lost (heat &amp; sound)</span><span><i class="dash" style="border-color:var(--tot)"></i>Total</span></div>
+      </div>
+      <div class="card graph">
+        <h3 id="bTitle">Energy right now · ideal car</h3>
+        <canvas id="gB" aria-label="Energy bar chart"></canvas>
+        <p class="note" id="bNote">The dashed outline is the energy at the start.</p>
+      </div>
+    </div>
+  </section>
+
+  <aside class="panel" aria-label="Inputs and results">
+    <div class="card">
+      <h2><span class="n">1</span>Your car</h2>
+      <div class="field"><label for="mc">Car mass <span class="unit">(g)</span></label><input id="mc" type="number" inputmode="decimal" min="1" step="1" value="190">
+        <div class="hint">Without the hanging mass.</div></div>
+      <div class="field"><label for="mw">Hanging mass <span class="unit">(g)</span></label><input id="mw" type="number" inputmode="decimal" min="1" step="10" value="200"></div>
+      <div class="field"><label for="h">Drop height <span class="unit">(cm)</span></label><input id="h" type="number" inputmode="decimal" min="1" step="1" value="25">
+        <div class="hint">How far the hanging mass falls. Our tower allows about 26 cm.</div></div>
+      <details>
+        <summary>Car design (wheel and drum)</summary>
+        <div class="field"><label for="R">Wheel radius <span class="unit">(cm)</span></label><input id="R" type="number" inputmode="decimal" min="0.5" step="0.1" value="6.0">
+          <div class="hint">A CD is 6.0 cm.</div></div>
+        <div class="field"><label for="r">Drum radius <span class="unit">(cm)</span></label><input id="r" type="number" inputmode="decimal" min="0.1" step="0.1" value="1.0">
+          <div class="hint">The spool where the string winds. These two set how far the car rolls while the mass falls.</div></div>
+      </details>
+    </div>
+
+    <div class="card">
+      <h2><span class="n">2</span>Prediction: no friction</h2>
+      <div class="big"><b id="vTheory">—</b><span>m/s theoretical max speed</span></div>
+      <div class="math" id="mathTheory"></div>
+      <dl class="kv">
+        <dt>Pull distance (string runs out)</dt><dd id="kvPull">—</dd>
+        <dt>Time to reach top speed</dt><dd id="kvT0">—</dd>
+      </dl>
+      <div class="row-btns"><button class="btn" id="runIdeal">▶ Run ideal car</button></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="n">3</span>Your measurements</h2>
+      <div class="field"><label for="vm">Measured max speed <span class="unit">(m/s)</span></label><input id="vm" type="number" inputmode="decimal" min="0" step="0.01" placeholder="e.g. 1.10">
+        <div class="hint">From the photogate where the string runs out.</div></div>
+      <div class="field"><label for="dt">Maximum displacement <span class="unit">(m)</span></label><input id="dt" type="number" inputmode="decimal" min="0" step="0.01" placeholder="e.g. 3.00">
+        <div class="hint">Start line to where the car stopped.</div></div>
+      <div id="effEmpty" class="msg info">Enter your measured speed to find your car's efficiency.</div>
+      <div id="effOut" hidden>
+        <div class="big"><b id="effBig">—</b><span>efficiency</span></div>
+        <div class="effbar"><i id="effFill"></i></div>
+        <div class="math" id="mathEff"></div>
+        <dl class="kv" id="kvFric"></dl>
+      </div>
+      <div id="effWarn" class="msg warn" hidden></div>
+      <div class="row-btns">
+        <button class="btn amber" id="runYours" disabled>▶ Run my car</button>
+        <button class="btn ghost" id="addRow" disabled>+ Add to results table</button>
+        <button class="btn ghost" id="example">Load example numbers</button>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<section class="card" style="margin-top:16px" aria-label="Results table">
+  <h2>Results table</h2>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Trial</th><th>Car (g)</th><th>Hanging (g)</th><th>h (cm)</th><th>Predicted v (m/s)</th><th>Measured v (m/s)</th><th>Max displacement (m)</th><th>Efficiency (%)</th><th>Friction pulling (N)</th><th>Friction coasting (N)</th><th></th></tr></thead>
+    <tbody id="tbody"></tbody>
+  </table></div>
+  <div class="row-btns">
+    <button class="btn ghost" id="copyTbl">Copy table for a spreadsheet</button>
+    <button class="btn ghost" id="clearTbl">Clear table</button>
+    <span id="copyMsg" class="note" style="margin:0; align-self:center"></span>
+  </div>
+  <textarea id="copyArea" hidden readonly aria-label="Table text to copy"></textarea>
+</section>
+</main>
+
+<script>
+(() => {
+'use strict';
+const g = 10;
+const $ = id => document.getElementById(id);
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const f = (v, d = 2) => Number.isFinite(v) ? v.toFixed(d) : '—';
+
+// Car geometry, cm, measured backward from the FRONT of the car (u) and up from the floor (z)
+const GEO = { L:35.5, RB:4.1, RT:7.9, AZ:6, XF:3.5, XR:31.5, PF:24.8, PB:30.5, PUL:28.5, PZ:37.6, TOP:39.6,
+  WHEEL:6, PR:0.9, FLAG:20.25, WX:27.6, WTOP0:32.7, WTOP1:6.5, WH:3.5, WW:2.8, TB:[19.95, 28.8] };
+
+const state = { mode:'ideal', t:0, playing:false, speed:1, last:null };
+let M = null;      // current model
+let curves = null; // sampled curves for graphs
+
+// ---------- physics ----------
+function num(id){ const v = parseFloat($(id).value); return Number.isFinite(v) ? v : NaN; }
+function compute(){
+  const mcg = num('mc'), mwg = num('mw'), hcm = num('h'), R = num('R'), r = num('r');
+  const vm = num('vm'), d = num('dt');
+  const ok = { mc: mcg > 0, mw: mwg > 0, h: hcm > 0, R: R > 0, r: r > 0 };
+  for (const k in ok) $(k).classList.toggle('bad', !ok[k]);
+  $('vm').classList.toggle('bad', $('vm').value !== '' && !(vm > 0));
+  $('dt').classList.toggle('bad', $('dt').value !== '' && !(d > 0));
+  if (!Object.values(ok).every(Boolean)) return null;
+  const mc = mcg/1000, mw = mwg/1000, h = hcm/100;
+  const Mt = mc + mw, PE0 = mw*g*h, v0 = Math.sqrt(2*PE0/Mt), Gr = R/r, dD = Gr*h;
+  const m = { mc, mw, h, R, r, Mt, PE0, v0, Gr, dD, a0: v0*v0/(2*dD), t0: 2*dD/v0, vm, d };
+  m.hasV = vm > 0; m.hasD = d > 0;
+  if (m.hasV){
+    m.KEm = 0.5*Mt*vm*vm; m.eff = m.KEm/PE0; m.lostPull = PE0 - m.KEm; m.fPull = m.lostPull/dD;
+    m.vOK = vm <= v0;
+  }
+  if (m.hasV && m.hasD){
+    m.dCoast = d - dD;
+    m.runOK = m.vOK && m.dCoast > 0;
+    if (m.runOK){
+      m.KEcar = 0.5*mc*vm*vm; m.fCoast = m.KEcar/m.dCoast;
+      m.a1 = vm*vm/(2*dD); m.t1 = 2*dD/vm; m.a2 = vm*vm/(2*m.dCoast); m.t2 = 2*m.dCoast/vm; m.tEnd = m.t1 + m.t2;
+    }
+  }
+  m.T = m.runOK ? Math.max(m.tEnd, m.t0)*1.06 : m.t0*2.2;
+  return m;
+}
+function idealAt(m, t){
+  if (t < m.t0){ const v = m.a0*t, x = 0.5*m.a0*t*t, PE = m.mw*g*(m.h - x/m.Gr);
+    return { x, v, PE, KE: 0.5*m.Mt*v*v, lost: 0, phase:'pull', p: x/m.dD }; }
+  return { x: m.dD + m.v0*(t - m.t0), v: m.v0, PE: 0, KE: m.PE0, lost: 0, phase:'coast', p: 1 };
+}
+function yoursAt(m, t){
+  if (t < m.t1){ const v = m.a1*t, x = 0.5*m.a1*t*t, PE = m.mw*g*(m.h - x/m.Gr), KE = 0.5*m.Mt*v*v;
+    return { x, v, PE, KE, lost: m.PE0 - PE - KE, phase:'pull', p: x/m.dD }; }
+  const tc = Math.min(t - m.t1, m.t2), v = Math.max(m.vm - m.a2*tc, 0);
+  const x = m.dD + m.vm*tc - 0.5*m.a2*tc*tc, KE = 0.5*m.mc*v*v;
+  return { x, v, PE: 0, KE, lost: m.PE0 - KE, phase: (t - m.t1 >= m.t2) ? 'stop' : 'coast', p: 1 };
+}
+const runAt = (mode, t) => mode === 'yours' ? yoursAt(M, t) : idealAt(M, t);
+
+function sample(){
+  const N = 360, c = { ideal: [], yours: [] };
+  for (let i = 0; i <= N; i++){
+    const t = M.T*i/N;
+    c.ideal.push([t, idealAt(M, t)]);
+    if (M.runOK) c.yours.push([t, yoursAt(M, t)]);
+  }
+  return c;
+}
+
+// ---------- canvas helpers ----------
+function fit(cv){
+  const dpr = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight;
+  if (cv.width !== Math.round(w*dpr) || cv.height !== Math.round(h*dpr)){ cv.width = Math.round(w*dpr); cv.height = Math.round(h*dpr); }
+  const ctx = cv.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, w, h);
+  return { ctx, w, h };
+}
+function niceStep(range, n){
+  const raw = range/n, p = Math.pow(10, Math.floor(Math.log10(raw))), q = raw/p;
+  return (q < 1.5 ? 1 : q < 3 ? 2 : q < 7 ? 5 : 10)*p;
+}
+function decimals(step){ return Math.max(0, -Math.floor(Math.log10(step) + 1e-9)); }
+
+function lineChart(cv, o){
+  const { ctx, w, h } = fit(cv);
+  const L = 50, Rm = 12, T = 12, B = 36, pw = w - L - Rm, ph = h - T - B;
+  const X = t => L + pw*t/o.xMax, Y = y => T + ph*(1 - y/o.yMax);
+  const sx = niceStep(o.xMax, Math.max(3, Math.floor(pw/70))), sy = niceStep(o.yMax, 4);
+  ctx.font = '11.5px "IBM Plex Mono", monospace'; ctx.lineWidth = 1;
+  ctx.strokeStyle = css('--line'); ctx.fillStyle = css('--muted');
+  ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  for (let t = 0; t <= o.xMax + 1e-9; t += sx){ ctx.beginPath(); ctx.moveTo(X(t), T); ctx.lineTo(X(t), T + ph); ctx.stroke(); ctx.fillText(t.toFixed(decimals(sx)), X(t), T + ph + 5); }
+  ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+  for (let y = 0; y <= o.yMax + 1e-9; y += sy){ ctx.beginPath(); ctx.moveTo(L, Y(y)); ctx.lineTo(L + pw, Y(y)); ctx.stroke(); ctx.fillText(y.toFixed(decimals(sy)), L - 6, Y(y)); }
+  ctx.strokeStyle = css('--ink'); ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(L, T); ctx.lineTo(L, T + ph); ctx.lineTo(L + pw, T + ph); ctx.stroke();
+  ctx.fillStyle = css('--muted'); ctx.font = '12px "IBM Plex Sans", sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+  ctx.fillText(o.xLabel, L + pw/2, h - 4);
+  ctx.save(); ctx.translate(12, T + ph/2); ctx.rotate(-Math.PI/2); ctx.fillText(o.yLabel, 0, 0); ctx.restore();
+  ctx.save(); ctx.beginPath(); ctx.rect(L, T - 2, pw + 2, ph + 4); ctx.clip();
+  for (const s of o.series){
+    ctx.strokeStyle = s.color; ctx.lineWidth = s.width || 2.4; ctx.setLineDash(s.dash || []); ctx.lineJoin = 'round';
+    ctx.beginPath(); s.pts.forEach(([t, y], i) => i ? ctx.lineTo(X(t), Y(y)) : ctx.moveTo(X(t), Y(y))); ctx.stroke();
+  }
+  ctx.setLineDash([]);
+  for (const mk of (o.marks || [])){
+    ctx.fillStyle = mk.color; ctx.beginPath(); ctx.arc(X(mk.t), Y(mk.y), 4.5, 0, Math.PI*2); ctx.fill();
+  }
+  ctx.restore();
+  if (o.cursor != null){
+    ctx.strokeStyle = css('--amber-ink'); ctx.lineWidth = 1.2; ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(X(o.cursor), T); ctx.lineTo(X(o.cursor), T + ph); ctx.stroke(); ctx.setLineDash([]);
+    for (const d of (o.dots || [])){ ctx.fillStyle = '#fff'; ctx.strokeStyle = d.color; ctx.lineWidth = 2.4; ctx.beginPath(); ctx.arc(X(o.cursor), Y(d.y), 5, 0, Math.PI*2); ctx.fill(); ctx.stroke(); }
+  }
+}
+
+function barChart(cv, now, start, max){
+  const { ctx, w, h } = fit(cv);
+  const L = 50, Rm = 12, T = 12, B = 36, pw = w - L - Rm, ph = h - T - B;
+  const Y = y => T + ph*(1 - y/max), sy = niceStep(max, 4);
+  ctx.font = '11.5px "IBM Plex Mono", monospace'; ctx.strokeStyle = css('--line'); ctx.fillStyle = css('--muted'); ctx.lineWidth = 1;
+  ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+  for (let y = 0; y <= max + 1e-9; y += sy){ ctx.beginPath(); ctx.moveTo(L, Y(y)); ctx.lineTo(L + pw, Y(y)); ctx.stroke(); ctx.fillText(y.toFixed(decimals(sy)), L - 6, Y(y)); }
+  ctx.save(); ctx.translate(12, T + ph/2); ctx.rotate(-Math.PI/2); ctx.font = '12px "IBM Plex Sans", sans-serif'; ctx.textAlign = 'center'; ctx.fillText('Energy (J)', 0, 0); ctx.restore();
+  const bars = [['PE', now.PE, start.PE, css('--pe')], ['KE', now.KE, start.KE, css('--ke')], ['Lost', now.lost, start.lost, css('--th')], ['Total', now.PE + now.KE + now.lost, start.PE + start.KE + start.lost, css('--tot')]];
+  const slot = pw/bars.length, bw = Math.min(64, slot*0.55);
+  bars.forEach(([name, v, v0, col], i) => {
+    const cx = L + slot*(i + 0.5);
+    ctx.fillStyle = col; ctx.fillRect(cx - bw/2, Y(Math.max(v, 0)), bw, Y(0) - Y(Math.max(v, 0)));
+    ctx.setLineDash([5, 4]); ctx.strokeStyle = css('--ink'); ctx.lineWidth = 1.3; ctx.strokeRect(cx - bw/2, Y(Math.max(v0, 0)), bw, Y(0) - Y(Math.max(v0, 0))); ctx.setLineDash([]);
+    ctx.fillStyle = css('--ink'); ctx.font = '600 12.5px "IBM Plex Sans", sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+    ctx.fillText(name, cx, h - 18);
+    ctx.font = '11.5px "IBM Plex Mono", monospace'; ctx.fillStyle = css('--muted'); ctx.fillText(v.toFixed(3) + ' J', cx, h - 4);
+  });
+  ctx.strokeStyle = css('--ink'); ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(L, T); ctx.lineTo(L, Y(0)); ctx.lineTo(L + pw, Y(0)); ctx.stroke();
+}
+
+// ---------- scene ----------
+function drawCar(ctx, fx, fy, s, o){
+  // fx: screen x of the car's front; fy: floor y; s: px per cm. Car faces right.
+  const X = u => fx - u*s, Z = z => fy - z*s;
+  const rect = (u0, u1, z0, z1) => [X(u1), Z(z1), (u1 - u0)*s, (z1 - z0)*s];
+  ctx.save(); ctx.globalAlpha = o.alpha ?? 1; ctx.lineJoin = 'round';
+  const edge = css('--ink'), navy = css('--navy');
+  // far wheels (offset slightly for depth)
+  for (const u of [GEO.XF, GEO.XR]){ ctx.fillStyle = '#e9edf2'; ctx.strokeStyle = '#9aa6b6'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(X(u) + 0.6*s, Z(GEO.AZ) - 0.4*s, GEO.WHEEL*s, 0, 7); ctx.fill(); ctx.stroke(); }
+  // tower posts (see-through)
+  ctx.fillStyle = 'rgba(246,217,160,0.55)'; ctx.strokeStyle = edge; ctx.lineWidth = 1.3;
+  ctx.fillRect(...rect(GEO.PF, GEO.PB, GEO.RB, GEO.TOP)); ctx.strokeRect(...rect(GEO.PF, GEO.PB, GEO.RB, GEO.TOP));
+  ctx.fillStyle = '#eef0f3';
+  for (const z0 of GEO.TB){ ctx.fillRect(...rect(GEO.PF - 0.5, GEO.PF, z0, z0 + 3.8)); ctx.strokeRect(...rect(GEO.PF - 0.5, GEO.PF, z0, z0 + 3.8)); }
+  // rail
+  ctx.fillStyle = css('--rail'); ctx.fillRect(...rect(0, GEO.L, GEO.RB, GEO.RT)); ctx.strokeRect(...rect(0, GEO.L, GEO.RB, GEO.RT));
+  ctx.setLineDash([3, 3]); ctx.lineWidth = 1; for (const u of [7, 20]) ctx.strokeRect(...rect(u, u + 0.5, GEO.RB + 0.3, GEO.RT - 0.3)); ctx.setLineDash([]);
+  // flag
+  ctx.fillStyle = '#c9a0e8'; ctx.strokeStyle = edge; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(X(GEO.FLAG), Z(GEO.RT + 0.55), 0.55*s + 1, 0, 7); ctx.fill(); ctx.stroke();
+  // pulley
+  ctx.fillStyle = css('--wood'); ctx.beginPath(); ctx.arc(X(GEO.PUL), Z(GEO.PZ), GEO.PR*s + 1, 0, 7); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = edge; ctx.beginPath(); ctx.arc(X(GEO.PUL), Z(GEO.PZ), 1.6, 0, 7); ctx.fill();
+  // drum + zip-tie bump (turns with the wheels)
+  const dr = 1.0*s, ang = o.theta;
+  ctx.fillStyle = css('--wood'); ctx.strokeStyle = navy; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.arc(X(GEO.XR), Z(GEO.AZ), dr + 1, 0, 7); ctx.fill(); ctx.stroke();
+  const bx = X(GEO.XR) + Math.cos(ang - Math.PI/4)*(dr + 2), by = Z(GEO.AZ) + Math.sin(ang - Math.PI/4)*(dr + 2);
+  ctx.fillStyle = edge; ctx.beginPath(); ctx.arc(bx, by, Math.max(1.6, 0.22*s), 0, 7); ctx.fill();
+  // string + hanging mass
+  const sw = Math.max(1.6, 0.22*s); ctx.strokeStyle = navy; ctx.lineWidth = sw;
+  if (!o.released){
+    const wTop = GEO.WTOP0 - o.p*(GEO.WTOP0 - GEO.WTOP1);
+    ctx.beginPath(); ctx.moveTo(X(GEO.XR + 1.0), Z(GEO.AZ)); ctx.lineTo(X(GEO.PUL + GEO.PR), Z(GEO.PZ));
+    ctx.arc(X(GEO.PUL), Z(GEO.PZ), GEO.PR*s, 0, Math.PI, true);
+    ctx.lineTo(X(GEO.WX), Z(wTop + 1.0)); ctx.stroke();
+    drawWeight(ctx, X(GEO.WX), Z(wTop), s);
+  } else if (o.keepWeight){
+    ctx.beginPath(); ctx.moveTo(X(GEO.PUL - GEO.PR), Z(GEO.PZ)); ctx.lineTo(X(GEO.WX), Z(GEO.WTOP1 + 1.0)); ctx.stroke();
+    ctx.beginPath(); ctx.arc(X(GEO.PUL), Z(GEO.PZ), GEO.PR*s, Math.PI, 0, false); ctx.lineTo(X(GEO.XR + 1.0), Z(GEO.AZ)); ctx.stroke();
+    drawWeight(ctx, X(GEO.WX), Z(GEO.WTOP1), s);
+  } else {
+    ctx.beginPath(); ctx.moveTo(X(GEO.PUL - GEO.PR), Z(GEO.PZ)); ctx.quadraticCurveTo(X(GEO.PUL - 1.2), Z(GEO.PZ - 6), X(GEO.PUL - 0.6), Z(GEO.PZ - 9)); ctx.stroke();
+  }
+  // near wheels (slightly see-through so the drum shows), with a turning mark
+  for (const u of [GEO.XF, GEO.XR]){
+    const cx = X(u), cy = Z(GEO.AZ), R = GEO.WHEEL*s;
+    ctx.fillStyle = 'rgba(199,206,216,0.55)'; ctx.strokeStyle = edge; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 7); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = 'rgba(27,47,78,0.55)'; ctx.lineWidth = Math.max(1.5, 0.3*s);
+    ctx.beginPath(); ctx.arc(cx, cy, R*0.78, ang, ang + 0.9); ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx, cy, R*0.78, ang + Math.PI, ang + Math.PI + 0.9); ctx.stroke();
+    ctx.fillStyle = '#fff'; ctx.strokeStyle = edge; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(cx, cy, 0.75*s, 0, 7); ctx.fill(); ctx.stroke();
+  }
+  ctx.restore();
+}
+function drawWeight(ctx, cx, ytop, s){
+  ctx.fillStyle = '#cfd3da'; ctx.strokeStyle = css('--ink'); ctx.lineWidth = 1.3;
+  ctx.fillRect(cx - GEO.WW/2*s, ytop, GEO.WW*s, GEO.WH*s); ctx.strokeRect(cx - GEO.WW/2*s, ytop, GEO.WW*s, GEO.WH*s);
+  ctx.beginPath(); ctx.moveTo(cx, ytop); ctx.lineTo(cx, ytop - 1.0*s); ctx.stroke();
+}
+
+function drawScene(){
+  const cv = $('scene'), { ctx, w, h } = fit(cv);
+  const s = Math.max(2.4, Math.min((h - 46)/42, (w*0.5)/GEO.L)); // px per cm
+  const P = s*100, fy = h - 30;
+  const cur = runAt(state.mode, state.t);
+  const anchor = w*0.64, xFront = cur.x;
+  const SX = X => anchor + (X - xFront)*P;
+  // floor and meter marks
+  ctx.fillStyle = '#e4e9f0'; ctx.fillRect(0, fy, w, h - fy);
+  ctx.strokeStyle = css('--floor'); ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0, fy); ctx.lineTo(w, fy); ctx.stroke();
+  const x0 = xFront - anchor/P - 0.2, x1 = xFront + (w - anchor)/P + 0.2;
+  ctx.font = '11.5px "IBM Plex Mono", monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillStyle = css('--muted');
+  for (let k = Math.ceil(x0*10); k <= x1*10; k++){
+    const sx = SX(k/10), big = k % 10 === 0;
+    ctx.strokeStyle = css('--floor'); ctx.lineWidth = big ? 2 : 1;
+    ctx.beginPath(); ctx.moveTo(sx, fy); ctx.lineTo(sx, fy + (big ? 12 : 5)); ctx.stroke();
+    if (big) ctx.fillText(k === 0 ? 'start' : (k/10) + ' m', sx, fy + 14);
+  }
+  // photogate where the string runs out (flag is 20.25 cm behind the front)
+  const gx = SX(M.dD - GEO.FLAG/100);
+  if (gx > -40 && gx < w + 40){
+    ctx.strokeStyle = css('--ink'); ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(gx - 2.4*s, fy); ctx.lineTo(gx - 2.4*s, fy - 15*s); ctx.lineTo(gx + 2.4*s, fy - 15*s); ctx.lineTo(gx + 2.4*s, fy); ctx.stroke();
+    ctx.strokeStyle = 'rgba(185,59,14,0.8)'; ctx.lineWidth = 1.4; ctx.setLineDash([4, 3]); ctx.beginPath(); ctx.moveTo(gx - 2.4*s, fy - (GEO.RT + 0.55)*s); ctx.lineTo(gx + 2.4*s, fy - (GEO.RT + 0.55)*s); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = css('--muted'); ctx.textBaseline = 'bottom'; ctx.fillText('photogate', gx, fy - 15*s - 4);
+  }
+  // other car as a faint ghost
+  const other = state.mode === 'ideal' ? (M.runOK ? 'yours' : null) : 'ideal';
+  if (other){
+    const oc = runAt(other, state.t), ox = SX(oc.x);
+    if (ox - GEO.L*s < w && ox > 0) drawCar(ctx, ox, fy, s, { theta: oc.x*100/GEO.WHEEL, p: oc.p, released: oc.p >= 1, keepWeight: other === 'ideal', alpha: 0.22 });
+    else {
+      const ahead = oc.x > cur.x, txt = (other === 'ideal' ? 'Ideal car ' : 'My car ') + Math.abs(oc.x - cur.x).toFixed(2) + ' m ' + (ahead ? 'ahead ▸' : '◂ behind');
+      ctx.font = '600 12.5px "IBM Plex Sans", sans-serif'; ctx.textBaseline = 'top'; ctx.textAlign = ahead ? 'right' : 'left';
+      ctx.fillStyle = css('--muted'); ctx.fillText(txt, ahead ? w - 10 : 10, 44);
+    }
+  }
+  // dropped hanging mass stays on the floor where the string ran out
+  const released = cur.p >= 1;
+  if (released && state.mode === 'yours'){
+    const wx = SX(M.dD - GEO.WX/100);
+    if (wx > -30 && wx < w + 30){ drawWeight(ctx, wx, fy - GEO.WH*s, s); }
+  }
+  drawCar(ctx, anchor, fy, s, { theta: cur.x*100/GEO.WHEEL, p: cur.p, released, keepWeight: state.mode === 'ideal' });
+  // HUD
+  $('hudT').textContent = 't = ' + state.t.toFixed(2) + ' s';
+  $('hudX').textContent = 'd = ' + cur.x.toFixed(2) + ' m';
+  $('hudV').textContent = 'v = ' + cur.v.toFixed(2) + ' m/s';
+  const ph = $('hudP');
+  const label = state.t === 0 && !state.playing ? 'Ready' : cur.phase === 'pull' ? 'Pulling: mass falling' : cur.phase === 'coast' ? (state.mode === 'ideal' ? 'Coasting: no friction, never slows' : 'Coasting: string ran out') : 'Stopped';
+  ph.textContent = label; ph.className = 'ph ' + (cur.phase === 'pull' ? 'pull' : cur.phase === 'coast' ? 'coast' : 'stop');
+}
+
+// ---------- graphs ----------
+function drawGraphs(){
+  const C = { navy: css('--navy'), amber: css('--amber'), pe: css('--pe'), ke: css('--ke'), th: css('--th'), tot: css('--tot') };
+  const yrs = M.runOK ? curves.yours : null;
+  const xMaxPos = Math.max(...curves.ideal.map(p => p[1].x), yrs ? M.d : 0) * 1.08;
+  const curI = idealAt(M, state.t), curY = M.runOK ? yoursAt(M, state.t) : null;
+  const sel = state.mode === 'yours' && M.runOK ? 'yours' : 'ideal';
+  const pos = [{ pts: curves.ideal.map(([t, s]) => [t, s.x]), color: C.navy, dash: [7, 5] }];
+  const vel = [{ pts: curves.ideal.map(([t, s]) => [t, s.v]), color: C.navy, dash: [7, 5] }];
+  const marks = [];
+  if (yrs){ pos.push({ pts: yrs.map(([t, s]) => [t, s.x]), color: C.amber, width: 3 }); vel.push({ pts: yrs.map(([t, s]) => [t, s.v]), color: C.amber, width: 3 }); marks.push({ t: M.t1, y: M.vm, color: C.amber }); }
+  lineChart($('gX'), { xMax: M.T, yMax: xMaxPos, xLabel: 'time (s)', yLabel: 'position (m)', series: pos, cursor: state.t,
+    dots: [{ y: curI.x, color: C.navy }].concat(curY ? [{ y: curY.x, color: C.amber }] : []) });
+  lineChart($('gV'), { xMax: M.T, yMax: M.v0*1.18, xLabel: 'time (s)', yLabel: 'velocity (m/s)', series: vel, marks, cursor: state.t,
+    dots: [{ y: curI.v, color: C.navy }].concat(curY ? [{ y: curY.v, color: C.amber }] : []) });
+  const src = sel === 'yours' ? yrs : curves.ideal;
+  const es = [
+    { pts: src.map(([t, s]) => [t, s.PE + s.KE + s.lost]), color: C.tot, dash: [7, 5], width: 2 },
+    { pts: src.map(([t, s]) => [t, s.PE]), color: C.pe }, { pts: src.map(([t, s]) => [t, s.KE]), color: C.ke }, { pts: src.map(([t, s]) => [t, s.lost]), color: C.th }];
+  const now = runAt(sel, state.t);
+  lineChart($('gE'), { xMax: M.T, yMax: M.PE0*1.15, xLabel: 'time (s)', yLabel: 'energy (J)', series: es, cursor: state.t,
+    dots: [{ y: now.PE, color: C.pe }, { y: now.KE, color: C.ke }, { y: now.lost, color: C.th }] });
+  barChart($('gB'), now, runAt(sel, 0), M.PE0*1.15);
+  const who = sel === 'yours' ? 'my car' : 'ideal car';
+  $('eTitle').textContent = 'Energy vs. time · ' + who; $('bTitle').textContent = 'Energy right now · ' + who;
+  $('bNote').textContent = sel === 'yours'
+    ? 'Dashed outlines show the start. When the string runs out, the mass drops off and its kinetic energy turns into heat and sound when it lands.'
+    : 'Dashed outlines show the start. With no friction, all of the PE becomes KE and the total never changes.';
+  $('lgX').style.visibility = $('lgV').style.visibility = yrs ? 'visible' : 'hidden';
+}
+
+// ---------- panel ----------
+function updatePanel(){
+  if (!M){ $('vTheory').textContent = '—'; $('mathTheory').innerHTML = '<span class="c">Enter positive numbers for every input.</span>'; return; }
+  $('vTheory').textContent = f(M.v0);
+  const mwkg = M.mw.toFixed(3), hm = M.h.toFixed(3).replace(/0+$/, '').replace(/\.$/, '');
+  $('mathTheory').innerHTML =
+    `PE = mgh<br>&nbsp;&nbsp; = (${mwkg} kg)(10 m/s²)(${hm} m)<br>&nbsp;&nbsp; = ${f(M.PE0, 3)} J<br>` +
+    `<span class="c">No friction, so all of it becomes KE of the whole car (car + hanging mass = ${M.Mt.toFixed(3)} kg):</span><br>` +
+    `½(${M.Mt.toFixed(3)} kg)v² = ${f(M.PE0, 3)} J<br>` +
+    `v = √(2 × ${f(M.PE0, 3)} J ÷ ${M.Mt.toFixed(3)} kg)<br>&nbsp;&nbsp; = <b>${f(M.v0)} m/s</b>`;
+  $('kvPull').textContent = f(M.dD) + ' m';
+  $('kvT0').textContent = f(M.t0) + ' s';
+
+  const warn = $('effWarn'); warn.hidden = true;
+  if (!M.hasV){ $('effEmpty').hidden = false; $('effOut').hidden = true; }
+  else {
+    $('effEmpty').hidden = true; $('effOut').hidden = false;
+    $('effBig').textContent = (M.eff*100).toFixed(0) + '%';
+    $('effFill').style.width = Math.min(100, M.eff*100) + '%';
+    $('effFill').style.background = M.eff > 1 ? css('--bad') : css('--ke');
+    $('mathEff').innerHTML =
+      `KE = ½mv²<br>&nbsp;&nbsp; = ½(${M.Mt.toFixed(3)} kg)(${f(M.vm)} m/s)²<br>&nbsp;&nbsp; = ${f(M.KEm, 3)} J<br>` +
+      `Efficiency = KE ÷ PE<br>&nbsp;&nbsp; = ${f(M.KEm, 3)} J ÷ ${f(M.PE0, 3)} J<br>&nbsp;&nbsp; = <b>${(M.eff*100).toFixed(0)}%</b>`;
+    let rows = `<dt>Energy lost while pulling</dt><dd>${f(M.lostPull, 3)} J</dd>` +
+      `<dt>Average friction while pulling<br><span class="unit">lost energy ÷ ${f(M.dD)} m pull distance</span></dt><dd>${f(M.fPull, 3)} N</dd>`;
+    if (M.runOK) rows += `<dt>Coasting distance</dt><dd>${f(M.dCoast)} m</dd>` +
+      `<dt>Average friction while coasting<br><span class="unit">car's KE ÷ coasting distance</span></dt><dd>${f(M.fCoast, 3)} N</dd>`;
+    $('kvFric').innerHTML = M.vOK ? rows : '';
+    let wmsg = null, wcls = 'msg warn';
+    if (!M.vOK) wmsg = `Your measured speed is faster than the no-friction prediction (${f(M.v0)} m/s), which would mean more than 100% efficiency. Check your masses, drop height, and speed.`;
+    else if (M.hasD && M.dCoast <= 0) wmsg = `The car rolls ${f(M.dD)} m while the string unwinds, so the maximum displacement must be longer than that. Check the distance, or the wheel and drum sizes under Car design.`;
+    else if (!M.hasD){ wmsg = 'Add your maximum displacement to find the friction while coasting and to run your car.'; wcls = 'msg info'; }
+    warn.hidden = !wmsg;
+    if (wmsg){ warn.textContent = wmsg; warn.className = wcls; }
+  }
+  $('runYours').disabled = !M.runOK;
+  $('modeYours').disabled = !M.runOK;
+  $('addRow').disabled = !(M.hasV && M.vOK);
+  if (!M.runOK && state.mode === 'yours') setMode('ideal');
+}
+
+// ---------- results table ----------
+const KEY = 'gravity-car-lab-trials-v1';
+let rows = [];
+try { rows = JSON.parse(localStorage.getItem(KEY) || '[]'); if (!Array.isArray(rows)) rows = []; } catch (e) { rows = []; }
+function saveRows(){ try { localStorage.setItem(KEY, JSON.stringify(rows)); } catch (e) {} }
+function renderRows(){
+  const tb = $('tbody');
+  if (!rows.length){ tb.innerHTML = '<tr class="empty"><td colspan="11">No trials yet. Enter your measurements, then click "Add to results table."</td></tr>'; return; }
+  tb.innerHTML = rows.map((r, i) => `<tr><td>${i + 1}</td><td>${r.mc}</td><td>${r.mw}</td><td>${r.h}</td><td>${r.v0}</td><td>${r.vm}</td><td>${r.d}</td><td>${r.eff}</td><td>${r.fp}</td><td>${r.fc}</td><td class="del"><button data-i="${i}" aria-label="Delete trial ${i + 1}">Delete</button></td></tr>`).join('');
+}
+$('tbody').addEventListener('click', e => { const b = e.target.closest('button[data-i]'); if (!b) return; rows.splice(+b.dataset.i, 1); saveRows(); renderRows(); });
+$('addRow').addEventListener('click', () => {
+  if (!M || !M.hasV) return;
+  rows.push({ mc: $('mc').value, mw: $('mw').value, h: $('h').value, v0: f(M.v0), vm: f(M.vm), d: M.hasD ? f(M.d) : '', eff: (M.eff*100).toFixed(0),
+    fp: f(M.fPull, 3), fc: M.runOK ? f(M.fCoast, 3) : '' });
+  saveRows(); renderRows();
+});
+function tableText(){
+  const head = ['Trial', 'Car (g)', 'Hanging (g)', 'h (cm)', 'Predicted v (m/s)', 'Measured v (m/s)', 'Max displacement (m)', 'Efficiency (%)', 'Friction pulling (N)', 'Friction coasting (N)'];
+  return [head.join('\t')].concat(rows.map((r, i) => [i + 1, r.mc, r.mw, r.h, r.v0, r.vm, r.d, r.eff, r.fp, r.fc].join('\t'))).join('\n');
+}
+$('copyTbl').addEventListener('click', () => {
+  const txt = tableText(), msg = $('copyMsg'), area = $('copyArea');
+  const fallback = () => { area.hidden = false; area.value = txt; area.focus(); area.select(); msg.textContent = 'Press Ctrl+C (or ⌘C) to copy the selected text.'; };
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(() => { msg.textContent = 'Copied. Paste it into Google Sheets or Excel.'; area.hidden = true; }, fallback);
+  } else fallback();
+});
+let clearArmed = null;
+$('clearTbl').addEventListener('click', () => {
+  const b = $('clearTbl');
+  if (!clearArmed){ b.textContent = 'Click again to clear'; clearArmed = setTimeout(() => { b.textContent = 'Clear table'; clearArmed = null; }, 3000); return; }
+  clearTimeout(clearArmed); clearArmed = null; b.textContent = 'Clear table'; rows = []; saveRows(); renderRows();
+});
+
+// ---------- controls ----------
+function setMode(m){
+  state.mode = m;
+  $('modeIdeal').setAttribute('aria-pressed', m === 'ideal'); $('modeYours').setAttribute('aria-pressed', m === 'yours');
+}
+function reset(){ state.t = 0; state.playing = false; $('play').textContent = '▶ Run'; drawAll(); }
+function play(){
+  if (state.t >= M.T - 1e-6) state.t = 0;
+  state.playing = true; state.last = null; $('play').textContent = '❚❚ Pause'; requestAnimationFrame(tick);
+}
+function pause(){ state.playing = false; $('play').textContent = '▶ Run'; }
+function tick(ts){
+  if (!state.playing) return;
+  if (state.last != null) state.t = Math.min(M.T, state.t + (ts - state.last)/1000*state.speed);
+  state.last = ts; drawAll();
+  if (state.t >= M.T){ pause(); return; }
+  requestAnimationFrame(tick);
+}
+$('play').addEventListener('click', () => state.playing ? pause() : play());
+$('reset').addEventListener('click', reset);
+$('speed').addEventListener('change', e => { state.speed = parseFloat(e.target.value); });
+$('modeIdeal').addEventListener('click', () => { setMode('ideal'); reset(); });
+$('modeYours').addEventListener('click', () => { if (M && M.runOK){ setMode('yours'); reset(); } });
+$('runIdeal').addEventListener('click', () => { setMode('ideal'); reset(); play(); $('scene').scrollIntoView({ block: 'nearest', behavior: 'smooth' }); });
+$('runYours').addEventListener('click', () => { if (!M || !M.runOK) return; setMode('yours'); reset(); play(); $('scene').scrollIntoView({ block: 'nearest', behavior: 'smooth' }); });
+$('example').addEventListener('click', () => {
+  $('mc').value = 190; $('mw').value = 200; $('h').value = 25; $('R').value = '6.0'; $('r').value = '1.0';
+  $('vm').value = '1.10'; $('dt').value = '3.00'; recompute(); setMode('yours'); reset();
+});
+['mc', 'mw', 'h', 'R', 'r', 'vm', 'dt'].forEach(id => $(id).addEventListener('input', recompute));
+
+function drawAll(){ if (!M) return; drawScene(); drawGraphs(); }
+function recompute(){
+  const m = compute();
+  if (!m){ M = null; updatePanel(); return; }
+  M = m; curves = sample();
+  if (state.t > M.T) state.t = M.T;
+  updatePanel(); drawAll();
+}
+let rz; window.addEventListener('resize', () => { cancelAnimationFrame(rz); rz = requestAnimationFrame(drawAll); });
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(drawAll);
+renderRows(); recompute();
+window.__gcl = { compute, idealAt, yoursAt, get M(){ return M; } };
+})();
+</script>
+
+</body>
+</html>
