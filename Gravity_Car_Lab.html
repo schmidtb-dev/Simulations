@@ -110,7 +110,7 @@ td.del button{border:0; background:none; color:var(--bad); cursor:pointer; font:
 <header class="bar"><div class="bar-in">
   <h1>Gravity Car Lab</h1>
   <span class="sub">Physics 1 ACP · Unit 3: Work, Energy &amp; Efficiency</span>
-  <span class="chip">g = 10 m/s²</span>
+  <span class="chip">g = 9.8 m/s²</span>
 </div></header>
 
 <main class="wrap">
@@ -230,7 +230,7 @@ td.del button{border:0; background:none; color:var(--bad); cursor:pointer; font:
 <script>
 (() => {
 'use strict';
-const g = 10;
+const g = 9.8;
 const $ = id => document.getElementById(id);
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const f = (v, d = 2) => Number.isFinite(v) ? v.toFixed(d) : '—';
@@ -510,7 +510,7 @@ function updatePanel(){
   $('vTheory').textContent = f(M.v0);
   const mwkg = M.mw.toFixed(3), hm = M.h.toFixed(3).replace(/0+$/, '').replace(/\.$/, '');
   $('mathTheory').innerHTML =
-    `PE = mgh<br>&nbsp;&nbsp; = (${mwkg} kg)(10 m/s²)(${hm} m)<br>&nbsp;&nbsp; = ${f(M.PE0, 3)} J<br>` +
+    `PE = mgh<br>&nbsp;&nbsp; = (${mwkg} kg)(9.8 m/s²)(${hm} m)<br>&nbsp;&nbsp; = ${f(M.PE0, 3)} J<br>` +
     `<span class="c">No friction, so all of it becomes KE of the whole car (car + hanging mass = ${M.Mt.toFixed(3)} kg):</span><br>` +
     `½(${M.Mt.toFixed(3)} kg)v² = ${f(M.PE0, 3)} J<br>` +
     `v = √(2 × ${f(M.PE0, 3)} J ÷ ${M.Mt.toFixed(3)} kg)<br>&nbsp;&nbsp; = <b>${f(M.v0)} m/s</b>`;
