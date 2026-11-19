@@ -209,6 +209,11 @@ input[type=range]::-moz-range-thumb{width:12px;height:22px;border-radius:5px;bac
 .bigscore b{font-family:var(--font-display);font-size:40px;color:var(--navy);line-height:1}
 .bigscore span{color:var(--muted)}
 .copyarea{width:100%;min-height:150px;font-family:var(--font-mono);font-size:12.5px;border:1px solid var(--line);border-radius:10px;padding:8px}
+.sendstat{margin:0;font-size:13.5px;line-height:1.45}
+.sendstat:empty{display:none}
+.sendstat.ok{color:var(--good);font-weight:600}
+.sendstat.err{color:var(--bad)}
+.sendstat.stale{color:var(--muted)}
 .toast{position:fixed;left:50%;bottom:max(20px,env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--navy);color:#fff;border-radius:10px;padding:8px 14px;z-index:60;font-size:14px}
 
 /* ---------- responsive ---------- */
@@ -234,6 +239,13 @@ input[type=range]::-moz-range-thumb{width:12px;height:22px;border-radius:5px;bac
 <main id="main"></main>
 <script>
 'use strict';
+/* ================= teacher setup: results collector =================
+   Paste your Google Apps Script web-app URL (it ends in /exec) between the
+   quotes below. That turns on the "Send to my teacher" button in My results.
+   Leave it empty and the button stays hidden (students can still copy results). */
+const SUBMIT_URL = 'https://script.google.com/macros/s/AKfycbwt1I4mbbGv8UEOQGULVUJcPoA53s121Yee47sjVBl9U7gZG6bnRiujonUHS9cCSJQcng/exec';
+const SIM_NAME = 'Work & Energy Lab';   // also names the tabs in your results sheet
+
 /* ================= core utilities ================= */
 const G = 10;                       // g = 10 N/kg, as in the course
 const COL = {
@@ -380,6 +392,7 @@ function readout(parent, rows) {
   return (k, v, color) => { if (map[k]) { map[k].textContent = v; if (color) map[k].style.color = color; } };
 }
 function toast(msg) {
+  document.querySelectorAll('.toast').forEach(o => o.remove());
   const t = el('div', { class: 'toast', role: 'status' }, msg);
   document.body.append(t); setTimeout(() => t.remove(), 1800);
 }
@@ -632,7 +645,7 @@ function drawGraph(ctx, R, o) {
 /* ================= app shell ================= */
 const App = {
   screens: [], byId: {}, current: 'home', dirty: true, slow: false, last: 0,
-  name: '',
+  name: '', block: '', sent: null,
   register(s) { this.screens.push(s); this.byId[s.id] = s; },
   go(id) {
     if (!this.byId[id] && id !== 'home') id = 'home';
@@ -808,10 +821,10 @@ const Q = {
   },
   init() {
     const saved = Store.load();
-    if (saved && saved.seed) { this.seed = saved.seed; this.st = saved.st || {}; App.name = saved.name || ''; }
+    if (saved && saved.seed) { this.seed = saved.seed; this.st = saved.st || {}; App.name = saved.name || ''; App.block = saved.block || ''; App.sent = saved.sent || null; }
     else { this.seed = (Math.random() * 1e9) >>> 0; this.persist(); }
   },
-  persist() { Store.save({ seed: this.seed, st: this.st, name: App.name, v: 1 }); },
+  persist() { Store.save({ seed: this.seed, st: this.st, name: App.name, block: App.block, sent: App.sent, v: 1 }); },
   setCode() { return (this.seed % 46656).toString(36).toUpperCase().padStart(3, '0'); },
   params(qid) {
     const q = this.all[qid]; if (!q) return {};
@@ -2669,7 +2682,9 @@ function buildShell() {
         el('li', null, 'Answer the questions in the panel. Use the ', el('b', null, '“Set up the sim for me”'), ' button to load a question’s numbers, then check your answer in the sim.'),
         el('li', null, 'Right on the first try = 2 points. Right after a retry = 1 point. After 2 misses you may show the solution (0 points).'),
         el('li', null, 'Use g = 10 N/kg. Type only the number; the unit is shown.'),
-        el('li', null, 'When you finish, open ', el('b', null, 'My results'), ' and copy your summary to turn in. Progress is saved in this browser only.')))));
+        SUBMIT_URL
+          ? el('li', null, 'When you finish, open ', el('b', null, 'My results'), ' and press ', el('b', null, 'Send to my teacher'), '. You can send again after more work; your teacher sees your newest results. Progress is saved in this browser only.')
+          : el('li', null, 'When you finish, open ', el('b', null, 'My results'), ' and copy your summary to turn in. Progress is saved in this browser only.')))));
   const cards = el('div', { class: 'cards' });
   App.screens.forEach(s => {
     const prog = el('div', { class: 'prog' }, el('div', { class: 'bar' }, el('i', { 'data-bar': s.id, style: 'width:0%' })), el('span', { 'data-cnt': s.id }, ''));
@@ -2696,7 +2711,9 @@ App.updateProgress = function () {
 
 function resultsText() {
   const T = Q.totals(), now = new Date();
-  const lines = ['Work & Energy Lab (Unit 3) — results', 'Name: ' + (App.name || '(no name entered)'), 'Date: ' + now.toLocaleString(), 'Question set: ' + Q.setCode(), ''];
+  const lines = ['Work & Energy Lab (Unit 3) — results', 'Name: ' + (App.name || '(no name entered)')];
+  if (App.block) lines.push('Block: ' + App.block);
+  lines.push('Date: ' + now.toLocaleString(), 'Question set: ' + Q.setCode(), '');
   App.screens.forEach(s => {
     const t = Q.screenStats(s.id);
     lines.push((s.ext ? '[Extension] ' : '') + s.section + ' ' + s.title + ': ' + t.pts + '/' + t.max + ' pts (' + t.done + '/' + t.n + ' done; first try ' + t.first + ', after retry ' + t.later + ', solution shown ' + t.shown + ')');
@@ -2705,6 +2722,68 @@ function resultsText() {
   lines.push('Extension (Power): ' + T.ext.pts + ' / ' + T.ext.max);
   return lines.join('\n');
 }
+
+/* ---------- send to the teacher's Google Sheet ---------- */
+// One row of the teacher's sheet: totals, each screen, then each question
+// (2 = first try, 1 = after a retry, 0 = solution shown, blank = not done).
+function resultsPayload() {
+  const T = Q.totals();
+  let shown = 0;
+  App.screens.forEach(s => { shown += Q.screenStats(s.id).shown; });
+  const fields = [
+    ['Block', App.block || ''],
+    ['Core score (of ' + T.core.max + ')', T.core.pts],
+    ['Core %', T.core.max ? Math.round(T.core.pts / T.core.max * 100) : 0],
+    ['Extension (of ' + T.ext.max + ')', T.ext.pts],
+    ['Core questions done (of ' + T.core.n + ')', T.core.done],
+    ['Solutions shown', shown],
+    ['Question set', Q.setCode()]];
+  App.screens.forEach(s => { const t = Q.screenStats(s.id); fields.push([s.section + ' ' + s.title + (s.ext ? ' (Ext.)' : '') + ' (of ' + t.max + ')', t.pts]); });
+  App.screens.forEach(s => (Q.sets[s.id] || []).forEach(q => {
+    const st = Q.st[q.id];
+    fields.push([s.section + ' Q' + q.n, st && st.status ? Q.pts(q.id) : '']);
+  }));
+  return { sim: SIM_NAME, name: App.name, fields };
+}
+function sentLine() {
+  if (!App.sent) return { text: '', cls: '' };
+  const when = new Date(App.sent.at).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' });
+  const T = Q.totals();
+  const changed = App.sent.pts !== T.core.pts || App.sent.ext !== T.ext.pts || App.sent.done !== T.core.done + T.ext.done;
+  return changed
+    ? { text: 'Last sent ' + when + ' with ' + App.sent.pts + ' / ' + T.core.max + '. You have done more since then, so send again.', cls: 'stale' }
+    : { text: '✓ Sent to your teacher ' + when + ' with ' + App.sent.pts + ' / ' + T.core.max + '.', cls: 'ok' };
+}
+async function sendResults(btn, stat, nameIn) {
+  if (App.name.replace(/[^A-Za-z]/g, '').length < 3) {
+    toast('Type your first and last name first.');
+    nameIn.focus();
+    return;
+  }
+  const label = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Sending…';
+  stat.className = 'sendstat'; stat.textContent = '';
+  const ctl = typeof AbortController === 'function' ? new AbortController() : null;
+  const timer = setTimeout(() => { if (ctl) ctl.abort(); }, 20000);
+  try {
+    // A plain-text body keeps this a "simple" request, which Apps Script accepts.
+    const r = await fetch(SUBMIT_URL, { method: 'POST', body: JSON.stringify(resultsPayload()), signal: ctl ? ctl.signal : undefined });
+    const j = await r.json();
+    if (!j || !j.ok) throw new Error((j && j.error) || 'not saved');
+    const T = Q.totals();
+    App.sent = { at: Date.now(), pts: T.core.pts, ext: T.ext.pts, done: T.core.done + T.ext.done };
+    Q.persist();
+    const s = sentLine(); stat.textContent = s.text; stat.className = 'sendstat ' + s.cls;
+    toast('Sent to your teacher.');
+  } catch (e) {
+    stat.textContent = 'That didn’t go through. Check your internet connection and press Send again. If it still fails, use Copy my results and paste it where your teacher asked.';
+    stat.className = 'sendstat err';
+  } finally {
+    clearTimeout(timer);
+    btn.disabled = false; btn.textContent = label;
+  }
+}
+
 function openResults() {
   const T = Q.totals();
   const modal = el('div', { class: 'modal', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'My results' });
@@ -2720,7 +2799,12 @@ function openResults() {
   App.screens.forEach(s => { const t = Q.screenStats(s.id); tb.append(el('tr', null, el('td', null, s.section + ' ' + s.title + (s.ext ? ' (Ext.)' : '')), el('td', null, t.done + ' / ' + t.n), el('td', null, String(t.first)), el('td', null, String(t.later)), el('td', null, String(t.shown)), el('td', null, t.pts + ' / ' + t.max))); });
   const tbl = el('table', { class: 'restable' }, el('thead', null, el('tr', null, ['Screen', 'Done', 'First try', 'Retry', 'Shown', 'Points'].map(h => el('th', null, h)))), tb,
     el('tfoot', null, el('tr', null, el('td', null, 'Core total (3.1–3.5)'), el('td', null, T.core.done + ' / ' + T.core.n), el('td'), el('td'), el('td'), el('td', null, T.core.pts + ' / ' + T.core.max))));
-  const copyBtn = el('button', { type: 'button', class: 'btn solid', onclick: () => {
+  const blockIn = el('input', { type: 'text', id: 'res-block', value: App.block, placeholder: 'e.g. C', maxlength: '12', autocomplete: 'off', style: 'flex:0 0 84px;width:84px;min-width:0;border:1.5px solid var(--line);border-radius:9px;padding:8px 10px' });
+  blockIn.addEventListener('input', () => { App.block = blockIn.value.trim(); Q.persist(); refresh(); });
+  const stat = el('p', { class: 'sendstat', role: 'status', 'aria-live': 'polite' });
+  const s0 = sentLine(); stat.textContent = s0.text; if (s0.cls) stat.classList.add(s0.cls);
+  const sendBtn = SUBMIT_URL ? el('button', { type: 'button', class: 'btn solid', onclick: () => sendResults(sendBtn, stat, nameIn) }, 'Send to my teacher') : null;
+  const copyBtn = el('button', { type: 'button', class: SUBMIT_URL ? 'btn' : 'btn solid', onclick: () => {
     refresh();
     const done = () => toast('Copied. Paste it where your teacher asked.');
     const fallback = () => { ta.focus(); ta.select(); toast('Press Ctrl+C (or ⌘+C) to copy the selected text.'); };
@@ -2729,18 +2813,21 @@ function openResults() {
   let armed = false;
   const resetBtn = el('button', { type: 'button', class: 'linkbtn', onclick: () => {
     if (!armed) { armed = true; resetBtn.textContent = 'Click again to erase all answers on this computer'; setTimeout(() => { armed = false; resetBtn.textContent = 'Start over'; }, 4000); return; }
-    Q.st = {}; Q.seed = (Math.random() * 1e9) >>> 0; Q.persist(); location.reload();
+    Q.st = {}; Q.seed = (Math.random() * 1e9) >>> 0; App.sent = null; Q.persist(); location.reload();
   } }, 'Start over');
   refresh();
   modal.append(el('div', { class: 'sheet' },
     el('div', { style: 'display:flex;align-items:center;gap:10px' }, el('h2', null, 'My results'), el('button', { type: 'button', class: 'x', 'aria-label': 'Close', onclick: close }, '×')),
-    el('div', { class: 'namebox', style: 'margin:0' }, el('label', { for: 'res-name' }, 'Name'), nameIn),
+    el('div', { class: 'namebox', style: 'margin:0' }, el('label', { for: 'res-name' }, 'Name'), nameIn, el('label', { for: 'res-block' }, 'Block'), blockIn),
     el('div', { class: 'bigscore' }, el('b', null, T.core.pts + ' / ' + T.core.max), el('span', null, Math.round(T.core.pts / T.core.max * 100) + '% on sections 3.1–3.5 · Extension: ' + T.ext.pts + ' / ' + T.ext.max)),
     el('div', { style: 'overflow-x:auto' }, tbl),
-    el('p', { class: 'note', style: 'font-size:13.5px' }, 'Copy this summary and paste it where your teacher asked (for example, in your assignment). Your answers are saved only in this browser.'),
-    ta, el('div', { class: 'qbtns' }, copyBtn, resetBtn)));
+    SUBMIT_URL
+      ? el('p', { class: 'note', style: 'font-size:13.5px' }, 'When you are done, press Send to my teacher. You can send again later; your teacher sees your newest results. Your answers are saved only in this browser.')
+      : el('p', { class: 'note', style: 'font-size:13.5px' }, 'Copy this summary and paste it where your teacher asked (for example, in your assignment). Your answers are saved only in this browser.'),
+    sendBtn ? el('div', { class: 'qbtns' }, sendBtn, copyBtn) : null, stat,
+    ta, el('div', { class: 'qbtns' }, sendBtn ? null : copyBtn, resetBtn)));
   document.body.append(modal);
-  copyBtn.focus();
+  (sendBtn || copyBtn).focus();
 }
 
 function start() {
